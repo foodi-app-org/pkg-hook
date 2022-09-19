@@ -1,0 +1,33 @@
+{
+  "name": "npm-pkg-hook",
+  "version": "1.0.0",
+  "description": "description-pkg-hook",
+  "main": "/src/index.jsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rm": "rm -rf node_modules package-lock.json && npm i"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@apollo/client": "3.6.9",
+    "@typescript-eslint/parser": "^5.37.0",
+    "js-cookie": "3.0.1",
+    "react": "18.1.0",
+    "react-dom": "18.1.0",
+    "react-query": "^3.39.2"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.19.1",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "@types/react": "^18.0.20",
+    "eslint": "^8.23.1",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.5",
+    "eslint-plugin-promise": "^6.0.1",
+    "eslint-plugin-react": "^7.31.8",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  }
+}
