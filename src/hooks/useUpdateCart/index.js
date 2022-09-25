@@ -1,8 +1,9 @@
 import debounce from 'lodash.debounce'
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { getCurrentDomain } from '../../utils'
 import { trigger } from '../useEvent'
+import { Cookies } from '../../cookies'
+
 // EXAMPLE
 // https://codesandbox.io/s/nextjs-cart-system-tfg1e?file=/pages/_app.js
 
