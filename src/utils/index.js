@@ -24,4 +24,31 @@ export const validationSubmitHooks = elements => {
   export const getCurrentDomain = () => {
     return typeof window !== 'undefined' && window.location.hostname.split('.').slice(-2).join('.')
   }
-  
+
+  export function RandomCode(length) {
+    let result = ''
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let charactersLength = characters.length
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() *
+        charactersLength))
+    }
+    return result
+  }
+  /**
+ * actualizar cache de apollo
+ * @param {{ cache: object, query: object, nameFun: string, dataNew: object, type: number, id: string }} params Parámetros para actualizar el cachet de apollo
+ * @returns {null} no hay retorno
+ */
+export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id }) => {
+  return cache.modify({
+    fields: {
+      [nameFun](dataOld = []) {
+        if (type === 1) return cache.writeQuery({ query, data: [...(dataOld || []), { ...(dataNew || {}) }] })
+        if (type === 2) return cache.writeQuery({ query, data: { ...(dataOld || {}), ...(dataNew || {}) } })
+        if (type === 3) return cache.writeQuery({ query, data: dataOld.filter(x => { return x === id }) })
+      }
+    }
+  })
+}
+export const initializer = (initialValue = initialState) => { return JSON.parse(localStorage.getItem(process.env.LOCAL_SALES_STORE)) || initialValue }
