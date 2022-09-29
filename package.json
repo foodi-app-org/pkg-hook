@@ -2,7 +2,7 @@
   "name": "npm-pkg-hook",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Jesus123780/pkg-hook"
+    "url": "https://github.com/Jesus123780/pkg-hook"
   },
   "version": "1.0.2",
   "description": "description-pkg-hook",

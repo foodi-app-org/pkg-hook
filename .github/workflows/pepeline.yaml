@@ -1,24 +1,22 @@
-name: Deployment Pipeline
-
+name: Publish package to GitHub Packages
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [develop]
-    types: [opened, synchronize]
-
+  release:
+    types: [created]
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest 
+    permissions: 
+      contents: read
+      packages: write 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        registry-url: 'https://registry.npmjs.org'
-    - run: npm ci
-    - run: npm publish
-    - name: Install dependencies
-      run: npm install -no-audit --no-fund --no-optional -f
+      - uses: actions/checkout@v3
+      # Setup .npmrc file to publish to GitHub Packages
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://npm.pkg.github.com'
+          # Defaults to the user or organization that owns the workflow file
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
