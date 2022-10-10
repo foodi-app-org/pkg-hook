@@ -37,8 +37,8 @@ module.exports = (phase) => {
     SESSION_NAME: 'vp.client',
     SESSION_KEY: '12ba105efUaGjihGrh0LfJHTGIBGu6jXa',
     URL_BASE: (() => {
-      if (isDev) return 'http://localhost:3001/app/'
-      if (isProd) return 'http://localhost:3001/app/'
+      if (isDev) return 'http://localhost:3001/'
+      if (isProd) return 'http://localhost:3001/'
       // if (isStaging) return 'Title Stg'
     })(),
     MAIN_URL_BASE: (() => {
@@ -79,7 +79,7 @@ module.exports = (phase) => {
   const headers = () => {
     return [
       {
-        source: '/app',
+        source: '',
         headers: [
           {
             key: 'x-custom-header-1',
@@ -98,7 +98,7 @@ module.exports = (phase) => {
       }
     ]
   }
-  const basePath = '/app'
+  const basePath = ''
   // puedes sobre escribir la ruta
   const rewrites = () => {
     return [
