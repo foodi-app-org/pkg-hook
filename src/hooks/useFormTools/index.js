@@ -2,7 +2,7 @@ import {
   useCallback,
   useEffect,
   useState
-  } from 'react'
+} from 'react'
 import { validationSubmitHooks } from '../../utils'
 /**
  * @version 0.0.1
@@ -14,7 +14,6 @@ export const useFormTools = () => {
   const [errorForm, setErrorForm] = useState({})
   const [errorSubmit, setErrorSubmit] = useState(false)
   const [calledSubmit, setCalledSubmit] = useState(false)
-
   // Handle Change
   const handleChange = useCallback((e, error) => {
     setDataForm({ ...dataForm, [e.target.name]: e.target.value })
@@ -32,6 +31,11 @@ export const useFormTools = () => {
   }, [setErrorForm])
 
   // Handle submit, al enviar formulario
+  const listErrors = Object.values(errorForm)
+  const errors = listErrors.find((error) => {
+    return error ===true
+  })
+
   const handleSubmit = useCallback(({ event, action, msgSuccess, msgError, actionAfterSuccess }) => {
     !!event && event.preventDefault()
     setCalledSubmit(true)
@@ -42,11 +46,17 @@ export const useFormTools = () => {
       if (errorForm[x]) errSub = true
     }
 
-    // if (errSub) return setErrorSubmit(errSub)
+    if (errors) {
+      setErrorSubmit(true)
+     return setForcedError({ ...errorForm })
+  }
+
+    if (errSub) return setErrorSubmit(errSub)
 
     // Valida los errores desde el evento
     const errores = validationSubmitHooks(event.target.elements)
     setErrorForm(errores)
+    console.log("🚀 ~ file: index.js ~ line 50 ~ handleSubmit ~ errores", errores)
     for (const x in errores) {
       if (errores[x]) errSub = true
     }
@@ -66,6 +76,9 @@ export const useFormTools = () => {
   }, [errorForm, setErrorForm])
 
   useEffect(() => {return setCalledSubmit(false)}, [calledSubmit])
+  useEffect(() => {
+    return setCalledSubmit(false)},
+  [])
 
   return [handleChange, handleSubmit, handleForcedData, { dataForm, errorForm, errorSubmit, calledSubmit, setForcedError }]
 }

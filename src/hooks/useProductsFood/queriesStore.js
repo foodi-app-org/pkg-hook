@@ -90,24 +90,24 @@ query productFoodsAll($search: String, $min: Int, $max: Int, $gender: [String], 
     ProPrice
     ProDescuento
     free
-	  ProUniDisponibles
-	  ProDescription
-	  ProProtegido
-	  ProAssurance
-	  ValueDelivery
-	  ProStar
+      ProUniDisponibles
+      ProDescription
+      ProProtegido
+      ProAssurance
+      ValueDelivery
+      ProStar
     sTateLogistic
-	  ProImage
-	  ProWidth
-	  ProHeight
-	  ProLength
-	  ProWeight
-	  ProQuantity
-	  ProOutstanding
+      ProImage
+      ProWidth
+      ProHeight
+      ProLength
+      ProWeight
+      ProQuantity
+      ProOutstanding
     pDatCre
     pDatMod
-	  ProDelivery
-	  ProVoltaje
+      ProDelivery
+      ProVoltaje
     pState
     feat {
       fId
@@ -247,21 +247,21 @@ mutation updateProducts($input: InputProduct){
     pName
     ProPrice
     ProDescuento
-	  ProUniDisponibles
-	  ProDescription
-	  ProProtegido
-	  ProAssurance
-	  ProStar
-	  pState
-	  ProImage
-	  ProWidth
-	  ProHeight
-	  ProLength
-	  ProWeight
-	  ProQuantity
-	  ProOutstanding
-	  ProDelivery
-	  ProVoltaje
+      ProUniDisponibles
+      ProDescription
+      ProProtegido
+      ProAssurance
+      ProStar
+      pState
+      ProImage
+      ProWidth
+      ProHeight
+      ProLength
+      ProWeight
+      ProQuantity
+      ProOutstanding
+      ProDelivery
+      ProVoltaje
   }
 }
 `
@@ -289,22 +289,22 @@ mutation updateProductFoods($input: InputProductFood){
     ProPrice
     carProId
     ProDescuento
-	  ProUniDisponibles
-	  ValueDelivery
-	  ProDescription
-	  ProProtegido
-	  ProAssurance
-	  ProStar
-	  pState
-	  ProImage
-	  ProWidth
-	  ProHeight
-	  ProLength
-	  ProWeight
-	  ProQuantity
-	  ProOutstanding
-	  ProDelivery
-	  ProVoltaje
+      ProUniDisponibles
+      ValueDelivery
+      ProDescription
+      ProProtegido
+      ProAssurance
+      ProStar
+      pState
+      ProImage
+      ProWidth
+      ProHeight
+      ProLength
+      ProWeight
+      ProQuantity
+      ProOutstanding
+      ProDelivery
+      ProVoltaje
   }
 }
 `
@@ -418,21 +418,21 @@ query productsAll($search: String, $min: Int, $max: Int, $gender: [String], $des
     pName
     ProPrice
     ProDescuento
-	  ProUniDisponibles
-	  ProDescription
-	  ProProtegido
-	  ProAssurance
-	  ProStar
+      ProUniDisponibles
+      ProDescription
+      ProProtegido
+      ProAssurance
+      ProStar
     sTateLogistic
-	  ProImage
-	  ProWidth
-	  ProHeight
-	  ProLength
-	  ProWeight
-	  ProQuantity
-	  ProOutstanding
-	  ProDelivery
-	  ProVoltaje
+      ProImage
+      ProWidth
+      ProHeight
+      ProLength
+      ProWeight
+      ProQuantity
+      ProOutstanding
+      ProDelivery
+      ProVoltaje
     pState
     feat {
       fId
@@ -468,7 +468,7 @@ query getFoodAllProduct($search: String, $min: Int, $max: Int, $gender: [String]
     pDatCre
     pDatMod
 }
-}		
+}       
 `
 
 
@@ -535,7 +535,7 @@ query productFoodsOne($pId: ID){
           state
           pDatCre
           pDatMod
-    	}
+        }
     getStore {
         idStore
         cId
@@ -591,7 +591,7 @@ query productFoodsOne($pId: ID){
       }
     }
     
-	}
+    }
 }
 `
 

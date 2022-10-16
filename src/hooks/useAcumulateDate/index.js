@@ -6,11 +6,11 @@ const data = [
     const [year, month, day, hr, min, sec] = iso_string.split(/\D/g)
     return { year, month, day, hr, min, sec }
   }
-  function group_by_year(arr) {
+ export function groupDates(arr) {
     let total = arr.reduce((a, b) => {
-      const { day } = get_date_parts(b.x)
-      return a + parseInt(day)
+      const { hr } = get_date_parts(b.x)
+      return a + parseInt(hr)
     }, 0)
     return total
   }
-  const result = group_by_year(data)
+  const result = groupDates(data)

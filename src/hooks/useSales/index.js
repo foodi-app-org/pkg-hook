@@ -1,25 +1,29 @@
+import { useLazyQuery, useMutation } from '@apollo/client'
+import moment from 'moment'
 import {
-  useState,
-  useEffect,
   useCallback,
-  useReducer
+  useEffect,
+  useReducer,
+  useState
 } from 'react'
+import { Cookies } from '../../cookies'
 import {
   getCurrentDomain,
   RandomCode,
   updateCacheMod
 } from '../../utils'
-import { Cookies } from '../../cookies'
-import { useGetProductsFood } from '../useGetProductsFood'
+import { useProductsFood } from '../useProductsFood'
+import {
+  GET_ALL_EXTRA_PRODUCT,
+  GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
+  GET_ONE_PRODUCTS_FOOD
+} from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
-import moment from 'moment'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_SALES,
   GET_ALL_SALES_STATISTICS
 } from './queries'
-import { useLazyQuery, useMutation } from '@apollo/client'
-import { GET_ALL_EXTRA_PRODUCT, GET_EXTRAS_PRODUCT_FOOD_OPTIONAL, GET_ONE_PRODUCTS_FOOD } from '../useGetProductsFood/queriesStore'
 
 const initialState = {
   PRODUCT: [],
@@ -56,11 +60,11 @@ export const useSales = () => {
   const [product, setProduct] = useState({
     PRODUCT: {},
   })
-  const [productFoodsOne, { data: dataProduct, loading: loadingProduct }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
+  const [productFoodsOne, { data: dataProduct }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
   const [ExtProductFoodsOptionalAll, { data: dataOptional }] = useLazyQuery(GET_EXTRAS_PRODUCT_FOOD_OPTIONAL)
   const [ExtProductFoodsAll, { data: dataExtra }] = useLazyQuery(GET_ALL_EXTRA_PRODUCT)
 
-  const [productsFood, { loading, fetchMore }] = useGetProductsFood({
+  const [productsFood, { loading, fetchMore }] = useProductsFood({
     search: search?.length >= 4 ? search : '',
     gender: [],
     desc: [],
