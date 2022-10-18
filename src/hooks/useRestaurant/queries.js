@@ -2,6 +2,15 @@ import { gql } from '@apollo/client'
 export const GET_ALL_RESTAURANT = gql`
 query getAllStoreInStore($search: String, $min: Int, $max: Int){
   getAllStoreInStore(search: $search, min: $min, max: $max) {
+    open
+    getStoreSchedules {
+      idStore
+      schId
+      schDay
+      schHoSta
+      schHoEnd
+      schState
+    }
     idStore
     cId
     id
@@ -36,7 +45,7 @@ query getAllStoreInStore($search: String, $min: Int, $max: Int){
     addressStore
     createdAt
     pais{
-      	cId
+        cId
         cName
         cCalCod
         cState
@@ -66,5 +75,6 @@ query getAllStoreInStore($search: String, $min: Int, $max: Int){
       createAt
     }
   }
+  
 }
 `

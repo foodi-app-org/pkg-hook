@@ -12,7 +12,11 @@ export const useSchedule = ({ day = null }) => {
 }
 
 export const useSchedules = ({ schDay = 1 }) => {
-  const { data, loading, error } = useQuery(GET_SCHEDULE_STORE, { variables: { schDay: schDay } })
+  const {
+    data,
+    loading,
+    error
+  } = useQuery(GET_SCHEDULE_STORE, { variables: { schDay: schDay } })
 
 
   return [data?.getStoreSchedules, { loading, error }]
