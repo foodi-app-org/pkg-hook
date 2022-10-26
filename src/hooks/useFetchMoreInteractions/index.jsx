@@ -1,10 +1,13 @@
 import React, {
-    useState,
     useEffect,
-    useRef
+    useRef, useState
 } from 'react'
 
-export const useFetchMoreInteractions = ({ render, fetchMore = true, callback = () => {} }) => {
+export const useFetchMoreInteractions = ({
+    render,
+    fetchMore = true,
+    callback = () => {}
+}) => {
     const loadingRef = useRef()
 
     const useOnScreen = ref => {

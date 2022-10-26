@@ -40,7 +40,7 @@ const initialState = {
 
 const initializer = (initialValue = initialState) => { return JSON.parse(Cookies.get(process.env.LOCAL_SALES_STORE) || JSON.stringify(initialState)) || initialValue }
 
-export const useSales = () => {
+export const useSales = ({ disabled, sendNotification }) => {
   const domain = getCurrentDomain()
   const [modalItem, setModalItem] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
@@ -92,6 +92,12 @@ export const useSales = () => {
   }
   // HANDLESS
   // FILTER PRODUCT DATA_DB
+  const handlePrint = ({ callback }) => {
+    if (disabled) {
+      return  sendNotification({ title: 'Error', description: 'Esta es la descr', backgroundColor: 'red' })
+    }
+    setPrint(!print)
+  }
   const handleChangeFilter = (e) => { return setSearch(e.target.value) }
   const handleChange = e => { return setValues({ ...values, [e.target.name]: e.target.value }) }
   const onChangeInput = (e) => { return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value }) }
@@ -411,7 +417,7 @@ export const useSales = () => {
           const { data } = responseRegisterR || {}
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
-          if (Response.success === true) {
+          if (Response && Response.success === true) {
             console.log({ message: `${Response.message}`, color: 'success' })
             dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
             setValues({})
@@ -487,7 +493,7 @@ export const useSales = () => {
     setTotalProductPrice,
     setInputValue,
     getSortedProduct,
-    setPrint,
+    setPrint: handlePrint,
     PRODUCT
   }
 }
