@@ -72,7 +72,6 @@ query employees ($umId: ID, $cId: ID, $aId: ID){
     termContract
     eDatAdm
     eState
-    
   }
 }
 `
