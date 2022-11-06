@@ -29,3 +29,24 @@ export const useOnScreen = (threshold = 0.6) => {
 
   return [setRef, isVisible]
 }
+
+const defaultObserverOptions = {
+    root: null,
+    threshold: 0.1,
+    rootMargin: "0px"
+};
+export const useIntersectionObserver = ({ el, onEnter, active = true, options = defaultObserverOptions })  => {
+    useEffect(() => {
+        let observer;
+        const refEl = el.current;
+        if (IntersectionObserver && active && refEl) {
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => entry.isIntersecting && onEnter());
+            }, options);
+            observer.observe(refEl);
+        }
+        return () => {
+            observer === null || observer === void 0 ? void 0 : observer.disconnect(refEl);
+        };
+    }, [el, onEnter, active, options]);
+}

@@ -1,5 +1,4 @@
 import { useLazyQuery, useMutation } from '@apollo/client'
-import moment from 'moment'
 import {
   useCallback,
   useEffect,
@@ -12,6 +11,7 @@ import {
   RandomCode,
   updateCacheMod
 } from '../../utils'
+import { useFormatDate } from '../useFormatDate'
 import { useProductsFood } from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
@@ -55,7 +55,9 @@ export const useSales = ({ disabled, sendNotification }) => {
   const [values, setValues] = useState({})
   const [dataStore] = useStore()
   const { createdAt } = dataStore || {}
-  const [valuesDates, setValuesDates] = useState(() => { return { fromDate: moment(createdAt || null).format('YYYY-MM-DD'), toDate: moment().format('YYYY-MM-DD') } })
+  const {yearMonthDay} = useFormatDate({ date: createdAt  })
+  console.log("🚀 ~ file: index.js ~ line 59 ~ useSales ~ date", yearMonthDay)
+  const [valuesDates, setValuesDates] = useState(() => { return { fromDate: yearMonthDay, toDate: yearMonthDay } })
   const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE)
   const [product, setProduct] = useState({
     PRODUCT: {},
