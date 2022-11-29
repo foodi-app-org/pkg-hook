@@ -15,7 +15,7 @@ export const useFormatDate = ({
     const hourMinutes24 = dateToFormat.toLocaleTimeString('ES-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
     const handleHourPmAM = (hour) => {
         const hourPmAm = new Date(`1/1/1999 ${hour}`).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
-        return hourPmAm
+        return hour ? hourPmAm : ''
     }
     return {
     day,

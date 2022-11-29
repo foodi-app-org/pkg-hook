@@ -40,7 +40,11 @@ const initialState = {
 
 const initializer = (initialValue = initialState) => { return JSON.parse(Cookies.get(process.env.LOCAL_SALES_STORE) || JSON.stringify(initialState)) || initialValue }
 
-export const useSales = ({ disabled, sendNotification }) => {
+export const useSales = ({
+  disabled,
+  sendNotification,
+  setAlertBox
+}) => {
   const domain = getCurrentDomain()
   const [modalItem, setModalItem] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
@@ -56,9 +60,18 @@ export const useSales = ({ disabled, sendNotification }) => {
   const [dataStore] = useStore()
   const { createdAt } = dataStore || {}
   const {yearMonthDay} = useFormatDate({ date: createdAt  })
-  console.log("🚀 ~ file: index.js ~ line 59 ~ useSales ~ date", yearMonthDay)
-  const [valuesDates, setValuesDates] = useState(() => { return { fromDate: yearMonthDay, toDate: yearMonthDay } })
-  const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE)
+  const [valuesDates, setValuesDates] = useState(() => { return { fromDate: yearMonthDay, toDate: '' } })
+  const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE, {
+    onCompleted: (data) => {
+      const message = `${data?.registerSalesStore?.Response?.message}`
+      const error = data?.registerSalesStore?.Response.success ? 'Error' : 'Mensaje'
+      sendNotification({ title: error, description: message })
+      setAlertBox({ message: message, type: 'success' })
+    },
+    onError: (error) => {
+      console.log('error', error)
+    }
+  })
   const [product, setProduct] = useState({
     PRODUCT: {},
   })
@@ -76,7 +89,6 @@ export const useSales = ({ disabled, sendNotification }) => {
     max: showMore,
     min: 0
   })
-
   const max = productsFood?.reduce(function (a, b) {
     return Math.max(a, b?.ProPrice || 0)
   }, 0)
@@ -357,6 +369,7 @@ export const useSales = ({ disabled, sendNotification }) => {
     })
     return dataList
   }
+  console.log(values?.cliId)
   const searchedInput = (words) => {
     setInputValue(words)
     let n = words.split(' ')
@@ -415,14 +428,15 @@ export const useSales = ({ disabled, sendNotification }) => {
       }
     })
       .then((responseRegisterR) => {
+        console.log(responseRegisterR)
         if (responseRegisterR) {
           const { data } = responseRegisterR || {}
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
           if (Response && Response.success === true) {
             console.log({ message: `${Response.message}`, color: 'success' })
-            dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
-            setValues({})
+            // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+            // setValues({})
           }
         }
       })

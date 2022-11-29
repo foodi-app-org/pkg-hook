@@ -24,16 +24,16 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
     pDatMod
     getAllPedidoStore{
         pdpId
-      	pId
-      	idStore
-      	ShoppingCard
+        pId
+        idStore
+        ShoppingCard
         pCodeRef
         pPStateP
         payMethodPState
         pPRecoger
         pDatCre
         pDatMod
-      	getAllShoppingCard {
+        getAllShoppingCard {
           ShoppingCard
           comments
           cantProducts
@@ -75,16 +75,16 @@ query getOneSalesStore($pCodeRef: String) {
     pDatMod
     getAllPedidoStore{
         pdpId
-      	pId
-      	idStore
-      	ShoppingCard
+        pId
+        idStore
+        ShoppingCard
         pCodeRef
         pPStateP
         payMethodPState
         pPRecoger
         pDatCre
         pDatMod
-      	getAllShoppingCard {
+        getAllShoppingCard {
           ShoppingCard
           comments
           cantProducts
@@ -203,7 +203,7 @@ mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
 mutation  registerSalesStore($input: [IShoppingCard], $id: ID, $idStore: ID, $pCodeRef: String, $change: String, $valueDelivery: Float, $payMethodPState: Int, $pickUp: Int, $totalProductsPrice: Float, $idSubArray: IID_SUB_ITEMS){
     registerSalesStore(input: $input, id: $id, idStore: $idStore, pCodeRef: $pCodeRef,  change: $change, valueDelivery: $valueDelivery, payMethodPState: $payMethodPState, pickUp: $pickUp, totalProductsPrice: $totalProductsPrice,  idSubArray: $idSubArray){
- 			ShoppingCard {
+            ShoppingCard {
       ShoppingCard
       id
       pId

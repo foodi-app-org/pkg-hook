@@ -61,7 +61,7 @@ mutation createOneContract($input: InputContractType) {
 `
 export const GET_ALL_EMPLOYEE_STORE = gql`
 query employees ($umId: ID, $cId: ID, $aId: ID){
-   employees(umId: $umId, cId: $cId, aId: $aId) {
+  employees(umId: $umId, cId: $cId, aId: $aId) {
     eId
     idStore
     id
@@ -72,10 +72,10 @@ query employees ($umId: ID, $cId: ID, $aId: ID){
     termContract
     eDatAdm
     eState
-    
   }
 }
 `
+
 export const GET_ALL_PRODUCT_STORE = gql`
 query productFoodsAll($search: String, $min: Int, $max: Int, $gender: [String], $pState: Int, $desc: [String], $categories: [ID], $fromDate: DateTime, $toDate: DateTime ) {
   productFoodsAll(search: $search, min: $min, max: $max, gender: $gender, desc: $desc, pState: $pState categories: $categories,  toDate: $toDate, fromDate: $fromDate) {
@@ -87,6 +87,13 @@ query productFoodsAll($search: String, $min: Int, $max: Int, $gender: [String], 
     ctId  #Cuidad
     fId  #Características
     pName
+    getOneTags {
+      tPsId
+      idUser
+      idStore
+      pId
+      nameTag
+    }
     ProPrice
     ProDescuento
     free
@@ -118,10 +125,8 @@ query productFoodsAll($search: String, $min: Int, $max: Int, $gender: [String], 
       aId
       aName
     }
-    
   }
 }
-
 `
 export const GET_ALL_RATING_START_STORE = gql`
 query getAllRatingStar($idStore: ID){
@@ -758,9 +763,20 @@ query getCatProductsWithProduct($search: String, $min: Int, $max: Int, $gender: 
         sTateLogistic
         pDatCre
         pDatMod
-      
     }
-    
+  }
+}
+`
+
+export const REGISTER_TAGS_PRODUCT = gql`
+mutation registerTag($input: ITag) {
+  registerTag(input: $input) {
+    tPsId
+    idUser
+    idStore
+    pId
+    nameTag
+    aName
   }
 }
 `
