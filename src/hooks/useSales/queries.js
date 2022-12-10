@@ -9,6 +9,12 @@ query getAllSalesStore($idStore: ID,$search: String, $min: Int, $max: Int $fromD
   }
 }
 `
+
+export const GET_ALL_COUNT_SALES = gql`
+query getTodaySales {
+  getTodaySales
+}
+`
 export const GET_ALL_SALES_STATISTICS = gql`
 query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: DateTime, $toDate: DateTime ) {
   getAllSalesStoreStatistic(idStore: $idStore, search: $search, min: $min, max: $max, toDate: $toDate, fromDate: $fromDate) {

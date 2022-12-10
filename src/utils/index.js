@@ -53,4 +53,5 @@ export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id 
 }
 export const initializer = (initialValue = initialState) => { return JSON.parse(localStorage.getItem(process.env.LOCAL_SALES_STORE)) || initialValue }
 
+
 export const numberFormat = value => { return value ? (parseInt(value) ? new Intl.NumberFormat('de-DE').format(parseFloat(`${value}`.replace(/\./g, ''))) : value) : (value) }

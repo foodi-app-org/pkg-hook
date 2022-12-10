@@ -21,6 +21,7 @@ import {
 import { useStore } from '../useStore'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
+  GET_ALL_COUNT_SALES,
   GET_ALL_SALES,
   GET_ALL_SALES_STATISTICS
 } from './queries'
@@ -43,6 +44,7 @@ const initializer = (initialValue = initialState) => { return JSON.parse(Cookies
 export const useSales = ({
   disabled,
   sendNotification,
+  router,
   setAlertBox
 }) => {
   const domain = getCurrentDomain()
@@ -64,7 +66,7 @@ export const useSales = ({
   const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE, {
     onCompleted: (data) => {
       const message = `${data?.registerSalesStore?.Response?.message}`
-      const error = data?.registerSalesStore?.Response.success ? 'Error' : 'Mensaje'
+      const error = data?.registerSalesStore?.Response.success ? 'Éxito' : 'Error'
       sendNotification({ title: error, description: message })
       setAlertBox({ message: message, type: 'success' })
     },
@@ -108,7 +110,11 @@ export const useSales = ({
   // FILTER PRODUCT DATA_DB
   const handlePrint = ({ callback }) => {
     if (disabled) {
-      return  sendNotification({ title: 'Error', description: 'Esta es la descr', backgroundColor: 'red' })
+      return  sendNotification({
+        title: 'Error',
+        description: 'Esta es la descr',
+        backgroundColor: 'red'
+      })
     }
     setPrint(!print)
   }
@@ -369,7 +375,6 @@ export const useSales = ({
     })
     return dataList
   }
-  console.log(values?.cliId)
   const searchedInput = (words) => {
     setInputValue(words)
     let n = words.split(' ')
@@ -391,9 +396,11 @@ export const useSales = ({
         comments: 'Comentarios'
       }
     })
-
+  const [code, setCode] = useState(null)
+  const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const handleSubmit = () => {
     const code = RandomCode(5)
+    setCode(code)
     return registerSalesStore({
       variables: {
         input: newArrayProducts || [],
@@ -405,7 +412,25 @@ export const useSales = ({
         pickUp: 1,
         totalProductsPrice: data?.totalAmount || 0
       },
-      update: (cache, { data: { getAllSalesStoreStatistic } }) => {
+      update: (cache, { data: {
+        getAllSalesStoreStatistic,
+        getTodaySales,
+        getAllSalesStore
+      } }) => {
+        updateCacheMod(
+          {
+            cache,
+            query: GET_ALL_SALES,
+            nameFun: 'getAllSalesStore',
+            dataNew: getAllSalesStore,
+        })
+        updateCacheMod(
+          {
+            cache,
+            query: GET_ALL_COUNT_SALES,
+            nameFun: 'getTodaySales',
+            dataNew: getTodaySales,
+          })
         return updateCacheMod(
           {
             cache,
@@ -413,17 +438,7 @@ export const useSales = ({
             nameFun: 'getAllSalesStoreStatistic',
             dataNew: getAllSalesStoreStatistic,
             type: 2
-          },
-          cache.modify({
-            fields: {
-              getAllSalesStore(dataOld = []) {
-                return cache.writeQuery({
-                  query: GET_ALL_SALES,
-                  data: dataOld
-                })
-              }
-            }
-          })
+          }
         )
       }
     })
@@ -434,8 +449,18 @@ export const useSales = ({
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
           if (Response && Response.success === true) {
-            console.log({ message: `${Response.message}`, color: 'success' })
             // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+            setOpenCurrentSale(true)
+            router.push(
+              {
+                query: {
+                  ...router.query,
+                  reference: code
+                }
+              },
+              undefined,
+              { shallow: true }
+            )
             // setValues({})
           }
         }
@@ -443,6 +468,14 @@ export const useSales = ({
   }
   let suma = 0
   let total = 0
+  useEffect(() => {
+    if (openCurrentSale) {
+      setTimeout(() => {
+        setOpenCurrentSale(false)
+      }, 5000)
+    }
+  }, [openCurrentSale])
+
   useEffect(() => {
     data.PRODUCT.forEach((a) => {
       const { ProPrice } = a || {}
@@ -472,7 +505,9 @@ export const useSales = ({
 
   return {
     loading,
+    openCurrentSale,
     fetchMore,
+    code,
     totalProductPrice,
     saveDataState,
     product,
@@ -499,6 +534,7 @@ export const useSales = ({
     handleChangeFilter,
     handleProduct,
     handleChange,
+    setOpenCurrentSale,
     onChangeInput,
     setDelivery,
     setValues,
