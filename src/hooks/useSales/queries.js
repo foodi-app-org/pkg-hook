@@ -206,10 +206,57 @@ mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS
   }
 }
 `
+export const GET_ONE_SALE = gql`
+query getOnePedidoStore($pCodeRef: String) {
+  getOnePedidoStore(pCodeRef: $pCodeRef) {
+    pdpId
+    pCodeRef
+    idStore
+    pPDate
+    pSState
+    pDatCre
+    pDatMod
+    pPRecoger
+    payMethodPState
+    pdpId
+    totalProductsPrice
+    locationUser
+    getAllPedidoStore {
+      pdpId
+      idStore
+      pCodeRef
+      ShoppingCard
+      getAllShoppingCard {
+        ShoppingCard
+        cantProducts
+        pId
+          productFood {
+          pId
+          carProId
+          colorId
+          idStore
+          pName
+          ProPrice
+          ProDescuento
+          ProDescription
+          ValueDelivery
+          ProImage
+          ProStar
+          pState
+          pDatCre
+          pDatMod
+        }
+      }
+    }
+  }
+}
+`
+
+
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
 mutation  registerSalesStore($input: [IShoppingCard], $id: ID, $idStore: ID, $pCodeRef: String, $change: String, $valueDelivery: Float, $payMethodPState: Int, $pickUp: Int, $totalProductsPrice: Float, $idSubArray: IID_SUB_ITEMS){
     registerSalesStore(input: $input, id: $id, idStore: $idStore, pCodeRef: $pCodeRef,  change: $change, valueDelivery: $valueDelivery, payMethodPState: $payMethodPState, pickUp: $pickUp, totalProductsPrice: $totalProductsPrice,  idSubArray: $idSubArray){
-            ShoppingCard {
+      ShoppingCard {
       ShoppingCard
       id
       pId

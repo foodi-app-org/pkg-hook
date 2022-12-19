@@ -49,6 +49,7 @@ export const useSales = ({
 }) => {
   const domain = getCurrentDomain()
   const [modalItem, setModalItem] = useState(false)
+  const [openCommentModal, setOpenCommentModal] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
   const [search, setSearch] = useState('')
@@ -56,13 +57,17 @@ export const useSales = ({
   const [totalProductPrice, setTotalProductPrice] = useState(0)
   const [showMore, setShowMore] = useState(50)
   const [inputValue, setInputValue] = useState('')
+  const [_, setFilteredList] = useState([]);
   const [delivery, setDelivery] = useState(false)
   const [print, setPrint] = useState(false)
   const [values, setValues] = useState({})
   const [dataStore] = useStore()
+  const [code, setCode] = useState(null)
+  const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const { createdAt } = dataStore || {}
   const {yearMonthDay} = useFormatDate({ date: createdAt  })
   const [valuesDates, setValuesDates] = useState(() => { return { fromDate: yearMonthDay, toDate: '' } })
+
   const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE, {
     onCompleted: (data) => {
       const message = `${data?.registerSalesStore?.Response?.message}`
@@ -129,7 +134,17 @@ export const useSales = ({
     let filteredData = handleList(text)
     setFilteredList(filteredData)
   }
-
+  const [oneProductToComment, setOneProductToComment] = useState({})
+  const handleComment = (product) => {
+    if (product) {
+      setOneProductToComment(product)
+      setValues({
+        ...values,
+        comment: product?.comment || ''
+      })
+    }
+    setOpenCommentModal(!openCommentModal)
+  }
   const handleChangeNumber = useCallback((state, action) => {
     const event = action.payload
     const { value, index, id } = event || {}
@@ -212,6 +227,7 @@ export const useSales = ({
               : items
           })
         }
+      case 'PUT_COMMENT': return commentProducts(state, action)
       case 'PRICE_RANGE':
         return {
           ...state,
@@ -246,6 +262,17 @@ export const useSales = ({
     }
   }
   const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
+  const handleRemoveValue = useCallback(({name, value, pId}) => {
+    setValues({
+      ...values,
+      [name]: value ?? ''
+    })
+    return dispatch({
+      type: 'PUT_COMMENT',
+      payload: pId,
+      value: ''
+    })
+  }, [])
   useEffect(() => {
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
   }, [data, domain])
@@ -336,6 +363,24 @@ export const useSales = ({
     }
   }
 
+  // COMMENT_FREE_PRODUCT
+  function commentProducts(state, action, deleteValue) {
+    console.log(state?.PRODUCT[0])
+    console.log({deleteValue})
+    return {
+      ...state,
+      PRODUCT: state?.PRODUCT?.map((items) => {
+        console.log(items.pId === action.payload)
+        return items.pId === action.payload
+          ? {
+            ...items,
+            comment: deleteValue ? '' : values.comment,
+          }
+          : items
+      })
+    }
+  }
+
   const getSortedProduct = (sortData, sortBy) => {
     if (sortBy && sortBy === 'PRICE_HIGH_TO_LOW') {
       return (
@@ -363,7 +408,7 @@ export const useSales = ({
       })
     )
   }
-  const [_, setFilteredList] = useState([]);
+
   const sortedProduct = getSortedProduct(data.PRODUCT, data.sortBy)
   const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange)
 
@@ -388,16 +433,14 @@ export const useSales = ({
   }
   const newArrayProducts =
     data?.PRODUCT?.length > 0 &&
-    data?.PRODUCT?.map((x) => {
+    data?.PRODUCT?.map((product) => {
       return {
-        pId: x?.pId,
+        pId: product?.pId,
         id: values?.cliId,
-        cantProducts: x?.ProQuantity,
-        comments: 'Comentarios'
+        cantProducts: parseInt(product?.ProQuantity  ? product?.ProQuantity : 0),
+        comments: product?.comment ?? ''
       }
     })
-  const [code, setCode] = useState(null)
-  const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const handleSubmit = () => {
     const code = RandomCode(5)
     setCode(code)
@@ -443,7 +486,6 @@ export const useSales = ({
       }
     })
       .then((responseRegisterR) => {
-        console.log(responseRegisterR)
         if (responseRegisterR) {
           const { data } = responseRegisterR || {}
           const { registerSalesStore } = data || {}
@@ -455,7 +497,7 @@ export const useSales = ({
               {
                 query: {
                   ...router.query,
-                  reference: code
+                  saleId: code
                 }
               },
               undefined,
@@ -469,11 +511,11 @@ export const useSales = ({
   let suma = 0
   let total = 0
   useEffect(() => {
-    if (openCurrentSale) {
-      setTimeout(() => {
-        setOpenCurrentSale(false)
-      }, 5000)
-    }
+    // if (openCurrentSale) {
+    //   setTimeout(() => {
+    //     setOpenCurrentSale(false)
+    //   }, 5000)
+    // }
   }, [openCurrentSale])
 
   useEffect(() => {
@@ -512,6 +554,7 @@ export const useSales = ({
     saveDataState,
     product,
     data,
+    openCommentModal,
     inputValue,
     newArrayProducts,
     delivery,
@@ -524,18 +567,20 @@ export const useSales = ({
     initialStateSales,
     productsFood,
     modalItem,
-
+    oneProductToComment: oneProductToComment ?? null,
     dataProduct: dataProduct?.productFoodsOne || {},
     dataOptional: dataOptional?.ExtProductFoodsOptionalAll || [],
     dataExtra: dataExtra?.ExtProductFoodsAll || [],
 
     dispatch,
+    handleComment,
     setModalItem,
     handleChangeFilter,
     handleProduct,
     handleChange,
     setOpenCurrentSale,
     onChangeInput,
+    handleRemoveValue,
     setDelivery,
     setValues,
     setShowMore,
