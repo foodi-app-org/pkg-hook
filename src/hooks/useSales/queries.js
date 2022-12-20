@@ -67,36 +67,33 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
 `
 
 export const GET_ONE_SALES = gql`
-query getOneSalesStore($pCodeRef: String) {
-  getOneSalesStore(pCodeRef: $pCodeRef) {
+query getOnePedidoStore($pCodeRef: String) {
+  getOnePedidoStore(pCodeRef: $pCodeRef) {
     pdpId
-    idStore
     pCodeRef
-    payMethodPState
-    pPRecoger
-    totalProductsPrice
+    idStore
+    pPDate
     pSState
     pDatCre
-    locationUser
     pDatMod
-    getAllPedidoStore{
-        pdpId
-        pId
-        idStore
+    pPRecoger
+    payMethodPState
+    pdpId
+    totalProductsPrice
+    locationUser
+    getAllPedidoStore {
+      pdpId
+      idStore
+      pCodeRef
+      ShoppingCard
+      getAllShoppingCard {
         ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-        productFood{
-          pId
+        cantProducts
+        subProductsId
+        comments
+        pId
+                productFood {
+                  pId
           carProId
           colorId
           idStore
@@ -227,10 +224,19 @@ query getOnePedidoStore($pCodeRef: String) {
       pCodeRef
       ShoppingCard
       getAllShoppingCard {
+        subProductsId
+        ShoppingCardRefCode
+        uuid
+        discountCardProduct
+        idUser
+        idStore
+        csDescription
         ShoppingCard
         cantProducts
+        subProductsId
+        comments
         pId
-          productFood {
+                productFood {
           pId
           carProId
           colorId
