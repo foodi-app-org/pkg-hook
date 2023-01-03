@@ -35,18 +35,50 @@ const defaultObserverOptions = {
     threshold: 0.1,
     rootMargin: "0px"
 };
-export const useIntersectionObserver = ({ el, onEnter, active = true, options = defaultObserverOptions })  => {
-    useEffect(() => {
-        let observer;
-        const refEl = el.current;
-        if (IntersectionObserver && active && refEl) {
-            observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => entry.isIntersecting && onEnter());
-            }, options);
-            observer.observe(refEl);
-        }
-        return () => {
-            observer === null || observer === void 0 ? void 0 : observer.disconnect(refEl);
-        };
-    }, [el, onEnter, active, options]);
+
+export const useIntersectionObserver = ({
+  active = true,
+  disconnect,
+  el,
+  options = defaultObserverOptions,
+  onEnter = () => {},
+  out = () => {}
+}) => {
+  const [onScreen, setOnScreen] = useState()
+  useEffect(() => {
+    let observer
+    const refEl = el.current
+    if (IntersectionObserver && active && refEl) {
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (disconnect) {
+            if (entry.isIntersecting) {
+              onEnter()
+              setOnScreen(true)
+            } else {
+              out()
+              setOnScreen(false)
+            }
+          }
+          if (!disconnect) {
+            onEnter()
+            setOnScreen(true)
+          }
+        })
+      }, options)
+      observer.observe(refEl)
+    }
+    return () => {
+      if (disconnect) {
+        // eslint-disable-next-line no-void
+        observer === null || observer === void 0 ? void 0 : observer.disconnect(refEl)
+      }
+      if (!disconnect) {
+        if (el && observer) observer.unobserve(refEl)
+      }
+    }
+  }, [el, onEnter, active, options])
+  return {
+    onScreen
+  }
 }

@@ -1,12 +1,12 @@
 import { useQuery } from '@apollo/client'
 import { GET_ALL_CATEGORIES_WITH_PRODUCT } from './queries'
 
-export const useCatWithProduct = ({ 
+export const useCatWithProduct = ({
     max = 1,
     min = 0,
-    search = null, 
+    search = null,
     searchFilter= {}
- }) => {
+}) => {
     const {
         gender,
         desc,
@@ -15,7 +15,8 @@ export const useCatWithProduct = ({
   const {
     data,
     loading,
-    error
+    error,
+    fetchMore
 } = useQuery(GET_ALL_CATEGORIES_WITH_PRODUCT, {
     fetchPolicy: 'network-only',
     variables:
@@ -28,6 +29,14 @@ export const useCatWithProduct = ({
       categories: speciality
     }
   })
-
-  return [data?.getCatProductsWithProduct, { loading, error }]
+  const totalCount = data?.getCatProductsWithProduct?.totalCount
+  return [
+    data?.getCatProductsWithProduct?.catProductsWithProduct,
+    {
+      loading,
+      error,
+      fetchMore,
+      totalCount
+      }
+  ]
 }

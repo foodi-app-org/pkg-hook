@@ -68,7 +68,7 @@ export const useSales = ({
   const {yearMonthDay} = useFormatDate({ date: createdAt  })
   const [valuesDates, setValuesDates] = useState(() => { return { fromDate: yearMonthDay, toDate: '' } })
 
-  const [registerSalesStore] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE, {
+  const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(CREATE_SHOPPING_CARD_TO_USER_STORE, {
     onCompleted: (data) => {
       const message = `${data?.registerSalesStore?.Response?.message}`
       const error = data?.registerSalesStore?.Response.success ? 'Éxito' : 'Error'
@@ -366,11 +366,9 @@ export const useSales = ({
   // COMMENT_FREE_PRODUCT
   function commentProducts(state, action, deleteValue) {
     console.log(state?.PRODUCT[0])
-    console.log({deleteValue})
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
-        console.log(items.pId === action.payload)
         return items.pId === action.payload
           ? {
             ...items,
@@ -442,7 +440,7 @@ export const useSales = ({
       }
     })
   const handleSubmit = () => {
-    const code = RandomCode(5)
+    const code = RandomCode(10)
     setCode(code)
     return registerSalesStore({
       variables: {
@@ -547,6 +545,7 @@ export const useSales = ({
 
   return {
     loading,
+    loadingRegisterSale,
     openCurrentSale,
     fetchMore,
     code,

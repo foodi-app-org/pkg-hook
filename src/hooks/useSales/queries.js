@@ -73,6 +73,7 @@ query getOnePedidoStore($pCodeRef: String) {
     pCodeRef
     idStore
     pPDate
+    channel
     pSState
     pDatCre
     pDatMod
@@ -210,6 +211,7 @@ query getOnePedidoStore($pCodeRef: String) {
     pCodeRef
     idStore
     pPDate
+    channel
     pSState
     pDatCre
     pDatMod
