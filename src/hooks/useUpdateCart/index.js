@@ -1,4 +1,4 @@
-import debounce from 'lodash.debounce'
+import debounce from 'lodash'
 import { useState, useEffect } from 'react'
 import { getCurrentDomain } from '../../utils'
 import { trigger } from '../useEvent'
@@ -8,7 +8,7 @@ import { Cookies } from '../../cookies'
 // https://codesandbox.io/s/nextjs-cart-system-tfg1e?file=/pages/_app.js
 
 // Method to execute the event to add all items of the app.cart cookie
-const updateCart = debounce((items = []) => {
+const updateCart = debounce.debounce((items = []) => {
   trigger({ eventType: 'app.cart', data: { loading: true, items } })
 }, 3000)
 

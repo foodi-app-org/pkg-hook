@@ -74,6 +74,8 @@ export const useSales = ({
       const error = data?.registerSalesStore?.Response.success ? 'Éxito' : 'Error'
       sendNotification({ title: error, description: message })
       setAlertBox({ message: message, type: 'success' })
+      setOpenCurrentSale(data?.registerSalesStore?.Response.success)
+
     },
     onError: (error) => {
       console.log('error', error)
@@ -365,7 +367,6 @@ export const useSales = ({
 
   // COMMENT_FREE_PRODUCT
   function commentProducts(state, action, deleteValue) {
-    console.log(state?.PRODUCT[0])
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
@@ -451,7 +452,7 @@ export const useSales = ({
         valueDelivery: parseInt(values.valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
-        totalProductsPrice: data?.totalAmount || 0
+        totalProductsPrice: totalProductPrice || 0
       },
       update: (cache, { data: {
         getAllSalesStoreStatistic,
@@ -488,9 +489,9 @@ export const useSales = ({
           const { data } = responseRegisterR || {}
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
+          console.log(Response)
           if (Response && Response.success === true) {
             // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
-            setOpenCurrentSale(true)
             router.push(
               {
                 query: {
@@ -501,20 +502,13 @@ export const useSales = ({
               undefined,
               { shallow: true }
             )
-            // setValues({})
+            setValues({})
           }
         }
       })
   }
   let suma = 0
   let total = 0
-  useEffect(() => {
-    // if (openCurrentSale) {
-    //   setTimeout(() => {
-    //     setOpenCurrentSale(false)
-    //   }, 5000)
-    // }
-  }, [openCurrentSale])
 
   useEffect(() => {
     data.PRODUCT.forEach((a) => {

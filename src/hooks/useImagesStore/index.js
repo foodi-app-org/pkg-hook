@@ -1,14 +1,14 @@
 import { useMutation } from '@apollo/client';
 import {
-    useRef,
-    useState
+  useRef,
+  useState
 } from 'react';
 import {
-    CREATE_BANNER_STORE,
-    CREATE_LOGO,
-    DELETE_ONE_BANNER_STORE,
-    DELETE_ONE_LOGO_STORE,
-    GET_ONE_BANNER_STORE
+  CREATE_BANNER_STORE,
+  CREATE_LOGO,
+  DELETE_ONE_BANNER_STORE,
+  DELETE_ONE_LOGO_STORE,
+  GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore';
 import { GET_ONE_STORE } from '../useStore/queries';
 
