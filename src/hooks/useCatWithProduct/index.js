@@ -24,7 +24,7 @@ export const useCatWithProduct = ({
       search,
       gender: gender,
       min,
-      max,
+      max: 400,
       desc: desc,
       categories: speciality
     }

@@ -15,7 +15,6 @@ export const useReport = ({
         max: more
     }
   })
-  console.log({data})
   // get total sales
   const { data: totalSales } = useQuery(GET_ALL_TOTAL_SALES, {
     variables: {

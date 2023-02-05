@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react'
 
-export function useDrag2(ref) {
+export function useDrag2 (ref) {
   useEffect(() => {
     const target = ref.current
     if (!target) return
     const previousOffset = { x: 0, y: 0 }
     let originMouseX
     let originMouseY
-    function onMousemove(e) {
+    function onMousemove (e) {
       const { pageX, pageY } = e
       const x = pageX - originMouseX + previousOffset.x
       const y = pageY - originMouseY + previousOffset.y
-      target.style.transform = `translate(${ x }px, ${ y }px)`
+      target.style.transform = `translate(${x}px, ${y}px)`
     }
-    function onMouseup(e) {
+    function onMouseup (e) {
       previousOffset.x += e.pageX - originMouseX
       previousOffset.y += e.pageY - originMouseY
       window.removeEventListener('mousemove', onMousemove)
       window.removeEventListener('mouseup', onMouseup)
     }
-    function onMousedown(e) {
+    function onMousedown (e) {
       originMouseX = e.pageX
       originMouseY = e.pageY
       window.addEventListener('mousemove', onMousemove)

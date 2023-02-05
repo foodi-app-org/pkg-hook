@@ -55,3 +55,52 @@ export const initializer = (initialValue = initialState) => { return JSON.parse(
 
 
 export const numberFormat = value => { return value ? (parseInt(value) ? new Intl.NumberFormat('de-DE').format(parseFloat(`${value}`.replace(/\./g, ''))) : value) : (value) }
+
+
+
+export const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December'
+]
+export const SPANISH_MONTHS = {
+  0:'Enero',
+  1:'Febrero',
+  2:'Marzo',
+  3:'Abril',
+  4:'Mayo',
+  5:'Junio',
+  6:'Julio',
+  7:'Augosto',
+  8:'Septiembre',
+  9:'Octubre',
+  10:'Noviembre ',
+  11:'Diciembre'
+}
+
+
+export const convertBase64 = file => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    if (file) {
+      reader.readAsDataURL(file)
+    }
+    reader.onload = () => {
+      resolve(reader.result)
+    }
+    reader.onerror = error => {
+      reject(error)
+    }
+  })
+}
+
+export const validationImg = file => { return (/\.(jpg|png|gif|jpeg)$/i).test(file.name) }
