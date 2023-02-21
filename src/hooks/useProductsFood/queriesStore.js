@@ -33,14 +33,13 @@ export const GET_ONE_SCHEDULE_STORE = gql`
 `
 export const GET_CAT_OF_PRODUCTS = gql`
 query getAllCatOfProducts($idStore: ID) {
- getAllCatOfProducts(idStore: $idStore) {
-  id
-  cpId
-  catName
-  catDescription
-  schState
-  
-}
+  getAllCatOfProducts(idStore: $idStore) {
+    id
+    cpId
+    catName
+    catDescription
+    schState
+  }
 }
 `
 export const REGISTER_CAT_OF_PRODUCTS = gql`

@@ -24,7 +24,7 @@ export const useCreateProduct = ({
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
   const [imageBase64, setImageBase64] = useState(null)
-  const [active, setActive] = useState(3)
+  const [active, setActive] = useState(0)
   const [pId, setPid] = useState(null)
 
   const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
@@ -44,7 +44,10 @@ export const useCreateProduct = ({
   } = useTagsProducts()
 
   // HANDLESS
-  const [check, setCheck] = useState({})
+  const [check, setCheck] = useState({
+    availability: true,
+    noAvailability: false,
+  })
 
   const handleCheck = (e) => {
     const { name, checked } = e.target
@@ -95,7 +98,7 @@ export const useCreateProduct = ({
     })
   }
 
-  const [updateProductFoods, { loading }] = useMutation(UPDATE_PRODUCT_FOOD, {
+  const [updateProductFoods] = useMutation(UPDATE_PRODUCT_FOOD, {
   })
   const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD, {
     context: { clientName: 'admin-server' }
@@ -227,7 +230,6 @@ export const useCreateProduct = ({
   }
   return {
     errors,
-    loading,
     src,
     names,
     setName,
@@ -240,7 +242,9 @@ export const useCreateProduct = ({
     pId,
     dataTags: data,
     tags,
+    tags,
     active,
+    idStore: dataStore?.getStore?.idStore || '',
     arrTags,
     setPid,
     handleChange,
