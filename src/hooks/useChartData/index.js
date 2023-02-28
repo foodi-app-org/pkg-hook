@@ -50,7 +50,7 @@ export const useChartData = ({ year }) => {
 
     const labelTitle = `Ventas por meses del año ${asFilter ? chartTypeYear : ''}`
     // Resultado:
-
+    console.log(chartTypeYear)
     const dataChart = {
         labels: asFilter ? newResult.map(data => {
             return SPANISH_MONTHS[data.Mes]
@@ -124,9 +124,11 @@ export const useChartData = ({ year }) => {
     })
     const handleChangeYear = (value) => {
         setFilter(true)
+        const currentYear = parseInt(value)
+        setChartTypeYear(currentYear || '')
         if (result?.length > 0) {
             const filterToYear = result.filter((elem) => {
-                return elem?.Year == parseInt(value)
+                return elem?.Year == currentYear
             })
             let missingNewMonths = allMonths.filter(month => { return !filterToYear.some(data => { return data.Mes === month }) })
             for (const element of missingNewMonths) {

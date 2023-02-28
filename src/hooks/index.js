@@ -43,4 +43,5 @@ export * from './useTimeAgo/useTimeAgo'
 export * from './useUpdateCart'
 export * from './useUpdateExtProductFoodsSubOptional'
 export * from './useUser'
+export * from './useReactToPrint'
 
