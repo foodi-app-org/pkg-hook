@@ -9,7 +9,7 @@ import { validationSubmitHooks } from '../../utils'
  * @description Hook con herramientas de validación y eventos de cambio
  * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
-export const useFormTools = () => {
+export const useFormTools = ({ sendNotification = () => { } } = {}) => {
   const [dataForm, setDataForm] = useState({})
   const [errorForm, setErrorForm] = useState({})
   const [errorSubmit, setErrorSubmit] = useState(false)
@@ -33,11 +33,12 @@ export const useFormTools = () => {
   // Handle submit, al enviar formulario
   const listErrors = Object.values(errorForm)
   const errors = listErrors.find((error) => {
-    return error ===true
+    return error === true
   })
 
   const handleSubmit = useCallback(({ event, action, msgSuccess, msgError, actionAfterSuccess }) => {
-    !!event && event.preventDefault()
+    event.preventDefault()
+    console.log(event)
     setCalledSubmit(true)
     let errSub = false
 
@@ -55,8 +56,8 @@ export const useFormTools = () => {
 
     // Valida los errores desde el evento
     const errores = validationSubmitHooks(event.target.elements)
+    console.log({errores})
     setErrorForm(errores)
-    console.log("🚀 ~ file: index.js ~ line 50 ~ handleSubmit ~ errores", errores)
     for (const x in errores) {
       if (errores[x]) errSub = true
     }
@@ -65,11 +66,11 @@ export const useFormTools = () => {
     if (!errSub && action) {
       action().then(res => {
         if (res) {
-          // setAlertBox({ message: msgSuccess || 'Operación exitosa', color: PColor })
+          sendNotification({ message: msgSuccess || 'Operación exitosa', description: 'Operación exitosa', color: PColor })
           !!actionAfterSuccess && actionAfterSuccess()
         }
 
-      }).catch(e => {return console.log({ message: msgError || e?.message || 'Ha ocurrido un error', color: WColor })})
+      }).catch(e => {return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', color: WColor })})
     }
 
     setErrorSubmit(errSub)

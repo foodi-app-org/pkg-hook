@@ -365,7 +365,6 @@ query ExtProductFoodsOptionalAll($search: String, $min: Int, $max: Int, $pId: ID
         pDatCre
         pDatMod
     }
-    
   }
 }
 `

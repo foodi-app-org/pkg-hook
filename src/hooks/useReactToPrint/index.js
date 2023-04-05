@@ -690,7 +690,7 @@
           var u = {
               copyStyles: !0,
               pageStyle:
-                "\n        @page {\n            /* Remove browser default header (title) and footer (url) */\n            margin: 0;\n        }\n        @media print {\n            body {\n                /* Tell browsers to print background colors */\n                -webkit-print-color-adjust: exact; /* Chrome/Safari/Edge/Opera */\n                color-adjust: exact; /* Firefox */\n            }\n        }\n    ",
+                "\n        @page {\n            /* Remove browser default header (title) and footer (url) */\n            padding: 10px;\n        }\n        @media print {\n            body {\n                /* Tell browsers to print background colors */\n                -webkit-print-color-adjust: exact; /* Chrome/Safari/Edge/Opera */\n                color-adjust: exact; /* Firefox */\n            }\n        }\n    ",
               removeAfterPrint: !1,
               suppressErrors: !1,
             },

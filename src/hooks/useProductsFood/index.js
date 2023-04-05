@@ -38,10 +38,13 @@ export const useProductsFood = ({
   search = null,
   toDate
 }) => {
-  const [productsFood, setProductsFood] = useState([])
+  // const [productsFood, setProductsFood] = useState([])
   const [showMore, setShowMore] = useState(50)
   const { data, loading, fetchMore, error } = useQuery(GET_ALL_PRODUCT_STORE, {
-    fetchPolicy: fetchPolicy,
+    fetchPolicy: fetchPolicy ?? 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
+    nextFetchPolicy: 'cache-first',
+    refetchWritePolicy: 'merge',
     variables:
     {
       categories: categories || [],
@@ -55,9 +58,8 @@ export const useProductsFood = ({
       toDate: toDate || null
     }
   })
-  useEffect(() => {
-    setProductsFood(data?.productFoodsAll || [])
-  }, [data, productsFood])
+
+  const productsFood = data?.productFoodsAll
   return [
     productsFood, {
       error,

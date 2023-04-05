@@ -212,6 +212,8 @@ query getOnePedidoStore($pCodeRef: String) {
     idStore
     pPDate
     channel
+    channel
+    change
     pSState
     pDatCre
     pDatMod

@@ -11,3 +11,13 @@ export const useGetClients = () => {
   })
   return [clientes?.getAllClients || [], { loading, error }]
 }
+
+export const useDeleteClients = () => {
+    const [clientes, setClients] = useState([])
+    const { loading, error } = useQuery(GET_ALL_CLIENTS, {
+    onCompleted: (data) => {
+        setClients(data)
+    }
+  })
+  return [clientes?.getAllClients || [], { loading, error }]
+}

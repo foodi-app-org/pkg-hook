@@ -50,7 +50,6 @@ export const useChartData = ({ year }) => {
 
     const labelTitle = `Ventas por meses del año ${asFilter ? chartTypeYear : ''}`
     // Resultado:
-    console.log(chartTypeYear)
     const dataChart = {
         labels: asFilter ? newResult.map(data => {
             return SPANISH_MONTHS[data.Mes]

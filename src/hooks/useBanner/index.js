@@ -12,7 +12,7 @@ export const useBanner = () => {
       } = useQuery(GET_ONE_BANNER_STORE, {
         context: { clientName: 'admin-server' },
         variables: {
-          idStore: !loaStore && store?.store
+          idStore: !loaStore && ''
         }
       })
     return [data?.getOneBanners, { loading, error }]
