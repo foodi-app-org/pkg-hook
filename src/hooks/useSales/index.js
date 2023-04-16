@@ -1,11 +1,7 @@
-import { useLazyQuery, useMutation } from "@apollo/client";
+import { useApolloClient, useLazyQuery, useMutation } from "@apollo/client";
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { Cookies } from "../../cookies";
-import {
-  RandomCode,
-  getCurrentDomain,
-  updateCacheMod
-} from "../../utils";
+import { RandomCode, getCurrentDomain, updateCacheMod } from "../../utils";
 import { useFormatDate } from "../useFormatDate";
 import { useProductsFood } from "../useProductsFood";
 import {
@@ -17,6 +13,7 @@ import { useStore } from "../useStore";
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_COUNT_SALES,
+  GET_ALL_PEDIDOS,
   GET_ALL_SALES,
   GET_ALL_SALES_STATISTICS,
 } from "./queries";
@@ -68,10 +65,13 @@ export const useSales = ({
   const [code, setCode] = useState(null);
   const [openCurrentSale, setOpenCurrentSale] = useState(null);
   const { createdAt } = dataStore || {};
+  const [oneProductToComment, setOneProductToComment] = useState({});
+  const [sumExtraProducts, setSumExtraProducts] = useState(0);
   const { yearMonthDay } = useFormatDate({ date: createdAt });
   const [valuesDates, setValuesDates] = useState(() => {
     return { fromDate: yearMonthDay, toDate: "" };
   });
+  const [loadingExtraProduct, setLoadingExtraProduct] = useState(false);
   const [dataOptional, setDataOptional] = useState([]);
   const [dataExtra, setDataExtra] = useState([]);
 
@@ -88,7 +88,7 @@ export const useSales = ({
         setOpenCurrentSale(data?.registerSalesStore?.Response.success);
       },
       onError: (error) => {
-        console.log("error", error);
+        sendNotification({ title: error || 'Lo sentimo', description: 'ha ocurrido un error' });
       },
     }
   );
@@ -165,7 +165,6 @@ export const useSales = ({
     let filteredData = handleList(text);
     setFilteredList(filteredData);
   };
-  const [oneProductToComment, setOneProductToComment] = useState({});
   const handleComment = (product) => {
     if (product) {
       setOneProductToComment(product);
@@ -213,7 +212,7 @@ export const useSales = ({
     const productExist = state.PRODUCT.find((items) => {
       return items.pId === action.id;
     });
-    const OurProduct = productsFood.find((items) => {
+    const OurProduct = productsFood?.find((items) => {
       return items.pId === action.id;
     });
     const isFree = productExist?.free;
@@ -363,7 +362,6 @@ export const useSales = ({
    * Description
    * @returns {any}
    *  */
-  const [sumExtraProducts, setSumExtraProducts] = useState(0);
   useEffect(() => {
     const arr =
       dataExtra?.length > 0
@@ -392,26 +390,38 @@ export const useSales = ({
   }, [dataExtra]);
 
   function handleUpdateAllExtra() {
-    const { pId } = product?.PRODUCT || {};
-    const filteredDataOptional = dataOptional.map((obj) => {
-        const filteredSubOptions = obj.ExtProductFoodsSubOptionalAll.filter(
-          (subObj) => subObj.check === true
-        );
-        // Excluya todo el objeto padre si filteredSubOptions está vacío
-        if (filteredSubOptions.length === 0) {
-          return null;
-        }
-        return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions };
-      }).filter((obj) => obj !== null); // Elimine todos los objetos nulos del arreglo
-    const filteredDataExtra = dataExtra.filter((p) => {
-      return p.quantity !== 0;
-    });
-    return dispatch({
-      type: "PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT",
-      payload: pId,
-      dataOptional: filteredDataOptional,
-      dataExtra: filteredDataExtra,
-    });
+    try {
+      if (!product?.PRODUCT?.pId) {
+        return sendNotification({
+          title: "Error",
+          description: "No se puede actualizar el producto sin pId",
+        });
+      }
+      const filteredDataOptional = dataOptional
+        .map((obj) => {
+          const filteredSubOptions = obj.ExtProductFoodsSubOptionalAll.filter(
+            (subObj) => subObj.check === true
+          );
+          // Excluya todo el objeto padre si filteredSubOptions está vacío
+          if (filteredSubOptions.length === 0) {
+            return null;
+          }
+          return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions };
+        })
+        .filter((obj) => obj !== null); // Elimine todos los objetos nulos del arreglo
+      const filteredDataExtra = dataExtra.filter((p) => p.quantity !== 0);
+      dispatch({
+        type: "PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT",
+        payload: product.PRODUCT.pId,
+        dataOptional: filteredDataOptional,
+        dataExtra: filteredDataExtra,
+      });
+    } catch (_error) {
+      return sendNotification({
+        title: "Error",
+        description: "No se puedo actualizar el producto",
+      });
+    }
   }
 
   function handleIncrementExtra({ Adicionales, index }) {
@@ -566,18 +576,14 @@ export const useSales = ({
 
   const getSortedProduct = (sortData, sortBy) => {
     if (sortBy && sortBy === "PRICE_HIGH_TO_LOW") {
-      return (
-        sortData.sort((a, b) => {
-          return b["ProPrice"] - a["ProPrice"];
-        })
-      );
+      return sortData.sort((a, b) => {
+        return b["ProPrice"] - a["ProPrice"];
+      });
     }
     if (sortBy && sortBy === "PRICE_LOW_TO_HIGH") {
-      return (
-        sortData.sort((a, b) => {
-          return a["ProPrice"] - b["ProPrice"];
-        })
-      );
+      return sortData.sort((a, b) => {
+        return a["ProPrice"] - b["ProPrice"];
+      });
     }
     return sortData;
   };
@@ -612,27 +618,98 @@ export const useSales = ({
     }
     return "";
   };
-  const newArrayProducts =
-    data?.PRODUCT?.length > 0 ?
-    data?.PRODUCT?.map((product) => {
-      const filteredDataExtra = product?.dataExtra?.map(({__typename, ...rest}) => rest) ?? [];
-      const dataOptional = product?.dataOptional?.map(({  __typename, ...product}) => {
-        const {ExtProductFoodsSubOptionalAll, ...rest} = product;
-        const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(subOption => {
-          const {__typename, ...subOptionRest} = subOption;
-          return subOptionRest;
-        });
-        return {...rest, ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll};
+  const arrayProduct =
+    data?.PRODUCT?.length > 0
+      ? data?.PRODUCT?.map((product) => {
+          const filteredDataExtra =
+            product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? [];
+          const dataOptional = product?.dataOptional?.map(
+            ({ __typename, ...product }) => {
+              const { ExtProductFoodsSubOptionalAll, ...rest } = product;
+              const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(
+                (subOption) => {
+                  const { __typename, ...subOptionRest } = subOption;
+                  return subOptionRest;
+                }
+              );
+              return {
+                ...rest,
+                ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll,
+              };
+            }
+          );
+          const refCodePid =  RandomCode(20)
+          return {
+            pId: product?.pId,
+            refCodePid: refCodePid,
+            id: values?.cliId,
+            cantProducts: parseInt(
+              product?.ProQuantity ? product?.ProQuantity : 0
+            ),
+            comments: product?.comment ?? "",
+            dataOptional: dataOptional ?? [],
+            dataExtra: filteredDataExtra || [],
+            ProPrice: product.ProPrice,
+          };
+        })
+      : [];
+  const finalArrayProduct = arrayProduct.map((item) => {
+    const totalExtra = item.dataExtra.reduce(
+      (accumulator, extra) => accumulator + extra.newExtraPrice,
+      0
+    );
+    return { ...item, totalExtra };
+  });
+
+  let totalSale = 0;
+  function sumProPriceAndTotalExtra(data) {
+    return data.map((item) => {
+      const totalExtra = item.dataExtra.reduce((acc, curr) => {
+        const newExtraPrice = parseFloat(curr.newExtraPrice);
+        if (isNaN(newExtraPrice)) {
+          return acc;
+        }
+        return acc + newExtraPrice;
+      }, 0);
+      const total = item.ProPrice + totalExtra;
+      return { ...item, totalExtra, total };
+    });
+  }
+  useEffect(() => {
+    const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct);
+    dataCountTotal.forEach((a) => {
+      const { total } = a || {};
+      totalSale += total;
+      setTotalProductPrice(Math.abs(totalSale));
+    });
+    if (data.PRODUCT.length === 0) {
+      setTotalProductPrice(0);
+    }
+  }, [totalProductPrice, totalSale, data, finalArrayProduct]);
+
+  const [discount, setDiscount] = useState({
+    price: totalProductPrice || 0,
+    discount: 0,
+  });
+  function applyDiscount(percentage) {
+    const validateCondition =
+      isNaN(percentage) || percentage < 0 || percentage > 100;
+
+    if (validateCondition) {
+      return sendNotification({
+        title: "Error",
+        description: "el descuento debe ser un número entre 0 y 100%",
       });
-      return {
-        pId: product?.pId,
-        id: values?.cliId,
-        cantProducts: parseInt(product?.ProQuantity ? product?.ProQuantity : 0),
-        comments: product?.comment ?? "",
-        dataOptional: dataOptional ?? [],
-        dataExtra: filteredDataExtra || []
-      };
-    }) : [];
+    }
+    const decimal = parseFloat(percentage) / 100;
+    const result = decimal * parseFloat(totalProductPrice);
+    setDiscount({ price: result, discount: percentage });
+
+    return { price: result, discount: percentage };
+  }
+  const totalProductsPrice = totalProductPrice;
+  const client = useApolloClient()
+
   const handleSubmit = () => {
     if (!values?.cliId)
       return sendNotification({
@@ -644,38 +721,16 @@ export const useSales = ({
     setCode(code);
     return registerSalesStore({
       variables: {
-        input: newArrayProducts || [],
+        input: finalArrayProduct || [],
         id: values?.cliId,
         pCodeRef: code,
         change: values.change,
         valueDelivery: parseInt(values.valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
-        totalProductsPrice: totalProductPrice || 0,
-      },
-      update: (
-        cache,
-        { data: { getAllSalesStoreStatistic, getTodaySales, getAllSalesStore } }
-      ) => {
-        updateCacheMod({
-          cache,
-          query: GET_ALL_SALES,
-          nameFun: "getAllSalesStore",
-          dataNew: getAllSalesStore,
-        });
-        updateCacheMod({
-          cache,
-          query: GET_ALL_COUNT_SALES,
-          nameFun: "getTodaySales",
-          dataNew: getTodaySales,
-        });
-        updateCacheMod({
-          cache,
-          query: GET_ALL_SALES_STATISTICS,
-          nameFun: "getAllSalesStoreStatistic",
-          dataNew: getAllSalesStoreStatistic
-        });
-      },
+        discount: discount.discount || 0,
+        totalProductsPrice: totalProductsPrice || 0,
+      }
     })
       .then((responseRegisterR) => {
         if (responseRegisterR) {
@@ -684,6 +739,13 @@ export const useSales = ({
           const { Response } = registerSalesStore || {};
           if (Response && Response.success === true) {
             // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+            client.query({
+              query: GET_ALL_COUNT_SALES,
+              fetchPolicy: 'network-only',
+              onCompleted: (data) => {
+                client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
+              }
+            })
             router.push(
               {
                 query: {
@@ -692,7 +754,7 @@ export const useSales = ({
                 },
               },
               undefined,
-              { shallow: true } 
+              { shallow: true }
             );
             // setValues({})
           }
@@ -710,73 +772,80 @@ export const useSales = ({
   let suma = 0;
   let total = 0;
 
-  useEffect(() => {
-    data.PRODUCT.forEach((a) => {
-      const { ProPrice } = a || {};
-      suma += ProPrice;
-      setTotalProductPrice(Math.abs(suma));
-    });
-    if (data.PRODUCT.length === 0) {
-      setTotalProductPrice(0);
-    }
-  }, [totalProductPrice, suma, total, data]);
-  const [loadingExtraProduct, setLoadingExtraProduct] = useState(false);
-
   const handleProduct = async (PRODUCT) => {
-    setLoadingExtraProduct(true)
+    setLoadingExtraProduct(true);
     const { pId } = PRODUCT || {};
     try {
       const originalArray = data.PRODUCT.find((item) => {
         return item.pId === pId;
       });
       // OPTIONAL
-      productFoodsOne({ variables: { pId  } })
-      const optionalAll = await ExtProductFoodsSubOptionalAll({ variables: { pId  } })
-      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll
-      setDataOptional(optionalFetch || [])
-      const existOptionalCookies = originalArray?.dataOptional
-      const filteredDataOptional  =  existOptionalCookies?.length ? existOptionalCookies?.map((obj) => {
-        const filteredSubOptions = obj.ExtProductFoodsSubOptionalAll.filter(
-          (subObj) => subObj.check === true
-        );
-        // Excluya todo el objeto padre si filteredSubOptions está vacío
-        if (filteredSubOptions.length === 0) {
-          return null;
-        }
-        return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions };
-      }).filter((obj) => obj !== null) : [];
+      productFoodsOne({ variables: { pId } });
+      const optionalAll = await ExtProductFoodsSubOptionalAll({
+        variables: { pId },
+      });
+      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll;
+      setDataOptional(optionalFetch || []);
+      const existOptionalCookies = originalArray?.dataOptional;
+      const filteredDataOptional = existOptionalCookies?.length
+        ? existOptionalCookies
+            ?.map((obj) => {
+              const filteredSubOptions =
+                obj.ExtProductFoodsSubOptionalAll.filter(
+                  (subObj) => subObj.check === true
+                );
+              // Excluya todo el objeto padre si filteredSubOptions está vacío
+              if (filteredSubOptions.length === 0) {
+                return null;
+              }
+              return {
+                ...obj,
+                ExtProductFoodsSubOptionalAll: filteredSubOptions,
+              };
+            })
+            .filter((obj) => obj !== null)
+        : [];
 
-        // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
-        if (optionalFetch && filteredDataOptional) {
-          const updateOption = optionalFetch.map((obj) => {
-            const matchingArray = filteredDataOptional.find((o) => o && o.opExPid === obj.opExPid);
+      // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
+      if (optionalFetch && filteredDataOptional) {
+        const updateOption = optionalFetch
+          .map((obj) => {
+            const matchingArray = filteredDataOptional.find(
+              (o) => o && o.opExPid === obj.opExPid
+            );
             if (!matchingArray) {
               return obj;
             }
-            const extProductFoodsSubOptionalAll = obj.ExtProductFoodsSubOptionalAll || [];
-            const updateExtProductFoodsSubOptionalAll = extProductFoodsSubOptionalAll.map((subObj) => {
-              const newItem = matchingArray.ExtProductFoodsSubOptionalAll.find(
-                (newItem) => newItem && newItem.opSubExPid === subObj.opSubExPid
-              );
-              if (newItem) {
-                return {
-                  ...subObj,
-                  check: true
-                };
-              }
-              return subObj;
-            });
+            const extProductFoodsSubOptionalAll =
+              obj.ExtProductFoodsSubOptionalAll || [];
+            const updateExtProductFoodsSubOptionalAll =
+              extProductFoodsSubOptionalAll.map((subObj) => {
+                const newItem =
+                  matchingArray.ExtProductFoodsSubOptionalAll.find(
+                    (newItem) =>
+                      newItem && newItem.opSubExPid === subObj.opSubExPid
+                  );
+                if (newItem) {
+                  return {
+                    ...subObj,
+                    check: true,
+                  };
+                }
+                return subObj;
+              });
             return {
               ...obj,
-              ExtProductFoodsSubOptionalAll: updateExtProductFoodsSubOptionalAll
+              ExtProductFoodsSubOptionalAll:
+                updateExtProductFoodsSubOptionalAll,
             };
-          }).filter(obj => obj);
-          if (existOptionalCookies) {
-            setDataOptional(updateOption || [])
-          } else {
-            setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || [])
-          }
+          })
+          .filter((obj) => obj);
+        if (existOptionalCookies) {
+          setDataOptional(updateOption || []);
+        } else {
+          setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || []);
         }
+      }
       // NO OPTIONAL
       const extProduct = await ExtProductFoodsAll({ variables: { pId } });
       let finalData;
@@ -803,10 +872,10 @@ export const useSales = ({
           PRODUCT,
         };
       });
-      setLoadingExtraProduct(false)
+      setLoadingExtraProduct(false);
     } catch (error) {
-      setLoadingExtraProduct(false)
-      console.log({ message: error || "Lo sentimos, ocurrió un error" });
+      setLoadingExtraProduct(false);
+      sendNotification({ description: error || "Lo sentimos, ocurrió un error" });
     }
   };
   const handleCleanFilter = () => {
@@ -814,7 +883,7 @@ export const useSales = ({
     setValues({});
     setValuesDates({ fromDate: yearMonthDay, toDate: "" });
   };
-  const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0
+  const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0;
   return {
     // loading: loading || loadingSale,
     loading: false,
@@ -830,7 +899,7 @@ export const useSales = ({
     data,
     openCommentModal,
     inputValue,
-    newArrayProducts,
+    arrayProduct,
     delivery,
     valuesDates,
     print,
@@ -848,6 +917,7 @@ export const useSales = ({
     dataOptional: dataOptional || [],
     dataExtra: dataExtra || [],
     fetchMore,
+    discount,
     handleUpdateAllExtra,
     dispatch,
     setArrayCategory,
@@ -859,6 +929,7 @@ export const useSales = ({
     setOpenCurrentSale,
     onChangeInput,
     handleRemoveValue,
+    applyDiscount,
     setDelivery,
     setValues,
     setShowMore,

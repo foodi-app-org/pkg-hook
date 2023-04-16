@@ -1,7 +1,7 @@
 export const useFormatDate = ({
     date,
     local = 'ES'
-}) => {
+} = {}) => {
     const dateToFormat = new Date(date ?? Date.now())
     const fullDate = dateToFormat.toLocaleDateString(local, { year: 'numeric', month: '2-digit', day: '2-digit' })
     const day = fullDate.split('/')[0]

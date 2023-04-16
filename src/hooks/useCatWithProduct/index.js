@@ -5,6 +5,7 @@ export const useCatWithProduct = ({
     max = 1,
     min = 0,
     search = null,
+    productName = null,
     searchFilter= {}
 }) => {
     const {
@@ -22,6 +23,7 @@ export const useCatWithProduct = ({
     variables:
     {
       search,
+      productName,
       gender: gender,
       min,
       max: 400,
