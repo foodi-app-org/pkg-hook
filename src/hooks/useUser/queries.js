@@ -67,3 +67,21 @@ mutation updateAvatar($file: Upload){
   }
 }
 `
+
+export const SET_USER_PROFILE = gql`
+    mutation setUserProfile($data: IUserProfile!) {
+        setUserProfile(input: $data){
+            upId
+            id
+            upPhone
+            upDateBir
+            upImage
+            upBloodG
+            cId
+            ctId
+            dId
+            upAddress
+            upZipCode
+        }
+    }
+`

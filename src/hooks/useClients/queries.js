@@ -65,6 +65,15 @@ query getOneClients($cliId: ID) {
 }
 `
 
+export const EDIT_ONE_CLIENT = gql`
+mutation editOneClient($input: IClients) {
+  editOneClient(input: $input) {
+    success
+    message
+  }
+}
+`
+
 export const CREATE_SHOPPING_CARD = gql`
 mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS){
     registerShoppingCard(input: $input, idSubArray: $idSubArray){
@@ -91,7 +100,7 @@ mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
 mutation  registerSalesStore($input: [IShoppingCard], $id: ID, $idStore: ID, $pCodeRef: String, $change: String, $valueDelivery: Float, $payMethodPState: Int, $pickUp: Int, $totalProductsPrice: Float, $idSubArray: IID_SUB_ITEMS){
     registerSalesStore(input: $input, id: $id, idStore: $idStore, pCodeRef: $pCodeRef,  change: $change, valueDelivery: $valueDelivery, payMethodPState: $payMethodPState, pickUp: $pickUp, totalProductsPrice: $totalProductsPrice,  idSubArray: $idSubArray){
- 			ShoppingCard {
+            ShoppingCard {
       ShoppingCard
       id
       pId

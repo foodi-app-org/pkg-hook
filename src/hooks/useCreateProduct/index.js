@@ -189,14 +189,22 @@ export const useCreateProduct = ({
           undefined,
           { shallow: true }
         )
-        sendNotification({ title: 'Success', description: `El producto ${names} subido con éxito` })
+        sendNotification({ 
+          backgroundColor: 'success',
+          title: 'Success',
+          description: `El producto ${names} subido con éxito`
+        })
         const objTag = {
           aName: tags.tag,
           pId
         }
         handleRegisterTags(objTag)
         // setValues({})
-      }).catch(err => { return sendNotification({ title: `${err}`, description: 'Error inesperado' }) })
+      }).catch(err => { return sendNotification({
+        backgroundColor: 'error',
+        title: `${err}`,
+        description: 'Error inesperado'
+      }) })
       if (image !== null) {
         setImageProducts({
           variables: {
@@ -207,7 +215,11 @@ export const useCreateProduct = ({
           }
         }).then((response) => {
         }).catch((error) => {
-          sendNotification({ title: `Ocurrió un error en la imagen en el producto ${names}`, description: 'error' })
+          sendNotification({
+            backgroundColor: 'error',
+            title: `Ocurrió un error en la imagen en el producto ${names}`, 
+            description: 'error'
+          })
         })
       }
     } catch (error) {

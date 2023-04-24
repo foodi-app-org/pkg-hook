@@ -36,9 +36,14 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
     return error === true
   })
 
-  const handleSubmit = useCallback(({ event, action, msgSuccess, msgError, actionAfterSuccess }) => {
+  const handleSubmit = ({
+    event,
+    msgError = '',
+    msgSuccess,
+    action = () => { return },
+    actionAfterSuccess = () => { return }
+  }) => {
     event.preventDefault()
-    console.log(event)
     setCalledSubmit(true)
     let errSub = false
 
@@ -46,7 +51,13 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
     for (const x in errorForm) {
       if (errorForm[x]) errSub = true
     }
-
+    if (errSub) {
+      sendNotification({
+        title: 'Completa los campos requeridos',
+        description: 'Error',
+        backgroundColor: 'error'
+      })
+    }
     if (errors) {
       setErrorSubmit(true)
     return setForcedError({ ...errorForm })
@@ -56,25 +67,28 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
 
     // Valida los errores desde el evento
     const errores = validationSubmitHooks(event.target.elements)
-    console.log({errores})
     setErrorForm(errores)
     for (const x in errores) {
       if (errores[x]) errSub = true
     }
+    if (errSub) return setErrorSubmit(errSub)
 
-    // Ejecuta la petición si es válido
+    // Ejecuta la accion si es válido
     if (!errSub && action) {
       action().then(res => {
         if (res) {
-          sendNotification({ message: msgSuccess || 'Operación exitosa', description: 'Operación exitosa', color: PColor })
+          sendNotification({
+            message: msgSuccess || 'Operación exitosa',
+            description: 'Operación exitosa',
+            backgroundColor: 'success' })
           !!actionAfterSuccess && actionAfterSuccess()
         }
 
-      }).catch(e => {return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', color: WColor })})
+      }).catch(e => {return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', backgroundColor: 'error' })})
     }
 
     setErrorSubmit(errSub)
-  }, [errorForm, setErrorForm])
+  }
 
   useEffect(() => {return setCalledSubmit(false)}, [calledSubmit])
   useEffect(() => {

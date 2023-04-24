@@ -83,12 +83,20 @@ export const useSales = ({
         const error = data?.registerSalesStore?.Response.success
           ? "Éxito"
           : "Error";
-        sendNotification({ title: error, description: message });
+        sendNotification({
+          backgroundColor: error ? 'success' : 'error',
+          title: error,
+          description: message
+        });
         setAlertBox({ message: message, type: "success" });
         setOpenCurrentSale(data?.registerSalesStore?.Response.success);
       },
       onError: (error) => {
-        sendNotification({ title: error || 'Lo sentimo', description: 'ha ocurrido un error' });
+        sendNotification({
+          backgroundColor: 'error',
+          title: error || 'Lo sentimo',
+          description: 'ha ocurrido un error'
+        });
       },
     }
   );
@@ -143,7 +151,7 @@ export const useSales = ({
       return sendNotification({
         title: "Error",
         description: "Esta es la descr",
-        backgroundColor: "red",
+        backgroundColor: "error",
       });
     }
     setPrint(!print);
@@ -394,6 +402,7 @@ export const useSales = ({
       if (!product?.PRODUCT?.pId) {
         return sendNotification({
           title: "Error",
+          backgroundColor: 'error',
           description: "No se puede actualizar el producto sin pId",
         });
       }
@@ -419,6 +428,7 @@ export const useSales = ({
     } catch (_error) {
       return sendNotification({
         title: "Error",
+        backgroundColor: 'error',
         description: "No se puedo actualizar el producto",
       });
     }
@@ -698,6 +708,7 @@ export const useSales = ({
     if (validateCondition) {
       return sendNotification({
         title: "Error",
+        backgroundColor: 'error',
         description: "el descuento debe ser un número entre 0 y 100%",
       });
     }
@@ -714,6 +725,7 @@ export const useSales = ({
     if (!values?.cliId)
       return sendNotification({
         title: "Error",
+        backgroundColor: 'error',
         description: "Elije primero un cliente",
       });
     setLoadingSale(true);
@@ -875,7 +887,11 @@ export const useSales = ({
       setLoadingExtraProduct(false);
     } catch (error) {
       setLoadingExtraProduct(false);
-      sendNotification({ description: error || "Lo sentimos, ocurrió un error" });
+      sendNotification({
+        title: 'error',
+        backgroundColor: 'error',
+        description: error || "Lo sentimos, ocurrió un error",
+       });
     }
   };
   const handleCleanFilter = () => {

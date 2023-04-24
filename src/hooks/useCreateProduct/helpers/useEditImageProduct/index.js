@@ -80,12 +80,19 @@ export const useEditImageProduct = ({ sendNotification = () => { }, initialState
             : initialState
         )
         // You can use the file object to send it to a server or to download it
-        sendNotification({ title: 'Exito', description: 'Imagen editada' })
+        sendNotification({
+          backgroundColor: 'success',
+          title: 'Exito',
+          description: 'Imagen editada' })
         setExistImage(true)
         handleOpenEditImage()
       })
       .catch(() => {
-        sendNotification({ title: 'Error', description: 'Ha ocurrido un error!' })
+        sendNotification({
+          backgroundColor: 'error',
+          title: 'Error',
+          description: 'Ha ocurrido un error!' 
+        })
       })
     // You can use the file object to send it to a server or to download it
   }

@@ -57,7 +57,28 @@ export const initializer = (initialValue = initialState) => { return JSON.parse(
 export const numberFormat = value => { return value ? (parseInt(value) ? new Intl.NumberFormat('de-DE').format(parseFloat(`${value}`.replace(/\./g, ''))) : value) : (value) }
 
 
+/**
+ *
+ * @param {Object} data objeto a filtrar
+ * @param {Array} filters array a comparar o claves del objeto a excluir
+ * @param {boolean} dataFilter booleano para devolver los datos filtrados o no
+ * @return {Object} devuelve un objeto con los datos filtrados
+ */
+export const filterKeyObject = (data, filters, dataFilter) => {
+  let values = {}, valuesFilter = {}
+  for (const elem in data) {
+      let coincidence = false
+      for (let i = 0; i < filters.length; i++) {
+          if (elem === filters[i]) coincidence = true
+          else valuesFilter = filters[i]
+      }
 
+      if (!coincidence) values = { ...values, [elem]: data[elem] }
+      else valuesFilter = { ...valuesFilter, [elem]: data[elem] }
+  }
+  if (!dataFilter) return values
+  if (dataFilter) return { values, valuesFilter }
+}
 export const MONTHS = [
   'January',
   'February',
