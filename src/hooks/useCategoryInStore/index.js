@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { DELETE_ONE_CAT_PRODUCTS, GET_ULTIMATE_CATEGORY_PRODUCTS } from '../useProductsFood/queriesStore';
 import { UPDATE_CAT_IN_PRODUCT } from './../useProductsFood/queriesStore';
 import { GET_ONE_STORE_IN_CATEGORY } from './queries';
+
 export const useCategoryInStore = ({ catStoreId }) => {
   // STATES
   const [categories, setOneCategoryInStore] = useState([])

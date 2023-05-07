@@ -1,25 +1,24 @@
 import { useMutation } from "@apollo/client"
 import { useState } from "react"
-import { RandomCode } from "../../utils"
 import { REGISTER_TAGS_PRODUCT } from "./queriesStore"
 
 export const useTagsProducts = () => {
     const [registerTag] = useMutation(REGISTER_TAGS_PRODUCT)
     const data = [
       {
-        id: RandomCode(5),
-        tag: 'Bebida fria'
+        id: 1,
+        tag: 'Bebida fría'
       },
       {
-        id: RandomCode(5),
+        id: 2,
         tag: 'Bebida caliente'
       },
       {
-        id: RandomCode(5),
+        id: 3,
         tag: 'Bebida alcohólica'
       },
       {
-        id: RandomCode(5),
+        id: 4,
         tag: 'Bebida sin alcohol'
       }
   ]
@@ -27,14 +26,27 @@ export const useTagsProducts = () => {
       id: '',
       tag: ''
     })
+
     const handleAddTag = (id, tag) => {
-        setTags({
-          id,
-          tag
+      if (tags.id === id) {
+        return setTags({
+          id: '',
+          tag: ''
         })
+      }
+      return setTags({
+        id,
+        tag
+      })
     }
     const handleRegister = tag => {
-      const { pId, idUser, idStore, nameTag } = tag || {}
+      const {
+        pId,
+        idUser,
+        idStore,
+        nameTag
+      } = tag || {}
+
       registerTag({
         variables: {
           input: {

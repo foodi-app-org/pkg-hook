@@ -3,7 +3,7 @@ import {
   useMutation,
   useQuery
 } from '@apollo/client'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
@@ -40,7 +40,7 @@ export const useProductsFood = ({
 }) => {
   // const [productsFood, setProductsFood] = useState([])
   const [showMore, setShowMore] = useState(50)
-  const { data, loading, fetchMore, error } = useQuery(GET_ALL_PRODUCT_STORE, {
+  const { data, loading, fetchMore, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     fetchPolicy: fetchPolicy ?? 'cache-and-network',
     notifyOnNetworkStatusChange: true,
     nextFetchPolicy: 'cache-first',
@@ -63,7 +63,7 @@ export const useProductsFood = ({
   return [
     productsFood, {
       error,
-      loading,
+      loading: called ? false : loading,
       showMore,
       fetchMore,
       setShowMore

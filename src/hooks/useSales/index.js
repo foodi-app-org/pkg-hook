@@ -1,7 +1,17 @@
-import { useApolloClient, useLazyQuery, useMutation } from "@apollo/client";
-import { useCallback, useEffect, useReducer, useState } from "react";
+import {
+  useApolloClient,
+  useLazyQuery,
+  useMutation
+} from "@apollo/client";
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useMemo,
+  useState
+} from "react";
 import { Cookies } from "../../cookies";
-import { RandomCode, getCurrentDomain, updateCacheMod } from "../../utils";
+import { RandomCode, getCurrentDomain } from "../../utils";
 import { useFormatDate } from "../useFormatDate";
 import { useProductsFood } from "../useProductsFood";
 import {
@@ -92,6 +102,7 @@ export const useSales = ({
         setOpenCurrentSale(data?.registerSalesStore?.Response.success);
       },
       onError: (error) => {
+        console.log(error)
         sendNotification({
           backgroundColor: 'error',
           title: error || 'Lo sentimo',
@@ -252,6 +263,7 @@ export const useSales = ({
         return {
           ...state,
           PRODUCT: [],
+          sortBy: null,
           counter: 0,
         };
 
@@ -584,19 +596,20 @@ export const useSales = ({
     };
   }
 
-  const getSortedProduct = (sortData, sortBy) => {
-    if (sortBy && sortBy === "PRICE_HIGH_TO_LOW") {
-      return sortData.sort((a, b) => {
+  const getSortedProduct = useCallback((data, sort) => {
+    if (sort && sort === "PRICE_HIGH_TO_LOW") {
+      return data.sort((a, b) => {
         return b["ProPrice"] - a["ProPrice"];
       });
     }
-    if (sortBy && sortBy === "PRICE_LOW_TO_HIGH") {
-      return sortData.sort((a, b) => {
+    if (sort && sort === "PRICE_LOW_TO_HIGH") {
+      return data.sort((a, b) => {
         return a["ProPrice"] - b["ProPrice"];
       });
     }
-    return sortData;
-  };
+    return data;
+  }, [])
+
   const PriceRangeFunc = (products, price) => {
     return (
       products?.length > 0 &&
@@ -606,7 +619,9 @@ export const useSales = ({
     );
   };
 
-  const sortedProduct = getSortedProduct(data.PRODUCT, data.sortBy);
+  const sortedProduct = useMemo(() => {
+    return getSortedProduct(data.PRODUCT, data.sortBy);
+  }, [data.PRODUCT, data.sortBy, getSortedProduct])
   const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange);
 
   const handleList = (text) => {
@@ -891,7 +906,7 @@ export const useSales = ({
         title: 'error',
         backgroundColor: 'error',
         description: error || "Lo sentimos, ocurrió un error",
-       });
+      });
     }
   };
   const handleCleanFilter = () => {
@@ -901,8 +916,7 @@ export const useSales = ({
   };
   const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0;
   return {
-    // loading: loading || loadingSale,
-    loading: false,
+    loading: loading || loadingSale,
     loadingExtraProduct,
     disabledModalItems: !disabledModalItems,
     loadingRegisterSale,

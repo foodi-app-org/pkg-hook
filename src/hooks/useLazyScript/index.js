@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export const useLazyScript = (src, delay = null) => {
-  const [status, setStatus] = React.useState(src ? 'loading' : 'idle');
+  const [status, setStatus] = useState(src ? 'loading' : 'idle');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!src) {
       setStatus('idle');
       return 'idle';

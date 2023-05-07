@@ -37,10 +37,10 @@ export const useCreateProduct = ({
 
   const [dataStore] = useStore()
   const {
-    handleRegister: handleRegisterTags,
     data,
-    handleAddTag,
-    tags
+    tags,
+    handleRegister: handleRegisterTags,
+    handleAddTag
   } = useTagsProducts()
 
   // HANDLESS
@@ -189,13 +189,14 @@ export const useCreateProduct = ({
           undefined,
           { shallow: true }
         )
-        sendNotification({ 
+        sendNotification({
           backgroundColor: 'success',
           title: 'Success',
           description: `El producto ${names} subido con éxito`
         })
         const objTag = {
           aName: tags.tag,
+          nameTag: tags.tag,
           pId
         }
         handleRegisterTags(objTag)
