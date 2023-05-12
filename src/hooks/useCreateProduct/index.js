@@ -51,7 +51,7 @@ export const useCreateProduct = ({
 
   const handleCheck = (e) => {
     const { name, checked } = e.target
-    return setCheck({ ...check, [name]: checked ? true : false })
+    return setCheck((prev) =>({ ...prev, [name]: checked }))
   }
 
   const handleUpdateBanner = event => {
@@ -276,6 +276,7 @@ export const useCreateProduct = ({
     setShowMore,
     onTargetClick,
     handleAddTag,
+    handleCheck,
     handleCheckFreeShipping,
     check
   }
