@@ -72,9 +72,9 @@ export const useSales = ({
   const [print, setPrint] = useState(false);
   const [values, setValues] = useState({});
   const [dataStore] = useStore();
+  const { createdAt } = dataStore || {};
   const [code, setCode] = useState(null);
   const [openCurrentSale, setOpenCurrentSale] = useState(null);
-  const { createdAt } = dataStore || {};
   const [oneProductToComment, setOneProductToComment] = useState({});
   const [sumExtraProducts, setSumExtraProducts] = useState(0);
   const { yearMonthDay } = useFormatDate({ date: createdAt });
@@ -489,48 +489,67 @@ export const useSales = ({
       setDataExtra(newExtra);
     }
   }
-
+/**
+ * Agrega un producto al carrito de compras.
+ * @param {Object} state - Estado actual del carrito.
+ * @param {Object} action - Acción que contiene los datos del producto a agregar.
+ * @param {string} action.payload.pId - ID del producto.
+ * @param {string} action.payload.pName - Nombre del producto.
+ * @param {string[]} action.payload.getOneTags - Etiquetas del producto.
+ * @param {string} action.payload.ProDescription - Descripción del producto.
+ * @param {string} action.payload.ProImage - URL de la imagen del producto.
+ * @param {number} action.payload.ProPrice - Precio del producto.
+ * @returns {Object} Nuevo estado del carrito con el producto agregado.
+ */
   function addToCartFunc(state, action) {
-    const productExist = state.PRODUCT.find((items) => {
-      return items.pId === action.payload.pId;
-    });
-    const OurProduct = productsFood.find((items) => {
-      return items.pId === action.payload.pId;
-    });
+    const { pId, pName, getOneTags, ProDescription, ProImage, ProPrice } = action.payload;
+
+    const productExist = state.PRODUCT.find((item) => item.pId === pId);
+    const OurProduct = productsFood.find((item) => item.pId === pId);
     const isFree = productExist?.free;
+
+    const updatedProduct = {
+      pId,
+      pName,
+      getOneTags,
+      unitPrice: OurProduct?.ProPrice,
+      ProDescription,
+      ProImage,
+      ProPrice,
+      ProQuantity: 1,
+    };
+
+    if (!productExist) {
+      return {
+        ...state,
+        counter: state.counter + 1,
+        totalAmount: state.totalAmount + ProPrice,
+        startAnimateUp: "start-animate-up",
+        PRODUCT: [...state.PRODUCT, updatedProduct],
+      };
+    }
+  
     return {
       ...state,
       counter: state.counter + 1,
-      totalAmount: state.totalAmount + action.payload.ProPrice,
+      totalAmount: state.totalAmount + ProPrice,
       startAnimateUp: "start-animate-up",
-      PRODUCT: !productExist
-        ? [
-            ...state.PRODUCT,
-            {
-              pId: action.payload.pId,
-              pName: action.payload.pName,
-              unitPrice: OurProduct?.ProPrice,
-              ProDescription: action.payload.ProDescription,
-              ProImage: action.payload.ProImage,
-              ProPrice: action.payload.ProPrice,
-              ProQuantity: 1,
-            },
-          ]
-        : state.PRODUCT.map((items) => {
-            return items.pId === action.payload.pId
-              ? {
-                  ...items,
-                  unitPrice: OurProduct?.ProPrice,
-                  ProPrice: isFree
-                    ? 0
-                    : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
-                  ProQuantity: productExist.ProQuantity + 1,
-                  free: isFree ? true : false,
-                }
-              : items;
-          }),
+      PRODUCT: state.PRODUCT.map((item) => {
+        if (item.pId === pId) {
+          return {
+            ...item,
+            getOneTags: OurProduct.genderTags,
+            unitPrice: OurProduct?.ProPrice,
+            ProPrice: isFree ? 0 : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
+            ProQuantity: productExist.ProQuantity + 1,
+            free: isFree ? true : false,
+          };
+        }
+        return item;
+      }),
     };
   }
+  
   function removeFunc(state, action) {
     const productExist = state.PRODUCT.find((items) => {
       return items.pId === action.payload.pId;

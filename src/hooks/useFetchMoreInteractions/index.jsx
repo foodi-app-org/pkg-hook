@@ -1,6 +1,7 @@
 import React, {
     useEffect,
-    useRef, useState
+    useRef,
+    useState
 } from 'react'
 
 export const useFetchMoreInteractions = ({

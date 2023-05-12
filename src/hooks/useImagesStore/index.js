@@ -12,7 +12,7 @@ import {
 } from '../useProductsFood/queriesStore';
 import { GET_ONE_STORE } from '../useStore/queries';
 
-export const useImageStore = (idStore) => {
+export const useImageStore = ({ idStore, sendNotification = () => { return } } = {}) => {
     // STATES
     const fileInputRef = useRef(null)
     const [{ altLogo, srcLogo }, setPreviewImgLogo] = useState({})
@@ -86,13 +86,20 @@ export const useImageStore = (idStore) => {
               })
             }
           }).catch(() => {
-            console.log({ message: 'No pudimos cargar la imagen', duration: 7000 })
+            sendNotification({
+              title: 'No pudimos cargar la imagen',
+              description: 'Error',
+              backgroundColor: 'error'
+            })
             setPreviewImg(initialState)
           })
-    
         } catch {
           setPreviewImg(initialState)
-          console.log({ message: 'No pudimos cargar la imagen', duration: 7000 })
+          sendNotification({
+            title: 'No pudimos cargar la imagen',
+            description: 'Error',
+            backgroundColor: 'error'
+          })
         }
       }
       const handleInputChangeLogo = event => {
@@ -119,7 +126,11 @@ export const useImageStore = (idStore) => {
             })
           }
         }).catch(() => {
-          console.log({ message: 'No pudimos cargar el banner', duration: 7000 })
+          sendNotification({
+            title: 'No pudimos cargar la imagen',
+            description: 'Error',
+            backgroundColor: 'error'
+          })
           setPreviewImgLogo(initialState)
         })
       }

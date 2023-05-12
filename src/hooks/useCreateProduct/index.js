@@ -120,12 +120,13 @@ export const useCreateProduct = ({
           alt: files[0].name
         }
         : initialState
-    )
+        )
   }
   const onTargetClick = () => {
     fileInputRef.current.click()
   }
   const { img } = useEditImageProduct({ sendNotification, initialState })
+  console.log(values)
   const handleRegister = async () => {
     const {
       ProPrice,
@@ -149,9 +150,9 @@ export const useCreateProduct = ({
         variables: {
           input: {
             idStore: dataStore?.getStore?.idStore || '',
-            ProPrice: check ? 0 : formatPrice,
-            ProDescuento: check ? 0 : parseInt(ProDescuento),
-            ValueDelivery: check ? 0 : parseFloat(ValueDelivery),
+            ProPrice: check?.desc ? 0 : formatPrice,
+            ProDescuento: check?.desc ? 0 : parseInt(ProDescuento),
+            ValueDelivery: check?.desc ? 0 : parseFloat(ValueDelivery),
             ProDescription,
             pName: names,
             pCode,
@@ -162,8 +163,8 @@ export const useCreateProduct = ({
             ProImage,
             ProHeight: parseFloat(ProHeight),
             ProWeight,
-            ProOutstanding: check ? 1 : 0,
-            ProDelivery: check ? 1 : 0
+            ProOutstanding: check?.desc ? 1 : 0,
+            ProDelivery: check?.desc ? 1 : 0
           }
         },
         update (cache) {
