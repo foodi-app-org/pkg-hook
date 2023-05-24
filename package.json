@@ -7,7 +7,7 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "description-pkg-hook",
   "main": "/src/index.jsx",
   "scripts": {
