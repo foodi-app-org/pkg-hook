@@ -142,7 +142,7 @@ export const useCreateProduct = ({
     if (!ProPrice?.length > 0) {
       return setErrors({ ...errors, ProPrice: true })
     }
-    const ProImage = `${process.env.URL_ADMIN_SERVER}static/platos/${image?.name}`
+    const ProImage = `https:${process.env.URL_ADMIN_SERVER}static/platos/${image?.name}`
     const pCode = RandomCode(9)
     const formatPrice = ProPrice ? parseFloat(ProPrice.replace(/\./g, '')) : 0
     try {

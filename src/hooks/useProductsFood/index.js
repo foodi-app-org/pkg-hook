@@ -5,12 +5,14 @@ import {
 } from '@apollo/client'
 import { useState } from 'react'
 import {
+  GET_ALL_CATEGORIES_WITH_PRODUCT,
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
   GET_ONE_PRODUCTS_FOOD,
   UPDATE_PRODUCT_FOOD
 } from './queriesStore'
+export * from './useEditProduct'
 
 /**
  * Description
@@ -71,8 +73,8 @@ export const useProductsFood = ({
   ]
 }
 
-export const useDeleteProductsFood = () => {
-  const [updateProductFoods] = useMutation(UPDATE_PRODUCT_FOOD)
+export const useDeleteProductsFood = ({ sendNotification = () => { return }  } = {}) => {
+  const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
   const handleDelete = product => {
     const { pId, pState } = product || {}
@@ -98,10 +100,23 @@ export const useDeleteProductsFood = () => {
           }
         })
       }
-    }).catch(err => { return console.log({ message: `${err}`, duration: 7000 }) })
+    }).then(() => {
+      return sendNotification({
+        title: 'Success',
+        description: 'El producto se ha eliminado correctamente',
+        backgroundColor: 'success'
+      })
+    }).catch((e) => {
+      console.log(e)
+      return sendNotification({
+        title: 'Error',
+        description: 'Ocurrió un error',
+        backgroundColor: 'error'
+      })
+    })
   }
   return {
-    handleDelete
+    handleDelete, data, loading, error
   }
 }
 
