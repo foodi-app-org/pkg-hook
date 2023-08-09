@@ -23,14 +23,6 @@ getPromoStoreAdmin(min: $min, max: $max){
 }
 `
 
-export const CREATE_STORE_CALENDAR = gql`
-mutation  setStoreSchedule($input: ITstoreSchedule!){
-  setStoreSchedule(input: $input){
-    message
-    success
-  }
-}
-`
 export const DELETE_ONE_CAT_PRODUCTS = gql`
   mutation  deleteCatOfProducts($idPc: ID!, $pState: Int){
   deleteCatOfProducts(idPc: $idPc, pState: $pState){
@@ -61,14 +53,6 @@ mutation editExtProductFoods($input: InputExtProductFood!) {
   editExtProductFoods(input: $input) {
     success
     message
-  }
-}
-`
-export const DELETE_CAT_EXTRA_PRODUCTS = gql`
-  mutation  DeleteExtProductFoodsOptional($opExPid: ID, $state: Int){
-    DeleteExtProductFoodsOptional(opExPid: $opExPid, state: $state){
-      success, 
-      message
   }
 }
 `

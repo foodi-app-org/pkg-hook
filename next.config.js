@@ -46,7 +46,6 @@ module.exports = (phase) => {
       if (isProd) return 'http://localhost:3000/'
       if (isStaging) return 'Title Stg'
     })(),
-    // URL_BASE_WS
     URL_ADMIN_SERVER: (() => {
       if (isDev) return 'http://localhost:4000/'
       // if (isDev) return 'https://server-image-food.herokuapp.com/'

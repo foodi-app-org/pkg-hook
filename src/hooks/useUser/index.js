@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useQuery, useMutation } from '@apollo/client'
 import { GET_USER, SET_USER_PROFILE } from './queries'
 
 export const useUser = () => {

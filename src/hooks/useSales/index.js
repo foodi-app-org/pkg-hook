@@ -27,6 +27,9 @@ import {
   GET_ALL_SALES,
   GET_ALL_SALES_STATISTICS,
 } from "./queries";
+import { useLogout } from "../useLogout";
+import { updateExistingOrders } from "../useUpdateExistingOrders";
+import { useGetSale } from "../useSales/useGetSale";
 
 const initialState = {
   PRODUCT: [],
@@ -51,9 +54,10 @@ const initializer = (initialValue = initialState) => {
 
 export const useSales = ({
   disabled,
-  sendNotification,
   router,
-  setAlertBox,
+  sendNotification = () => { return },
+  setAlertBox = () => { return },
+  setSalesOpen = () => { return },
 }) => {
   const domain = getCurrentDomain();
   const [loadingSale, setLoadingSale] = useState(false);
@@ -84,22 +88,31 @@ export const useSales = ({
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false);
   const [dataOptional, setDataOptional] = useState([]);
   const [dataExtra, setDataExtra] = useState([]);
+  const [onClickLogout] = useLogout({ setAlertBox })
 
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
       onCompleted: (data) => {
         const message = `${data?.registerSalesStore?.Response?.message}`;
-        const error = data?.registerSalesStore?.Response.success
+        const isSuccess = data?.registerSalesStore?.Response.success === true
+        const error = isSuccess
           ? "Éxito"
           : "Error";
+          if (message === 'Token expired') {
+            setSalesOpen(false)
+            onClickLogout()
+          }
         sendNotification({
-          backgroundColor: error ? 'success' : 'error',
+          backgroundColor: isSuccess ? 'success' : 'error',
           title: error,
           description: message
         });
         setAlertBox({ message: message, type: "success" });
-        setOpenCurrentSale(data?.registerSalesStore?.Response.success);
+      
+        if (isSuccess) {
+          setOpenCurrentSale(isSuccess);
+        }
       },
       onError: (error) => {
         console.log(error)
@@ -754,6 +767,7 @@ export const useSales = ({
   }
   const totalProductsPrice = totalProductPrice;
   const client = useApolloClient()
+  const { getOnePedidoStore, error: saleError } = useGetSale()
 
   const handleSubmit = () => {
     if (!values?.cliId)
@@ -777,19 +791,42 @@ export const useSales = ({
         discount: discount.discount || 0,
         totalProductsPrice: totalProductsPrice || 0,
       }
-    })
-      .then((responseRegisterR) => {
+    }).then((responseRegisterR) => {
         if (responseRegisterR) {
           const { data } = responseRegisterR || {};
           const { registerSalesStore } = data || {};
           const { Response } = registerSalesStore || {};
-          if (Response && Response.success === true) {
-            // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+          const success = Response?.success === true
+          if (success) {
+            console.log(responseRegisterR)
+            if (!process.env.NODE_ENV === 'development') dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only',
               onCompleted: (data) => {
                 client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
+              }
+            })
+           getOnePedidoStore({
+              variables: {
+                pCodeRef: code || ''
+              }
+            }).then((res) => {
+              console.log(res)
+              const currentSale = res?.data?.getOnePedidoStore
+              if (currentSale && !saleError) {
+                client.cache.modify({
+                  fields: {
+                    getAllOrdersFromStore(existingOrders = []) {
+                      try {
+                        const cache = updateExistingOrders(existingOrders, code, 4, currentSale)
+                        return cache
+                      } catch (e) {
+                        return existingOrders
+                      }
+                    }
+                  }
+                })
               }
             })
             router.push(
@@ -802,7 +839,7 @@ export const useSales = ({
               undefined,
               { shallow: true }
             );
-            // setValues({})
+            if (!process.env.NODE_ENV === 'development')  setValues({})
           }
         }
         setLoadingSale(false);
@@ -830,18 +867,17 @@ export const useSales = ({
       const optionalAll = await ExtProductFoodsSubOptionalAll({
         variables: { pId },
       });
-      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll;
+      const optionalFetch = optionalAll?.data?.ExtProductFoodsOptionalAll || [];
       setDataOptional(optionalFetch || []);
       const existOptionalCookies = originalArray?.dataOptional;
       const filteredDataOptional = existOptionalCookies?.length
         ? existOptionalCookies
             ?.map((obj) => {
-              const filteredSubOptions =
-                obj.ExtProductFoodsSubOptionalAll.filter(
-                  (subObj) => subObj.check === true
+              const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
+                  (subObj) => subObj?.check === true
                 );
               // Excluya todo el objeto padre si filteredSubOptions está vacío
-              if (filteredSubOptions.length === 0) {
+              if (filteredSubOptions?.length === 0) {
                 return null;
               }
               return {

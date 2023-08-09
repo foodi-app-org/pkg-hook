@@ -174,11 +174,6 @@ export const GET_ALL_VISITOR_STORE = gql`
     }
   }
 `;
-export const GET_MIN_PEDIDO = gql`
-  query getMinPrice($idStore: ID) {
-    getMinPrice(idStore: $idStore)
-  }
-`;
 
 export const GET_All_RATING_STORE = gql`
   query getAllRating($idStore: ID) {

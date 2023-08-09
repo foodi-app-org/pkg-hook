@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
  *  - clearAll (callback)
  */
 
-export const useCheckboxState = (elem, selectedIds = [], disabledIds = []) => {
+export const useCheckboxState = (elem, selectedIds = [], disabledIds = [], calBack = () => { return }) => {
   const numTotalItems = elem?.length
   const [checkedItems, setCheckedItems] = useState(new Set(selectedIds))
   const [disabledItems, setDisabledItems] = useState(new Set(disabledIds))
@@ -23,14 +23,17 @@ export const useCheckboxState = (elem, selectedIds = [], disabledIds = []) => {
   const handleChangeCheck = useCallback((event, id) => {
     const target = event.target
     setCheckedItems(prevState => {
+
       const newState = new Set(prevState)
       if (target.checked) {
         newState.add(id)
       } else {
         newState.delete(id)
       }
+      calBack([...newState])
       return newState
     })
+    // eslint-disable-next-line
   }, [])
 
   const setAll = useCallback(
@@ -106,6 +109,7 @@ export const useCheckboxState = (elem, selectedIds = [], disabledIds = []) => {
     disabledItems,
     handleChangeCheck,
     toggleAll,
+    setCheckedItems,
     selectAll,
     clearAll,
     enableCheckboxes,
