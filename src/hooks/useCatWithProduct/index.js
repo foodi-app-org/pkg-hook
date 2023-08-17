@@ -42,6 +42,7 @@ export const useCatWithProduct = ({
     const errors = {
       errors: error?.graphQLErrors || []
     }
+    console.log(errors)
     const responseError = errorHandler(errors);
     console.log(responseError)
 

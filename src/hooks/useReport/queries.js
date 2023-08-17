@@ -22,19 +22,33 @@ query getAllSalesStoreTotal($idStore: ID,$search: String, $min: Int, $max: Int $
 }
 `
 export const GET_ALL_SALES_STATISTICS = gql`
-query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: DateTime, $toDate: DateTime ) {
-  getAllSalesStoreStatistic(idStore: $idStore, search: $search, min: $min, max: $max, toDate: $toDate, fromDate: $fromDate) {
-    pdpId
-    idStore
-    pCodeRef
-    payMethodPState
-    pPRecoger
-    totalProductsPrice
-    pSState
-    pDatCre
-    locationUser
-    pDatMod
-    getAllPedidoStore{
+  query getAllSalesStoreStatistic(
+    $idStore: ID
+    $search: String
+    $min: Int
+    $max: Int
+    $fromDate: DateTime
+    $toDate: DateTime
+  ) {
+    getAllSalesStoreStatistic(
+      idStore: $idStore
+      search: $search
+      min: $min
+      max: $max
+      toDate: $toDate
+      fromDate: $fromDate
+    ) {
+      pdpId
+      idStore
+      pCodeRef
+      payMethodPState
+      pPRecoger
+      totalProductsPrice
+      pSState
+      pDatCre
+      locationUser
+      pDatMod
+      getAllPedidoStore {
         pdpId
         pId
         idStore
@@ -50,26 +64,26 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
           comments
           cantProducts
           pId
-        productFood{
-          pId
-          carProId
-          colorId
-          idStore
-          pName
-          ProPrice
-          ProDescuento
-          ProDescription
-          ValueDelivery
-          ProImage
-          ProStar
-          pState
-          pDatCre
-          pDatMod
+          productFood {
+            pId
+            carProId
+            colorId
+            idStore
+            pName
+            ProPrice
+            ProDescuento
+            ProDescription
+            ValueDelivery
+            ProImage
+            ProStar
+            pState
+            pDatCre
+            pDatMod
+          }
         }
       }
     }
   }
-}
 `
 
 export const GET_ONE_SALES = gql`

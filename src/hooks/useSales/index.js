@@ -20,16 +20,11 @@ import {
   GET_ONE_PRODUCTS_FOOD,
 } from "../useProductsFood/queriesStore";
 import { useStore } from "../useStore";
-import {
-  CREATE_SHOPPING_CARD_TO_USER_STORE,
-  GET_ALL_COUNT_SALES,
-  GET_ALL_PEDIDOS,
-  GET_ALL_SALES,
-  GET_ALL_SALES_STATISTICS,
-} from "./queries";
+import { CREATE_SHOPPING_CARD_TO_USER_STORE, GET_ALL_COUNT_SALES } from "./queries";
 import { useLogout } from "../useLogout";
 import { updateExistingOrders } from "../useUpdateExistingOrders";
 import { useGetSale } from "../useSales/useGetSale";
+export * from './useGetAllSales'
 
 const initialState = {
   PRODUCT: [],

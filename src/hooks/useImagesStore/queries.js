@@ -8,29 +8,7 @@ export const CREATE_SCHEDULE_STORE = gql`
     }
   }
 `;
-export const GET_SCHEDULE_STORE = gql`
-  query getStoreSchedules($schDay: Int, $idStore: ID) {
-    getStoreSchedules(schDay: $schDay, idStore: $idStore) {
-      schId
-      idStore
-      schDay
-      schHoSta
-      schHoEnd
-      schState
-    }
-  }
-`;
-export const GET_ONE_SCHEDULE_STORE = gql`
-  query getOneStoreSchedules($schDay: Int, $idStore: ID) {
-    getOneStoreSchedules(schDay: $schDay, idStore: $idStore) {
-      schId
-      schDay
-      schHoSta
-      schHoEnd
-      schState
-    }
-  }
-`;
+
 export const GET_CAT_OF_PRODUCTS = gql`
   query getAllCatOfProducts($idStore: ID) {
     getAllCatOfProducts(idStore: $idStore) {

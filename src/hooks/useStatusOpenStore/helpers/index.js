@@ -8,13 +8,12 @@ export const getDayFromOpeningKey = (key) => {
         openingFri: 5,
         openingSat: 6
     };
-    return days[key];
+    return days[key] !== undefined ? days[key] : -1
 }
 
 // Función para convertir el objeto de tiempo en una cadena de tiempo
 export function getTimeString(timeStr) {
-    if (!timeStr) return '00:00';
-    return timeStr;
+    return timeStr || '00:00'; // Return '00:00' for empty time strings
 }
 
 
@@ -33,11 +32,13 @@ export function getCurrentDayAndTime() {
 
 export function getTimeObject(timeStr) {
     try {
-        if (!timeStr) return '00:00'
+        if (!timeStr || !/\d{2}:\d{2}/.test(timeStr)) {
+            return { hours: 0, minutes: 0 }; // Return default values for invalid input
+        }
         const [hours, minutes] = timeStr.split(':').map(str => parseInt(str));
         return { hours, minutes };
     } catch (e) {
-        return {};
+        return { hours: 0, minutes: 0 }; // Return default values on error
     }
 }
 
@@ -73,6 +74,7 @@ export function getOpeningKeyFromDay(day) {
     };
     return days[day];
 }
+
 export const weekDays = [
     'Domingo',
     'Lunes',
