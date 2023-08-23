@@ -11,6 +11,7 @@ import {
   GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore';
 import { GET_ONE_STORE } from '../useStore/queries';
+export { GET_MIN_PEDIDO } from './queries'
 
 export const useImageStore = ({ idStore, sendNotification = () => { return } } = {}) => {
     // STATES

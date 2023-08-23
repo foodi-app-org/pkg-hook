@@ -1,4 +1,5 @@
 import {
+  from,
   useApolloClient,
   useLazyQuery,
   useMutation
@@ -25,6 +26,7 @@ import {
   GET_ALL_COUNT_SALES
 } from "./queries";
 export * from './useGetAllSales'
+export { GET_ALL_COUNT_SALES }  from './queries'
 
 const initialState = {
   PRODUCT: [],

@@ -6,6 +6,7 @@ export const useReport = ({
   fromDate,
   toDate
 }) => {
+
   const { data, fetchMore, loading } = useQuery(GET_ALL_SALES,{
     fetchPolicy: 'network-only',
     variables: {
@@ -30,6 +31,7 @@ export const useReport = ({
     totalSales: totalSales?.getAllSalesStoreTotal.TOTAL ?? 0,
     restaurant: totalSales?.getAllSalesStoreTotal.restaurant ?? 0,
     delivery: totalSales?.getAllSalesStoreTotal.delivery ?? 0,
-    fetchMore
+    fetchMore,
+    getAllSalesStore: () => { return }
   }
 }

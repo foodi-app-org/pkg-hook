@@ -2,6 +2,8 @@ import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { SPANISH_MONTHS } from "../../utils/index";
 import { GET_ALL_SALES } from "../useReport/queries";
+export * from './useChartData'
+export * from './useChartDataAllOrders'
 
 export const useChartData = ({ year }) => {
     // Construcción del nuevo array:

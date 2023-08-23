@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 
 export function useDrag2 (ref) {
   useEffect(() => {
-    const target = ref.current
+    if (!ref || !ref?.current) return null
+    const target = ref?.current
     if (!target) return
     const previousOffset = { x: 0, y: 0 }
     let originMouseX
