@@ -1,5 +1,5 @@
 export const isValidCodeRef = (codeRef) => {
-  return typeof codeRef === 'string' && codeRef.trim() !== '';
+  return typeof codeRef === "string" && codeRef.trim() !== "";
 };
 
 export const isValidState = (state) => {
@@ -13,11 +13,11 @@ export const updateExistingOrders = (
   pSState,
   objectToAdd
 ) => {
-  if (typeof existingOrders !== 'object' || existingOrders === null) {
+  if (typeof existingOrders !== "object" || existingOrders === null) {
     // existingOrders no es un objeto válido
     return existingOrders;
   }
-  if (typeof pCodeRef !== 'string' || typeof pSState !== 'number') {
+  if (typeof pCodeRef !== "string" || typeof pSState !== "number") {
     // Los tipos de datos de pCodeRef y pSState no son los esperados
     return existingOrders;
   }
@@ -29,11 +29,11 @@ export const updateExistingOrders = (
   const updatedExistingOrders = { ...existingOrders }; // Copiar el objeto existente
 
   const statusKeys = {
-    1: 'ACEPTA',
-    2: 'PROCESSING',
-    3: 'READY',
-    4: 'CONCLUDES',
-    5: 'RECHAZADOS',
+    1: "ACEPTA",
+    2: "PROCESSING",
+    3: "READY",
+    4: "CONCLUDES",
+    5: "RECHAZADOS",
   };
   const targetArray = statusKeys[pSState];
 

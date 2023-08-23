@@ -94,60 +94,52 @@ export const GET_ALL_SALES_STATISTICS = gql`
 `;
 
 export const GET_ONE_SALES = gql`
-query getOnePedidoStore($pCodeRef: String) {
-  getOnePedidoStore(pCodeRef: $pCodeRef) {
-    pdpId
-    pCodeRef
-    idStore
-    pPDate
-    channel
-    change
-    pSState
-    pDatCre
-    id
-    pDatMod
-    pPRecoger
-    payMethodPState
-    pdpId
-    totalProductsPrice
-    locationUser
-    getUser {
-      id
-      email
-      uPhoNum
-      ULocation
-    }
-    getAllPedidoStore {
+  query getOnePedidoStore($pCodeRef: String) {
+    getOnePedidoStore(pCodeRef: $pCodeRef) {
       pdpId
-      idStore
       pCodeRef
-      ShoppingCard
-      getAllShoppingCard {
+      idStore
+      pPDate
+      channel
+      pSState
+      pDatCre
+      pDatMod
+      pPRecoger
+      payMethodPState
+      pdpId
+      totalProductsPrice
+      locationUser
+      getAllPedidoStore {
+        pdpId
+        idStore
+        pCodeRef
         ShoppingCard
-        cantProducts
-        subProductsId
-        comments
-        pId
-        productFood {
+        getAllShoppingCard {
+          ShoppingCard
+          cantProducts
+          subProductsId
+          comments
           pId
-          carProId
-          colorId
-          idStore
-          pName
-          ProPrice
-          ProDescuento
-          ProDescription
-          ValueDelivery
-          ProImage
-          ProStar
-          pState
-          pDatCre
-          pDatMod
+          productFood {
+            pId
+            carProId
+            colorId
+            idStore
+            pName
+            ProPrice
+            ProDescuento
+            ProDescription
+            ValueDelivery
+            ProImage
+            ProStar
+            pState
+            pDatCre
+            pDatMod
+          }
         }
       }
     }
   }
-}
 `;
 
 export const CREATE_CLIENTS = gql`
@@ -266,9 +258,7 @@ export const  GET_ONE_SALE = gql`
       pCodeRef
       idStore
       pPDate
-      id
       channel
-      change
       pSState
       pDatCre
       pDatMod

@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
 import { convertBase64, RandomCode } from '../../utils'
-import { useLocalStorage } from '../useLocalSorage'
+import useLocalStorage from '../useLocalSorage'
 import {
   GET_ALL_FOOD_PRODUCTS,
   UPDATE_IMAGE_PRODUCT_FOOD,
@@ -10,14 +10,11 @@ import {
 import { useStore } from '../useStore'
 import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
-import { errorHandler } from '../../config/client'
-import { useLogout } from '../useLogout'
 
 export const useCreateProduct = ({
+  setAlertBox = () => { },
   router,
-  sendNotification = () => { },
-  handleCloseCreateProduct = () => { },
-  setAlertBox = () => { }
+  sendNotification = () => { }
 }) => {
   const [errors, setErrors] = useState({
     names: ''
@@ -54,7 +51,7 @@ export const useCreateProduct = ({
 
   const handleCheck = (e) => {
     const { name, checked } = e.target
-    return setCheck((prev) => ({ ...prev, [name]: checked }))
+    return setCheck((prev) =>({ ...prev, [name]: checked }))
   }
 
   const handleUpdateBanner = event => {
@@ -123,15 +120,14 @@ export const useCreateProduct = ({
           alt: files[0].name
         }
         : initialState
-    )
+        )
   }
   const onTargetClick = () => {
     fileInputRef.current.click()
   }
   const { img } = useEditImageProduct({ sendNotification, initialState })
-  const [onClickLogout] = useLogout()
-
-  const handleRegister = async ({ callBack = () => { return} } = {}) => {
+  console.log(values)
+  const handleRegister = async () => {
     const {
       ProPrice,
       ProDescuento,
@@ -150,93 +146,67 @@ export const useCreateProduct = ({
     const pCode = RandomCode(9)
     const formatPrice = ProPrice ? parseFloat(ProPrice.replace(/\./g, '')) : 0
     try {
-      if (names.trim() !== '') {
-        updateProductFoods({
-          variables: {
-            input: {
-              idStore: dataStore?.getStore?.idStore || '',
-              ProPrice: check?.desc ? 0 : formatPrice,
-              ProDescuento: check?.desc ? 0 : parseInt(ProDescuento),
-              ValueDelivery: check?.desc ? 0 : parseFloat(ValueDelivery),
-              ProDescription,
-              pName: names,
-              pCode,
-              carProId,
-              pState: 1,
-              sTateLogistic: 1,
-              ProStar: 0,
-              ProImage,
-              ProHeight: parseFloat(ProHeight),
-              ProWeight,
-              ProOutstanding: check?.desc ? 1 : 0,
-              ProDelivery: check?.desc ? 1 : 0
-            }
-          }, update(cache) {
-            cache.modify({
-              fields: {
-                productFoodsAll(dataOld = []) {
-                  return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
-                }
+      updateProductFoods({
+        variables: {
+          input: {
+            idStore: dataStore?.getStore?.idStore || '',
+            ProPrice: check?.desc ? 0 : formatPrice,
+            ProDescuento: check?.desc ? 0 : parseInt(ProDescuento),
+            ValueDelivery: check?.desc ? 0 : parseFloat(ValueDelivery),
+            ProDescription,
+            pName: names,
+            pCode,
+            carProId,
+            pState: 1,
+            sTateLogistic: 1,
+            ProStar: 0,
+            ProImage,
+            ProHeight: parseFloat(ProHeight),
+            ProWeight,
+            ProOutstanding: check?.desc ? 1 : 0,
+            ProDelivery: check?.desc ? 1 : 0
+          }
+        },
+        update (cache) {
+          cache.modify({
+            fields: {
+              productFoodsAll (dataOld = []) {
+                return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
               }
-            })
-          }
-        }).then((res) => {
-
-          const { updateProductFoods } = res?.data || {}
-          const { pId } = updateProductFoods || {}
-
-          if (res?.errors?.length > 0) {
-            const errors = {
-              errors: res?.errors
             }
-            const responseError = errorHandler(errors);
-            if (responseError) {
-              handleCloseCreateProduct()
-              return onClickLogout()
-            }
-          } else {
-            router.push(
-              {
-                query: {
-                  ...router.query,
-                  food: pId
-                }
-              },
-              undefined,
-              { shallow: true }
-            )
-            if (pId){
-              setPid(pId ?? null)
-              sendNotification({
-                backgroundColor: 'success',
-                title: 'Success',
-                description: `El producto ${names} subido con éxito`
-              })
-              callBack()
-            }
-            const objTag = {
-              aName: tags?.tag,
-              nameTag: tags?.tag,
-              pId
-            }
-            handleRegisterTags(objTag)
-            setValues({})
-          }
-        }).catch(err => {
-          return sendNotification({
-            backgroundColor: 'error',
-            title: 'Error inesperado',
-            description: `${err}`
           })
+        }
+      }).then((res) => {
+        const { updateProductFoods } = res?.data || {}
+        const { pId } = updateProductFoods || {}
+        setPid(pId ?? null)
+        router.push(
+          {
+            query: {
+              ...router.query,
+              food: pId
+            }
+          },
+          undefined,
+          { shallow: true }
+        )
+        sendNotification({
+          backgroundColor: 'success',
+          title: 'Success',
+          description: `El producto ${names} subido con éxito`
         })
-
-      } else {
-        return sendNotification({
-          backgroundColor: 'warning',
-          title: 'Alerta',
-          description: 'El nombre del producto no debe estar vacio'
-        })
-      }
+        const objTag = {
+          aName: tags.tag,
+          nameTag: tags.tag,
+          pId
+        }
+        handleRegisterTags(objTag)
+        // setValues({})
+      }).catch(err => { return sendNotification({
+        backgroundColor: 'error',
+        title: `${err}`,
+        description: 'Error inesperado'
+      }) })
       if (image !== null) {
         setImageProducts({
           variables: {
@@ -249,7 +219,7 @@ export const useCreateProduct = ({
         }).catch((error) => {
           sendNotification({
             backgroundColor: 'error',
-            title: `Ocurrió un error en la imagen en el producto ${names}`,
+            title: `Ocurrió un error en la imagen en el producto ${names}`, 
             description: 'error'
           })
         })

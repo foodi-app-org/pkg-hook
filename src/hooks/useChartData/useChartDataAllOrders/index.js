@@ -21,7 +21,7 @@ export const useChartDataAllOrders = () => {
   }
 
   // Procesar los datos y acumular los totales por estado
-  data.forEach(item => {
+  data?.forEach(item => {
     const status = item.pSState;
     const totalPrice = item.totalProductsPrice;
     totalsByStatus[status] += totalPrice;
@@ -34,8 +34,8 @@ export const useChartDataAllOrders = () => {
   // Iterar a través del statusMap para llenar los datos
   for (const status in statusMap) {
     const statusLabel = statusMap[status];
-    chartLabels.push(statusLabel);
-    chartData.push(totalsByStatus[status] || 0);
+    chartLabels?.push(statusLabel);
+    chartData?.push(totalsByStatus[status] || 0);
   }
 
   const chartJsData = {
@@ -72,17 +72,18 @@ export const useChartDataAllOrders = () => {
     tooltips: {
       callbacks: {
         label: (tooltipItem, data) => {
-          const dataset = data.datasets[tooltipItem.datasetIndex];
-          const total = dataset.data.reduce((previousValue, currentValue) => previousValue + currentValue);
-          const currentValue = dataset.data[tooltipItem.index];
+          const dataset = data?.datasets[tooltipItem.datasetIndex];
+          const total = dataset?.data?.reduce((previousValue, currentValue) => previousValue + currentValue);
+          const currentValue = dataset?.data[tooltipItem?.index];
           const percentage = ((currentValue / total) * 100).toFixed(2);
-          return `${data.labels[tooltipItem.index]}: ${currentValue} (${percentage}%)`;
+          return `${data?.labels[tooltipItem?.index]}: ${currentValue} (${percentage}%)`;
         },
       },
     },
   };
 
   return {
+    loading,
     data: loading ? [] : chartJsData,
     option: loading ? [] : defaultOptions
   };

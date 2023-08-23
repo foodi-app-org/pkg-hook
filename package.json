@@ -7,7 +7,7 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "1.1.3",
+  "version": "1.1.0",
   "description": "description-pkg-hook",
   "main": "/src/index.jsx",
   "scripts": {
@@ -20,15 +20,12 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@typescript-eslint/parser": "^5.37.0",
-    "crypto-js": "4.1.1",
     "js-cookie": "3.0.1",
-    "lodash": "4.17.21",
-    "md5": "2.3.0",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "react": "18.1.0",
     "react-dom": "18.1.0",
-    "react-query": "^3.39.2",
-    "uuid": "^9.0.0"
+    "react-query": "^3.39.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.19.1",

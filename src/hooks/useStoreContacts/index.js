@@ -36,11 +36,7 @@ export const useGetOneUseStoreContacts = ({ sendNotification = () => { return } 
 }
 
 export const useEditOneUseStoreContacts = ({ sendNotification = () => { return } } = {}) => {
-  const [editOneContacts, { data, error, loading }] = useMutation(EDIT_ONE_CONTACT,  {
-    onError: e => {
-      console.error(e)
-    }
-  })
+  const [editOneContacts, { data, error, loading }] = useMutation(EDIT_ONE_CONTACT)
   return [editOneContacts, { data: data?.editOneContacts, loading, error }]
 }
 

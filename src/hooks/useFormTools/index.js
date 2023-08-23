@@ -75,7 +75,7 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
 
     // Ejecuta la accion si es válido
     if (!errSub && action) {
-      action()?.then(res => {
+      action().then(res => {
         if (res) {
           sendNotification({
             message: msgSuccess || 'Operación exitosa',

@@ -4,8 +4,7 @@ export const errorHandler = (error) => {
     let logout = null
     if (error) {
         error.errors?.length && error.errors.forEach(err => {
-            const { code } = err.extensions
-            const { message } = err
+        const { code, message: { message } } = err.extensions
         if (code === 'UNAUTHENTICATED' || code === 'FORBIDDEN')  {
             logout = true
         return {

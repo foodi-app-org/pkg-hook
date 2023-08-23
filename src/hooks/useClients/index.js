@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
+import { useState } from 'react'
 import {
   CREATE_CLIENTS,
   DELETE_ONE_CLIENTS,
@@ -10,25 +11,15 @@ import {
 export const useGetClients = ({
   max,
   search,
-  fromDate, // Agrega las variables fromDate y toDate
-  toDate,
   sendNotification = () => { return }
 } = {}) => {
-  const { 
-    loading, 
-    error, 
-    called, 
-    data
-  } = useQuery(GET_ALL_CLIENTS, {
-    variables: {
-      search: search,
-      fromDate: fromDate, // Usa las variables aquí
-      toDate: toDate
-    }
-  });
-
-  return [data?.getAllClients || [], { loading: called ? false : loading, error }];
-};
+    const { loading, error, called, data } = useQuery(GET_ALL_CLIENTS, {
+      variables: {
+        search: search
+      }
+  })
+  return [data?.getAllClients || [], { loading: called ? false : loading, error }]
+}
 
 export const useDeleteClients = ({ sendNotification = () => { return } } = {}) => {
   const [deleteClient, {  loading, error }] = useMutation(DELETE_ONE_CLIENTS)

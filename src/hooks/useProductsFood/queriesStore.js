@@ -420,7 +420,6 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
     }
   }
 `;
-
 export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
   mutation updateExtProductFoodsSubOptional(
     $input: InputExtProductFoodSubOptional
@@ -702,6 +701,14 @@ export const GET_BANNER_PROMO_DASHBOARD = gql`
   }
 `;
 
+export const CREATE_STORE_CALENDAR = gql`
+  mutation setStoreSchedule($input: ITstoreSchedule!) {
+    setStoreSchedule(input: $input) {
+      message
+      success
+    }
+  }
+`;
 export const DELETE_ONE_CAT_PRODUCTS = gql`
   mutation deleteCatOfProducts($idPc: ID!, $pState: Int) {
     deleteCatOfProducts(idPc: $idPc, pState: $pState) {
@@ -734,8 +741,14 @@ export const EDIT_EXTRA_PRODUCTS = gql`
     }
   }
 `;
-
-
+export const DELETE_CAT_EXTRA_PRODUCTS = gql`
+  mutation DeleteExtProductFoodsOptional($opExPid: ID, $state: Int) {
+    DeleteExtProductFoodsOptional(opExPid: $opExPid, state: $state) {
+      success
+      message
+    }
+  }
+`;
 export const DELETE_CAT_EXTRA_SUB_OPTIONAL_PRODUCTS = gql`
   mutation DeleteExtFoodSubsOptional($opSubExPid: ID, $state: Int) {
     DeleteExtFoodSubsOptional(opSubExPid: $opSubExPid, state: $state) {
