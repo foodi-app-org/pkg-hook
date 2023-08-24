@@ -1,7 +1,11 @@
 import { useGetAllSales } from "../../useSales/useGetAllSales"
 
-export const useChartDataAllOrders = () => {
-  const { data, loading } = useGetAllSales({})
+export const useChartDataAllOrders = ({
+  onScreen = false
+} = {}) => {
+  const { data, loading } = useGetAllSales({
+    onScreen
+  })
 
   // Objeto para mapear los códigos de estado a sus nombres
   const statusMap = {

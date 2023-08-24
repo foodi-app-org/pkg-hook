@@ -7,6 +7,46 @@ mutation login($input: LoginInput){
   }
 }
 `
+export const GET_USER_PROFILE = gql`
+query getOneUserProfile($id: ID) {
+  getOneUserProfile(id: $id){
+      upId
+      id
+      upPhone
+      upImage
+      upDateBir
+      upBloodG
+      upAddress
+      ctId
+      dId
+      upZipCode
+      cId
+      upLatitude
+      upLongitude
+      user {
+      id
+      name
+      username
+      lastName
+      email
+      avatar
+      uToken
+      uPhoNum
+      ULocation
+      upLat
+      uState
+      upLon
+      upIdeDoc
+      siteWeb
+      description
+      password
+      createAt
+
+      }
+  }
+}
+`
+
 export const GET_USER = gql`
 query getUser($id: ID){
  getUser(id: $id ){

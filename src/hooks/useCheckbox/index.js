@@ -108,6 +108,7 @@ export const useCheckboxState = (elem, selectedIds = [], disabledIds = []) => {
     toggleAll,
     selectAll,
     clearAll,
+    setCheckedItems,
     enableCheckboxes,
     disableCheckboxes
   }
