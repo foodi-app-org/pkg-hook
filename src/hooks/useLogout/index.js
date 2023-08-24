@@ -19,8 +19,10 @@ export const useLogout = ({ setAlertBox = () => {  } } = {}) =>  {
           localStorage.removeItem('usuario');
           localStorage.removeItem('location');
           localStorage.removeItem('sessionGoogle');
+          localStorage.removeItem('namefood');
           localStorage.removeItem('longitude');
           localStorage.removeItem('latitude');
+          localStorage.removeItem('userlogin');
           localStorage.removeItem('restaurant');
           Cookies.remove('vp.store');
           Cookies.remove('app.cart.sales');

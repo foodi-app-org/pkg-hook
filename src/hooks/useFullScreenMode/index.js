@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 
-const useFullscreenMode = () => {
+export const useFullscreenMode = () => {
   const [isFullscreen, setFullscreen] = useState(false)
   const elementRef = useRef()
 
@@ -63,4 +63,3 @@ const useFullscreenMode = () => {
 const Button = styled.button`
 
 `
-export default useFullscreenMode

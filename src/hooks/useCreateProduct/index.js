@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
 import { convertBase64, RandomCode } from '../../utils'
-import useLocalStorage from '../useLocalSorage'
+import { useLocalStorage } from '../useLocalSorage'
 import {
   GET_ALL_FOOD_PRODUCTS,
   UPDATE_IMAGE_PRODUCT_FOOD,
