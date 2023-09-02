@@ -4,9 +4,9 @@ import { GET_ALL_DEVICES } from './queries'
 import { useFormatDate } from '../useFormatDate'
 
 export const useDevices = () => {
-  const { data, loading } = useQuery(GET_ALL_DEVICES,{
+  const { data, loading } = useQuery(GET_ALL_DEVICES, {
     onError: (error) => {
-        console.error(error)
+      console.error(error)
     }
   })
   const [deviceId, setDeviceId] = useState(false)
@@ -14,12 +14,12 @@ export const useDevices = () => {
 
   useEffect(() => {
     if (window) {
-        setDeviceId(window.localStorage.getItem('deviceid'))
+      setDeviceId(window.localStorage.getItem('deviceid'))
     }
   }, [])
 
   // Función para formatear la fecha
-  const formatDate = useFormatDate({ date: date })
+  const formatDate = useFormatDate({ date })
 
   const updateDate = (newDate) => {
     setDate(newDate)
@@ -33,4 +33,3 @@ export const useDevices = () => {
     updateDate
   }
 }
-

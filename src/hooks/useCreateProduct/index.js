@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
 import { convertBase64, RandomCode } from '../../utils'
@@ -46,12 +47,12 @@ export const useCreateProduct = ({
   // HANDLESS
   const [check, setCheck] = useState({
     availability: true,
-    noAvailability: false,
+    noAvailability: false
   })
 
   const handleCheck = (e) => {
     const { name, checked } = e.target
-    return setCheck((prev) =>({ ...prev, [name]: checked }))
+    return setCheck((prev) => ({ ...prev, [name]: checked }))
   }
 
   const handleUpdateBanner = event => {
@@ -59,9 +60,9 @@ export const useCreateProduct = ({
     setPreviewImg(
       files.length
         ? {
-          src: URL.createObjectURL(files[0]),
-          alt: files[0].name
-        }
+            src: URL.createObjectURL(files[0]),
+            alt: files[0].name
+          }
         : initialState
     )
   }
@@ -94,7 +95,7 @@ export const useCreateProduct = ({
     handleCheck(e)
     setValues({
       ...values,
-      ValueDelivery: '',
+      ValueDelivery: ''
     })
   }
 
@@ -116,17 +117,18 @@ export const useCreateProduct = ({
     setPreviewImg(
       files.length
         ? {
-          src: URL.createObjectURL(files[0]),
-          alt: files[0].name
-        }
+            src: URL.createObjectURL(files[0]),
+            alt: files[0].name
+          }
         : initialState
-        )
+    )
   }
   const onTargetClick = () => {
     fileInputRef.current.click()
   }
+  // eslint-disable-next-line no-unused-vars
   const { img } = useEditImageProduct({ sendNotification, initialState })
-  console.log(values)
+
   const handleRegister = async () => {
     const {
       ProPrice,
@@ -202,11 +204,13 @@ export const useCreateProduct = ({
         }
         handleRegisterTags(objTag)
         // setValues({})
-      }).catch(err => { return sendNotification({
-        backgroundColor: 'error',
-        title: `${err}`,
-        description: 'Error inesperado'
-      }) })
+      }).catch(err => {
+        return sendNotification({
+          backgroundColor: 'error',
+          title: `${err}`,
+          description: 'Error inesperado'
+        })
+      })
       if (image !== null) {
         setImageProducts({
           variables: {
@@ -216,10 +220,10 @@ export const useCreateProduct = ({
             }
           }
         }).then((response) => {
-        }).catch((error) => {
+        }).catch(() => {
           sendNotification({
             backgroundColor: 'error',
-            title: `Ocurrió un error en la imagen en el producto ${names}`, 
+            title: `Ocurrió un error en la imagen en el producto ${names}`,
             description: 'error'
           })
         })
@@ -255,7 +259,6 @@ export const useCreateProduct = ({
     search,
     pId,
     dataTags: data,
-    tags,
     tags,
     active,
     idStore: dataStore?.getStore?.idStore || '',

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const CREATE_SCHEDULE_STORE = gql`
   mutation setStoreSchedule($input: IsStoreSchedule!) {
@@ -7,7 +7,7 @@ export const CREATE_SCHEDULE_STORE = gql`
       message
     }
   }
-`;
+`
 export const GET_SCHEDULE_STORE = gql`
   query getStoreSchedules($schDay: Int, $idStore: ID) {
     getStoreSchedules(schDay: $schDay, idStore: $idStore) {
@@ -19,7 +19,7 @@ export const GET_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
+`
 export const GET_ONE_SCHEDULE_STORE = gql`
   query getOneStoreSchedules($schDay: Int, $idStore: ID) {
     getOneStoreSchedules(schDay: $schDay, idStore: $idStore) {
@@ -30,7 +30,7 @@ export const GET_ONE_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
+`
 export const GET_CAT_OF_PRODUCTS = gql`
   query getAllCatOfProducts($idStore: ID) {
     getAllCatOfProducts(idStore: $idStore) {
@@ -41,7 +41,7 @@ export const GET_CAT_OF_PRODUCTS = gql`
       schState
     }
   }
-`;
+`
 export const REGISTER_CAT_OF_PRODUCTS = gql`
   mutation updatedProducts($input: InputCatProducts) {
     updatedProducts(input: $input) {
@@ -49,7 +49,7 @@ export const REGISTER_CAT_OF_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const REGISTER_CONTRACT_STORE = gql`
   mutation createOneContract($input: InputContractType) {
     createOneContract(input: $input) {
@@ -57,7 +57,7 @@ export const REGISTER_CONTRACT_STORE = gql`
       message
     }
   }
-`;
+`
 export const GET_ALL_EMPLOYEE_STORE = gql`
   query employees($umId: ID, $cId: ID, $aId: ID) {
     employees(umId: $umId, cId: $cId, aId: $aId) {
@@ -73,7 +73,7 @@ export const GET_ALL_EMPLOYEE_STORE = gql`
       eState
     }
   }
-`;
+`
 export const GET_ALL_PRODUCT_STORE = gql`
   query productFoodsAll(
     $search: String
@@ -138,7 +138,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       }
     }
   }
-`;
+`
 export const GET_ALL_RATING_START_STORE = gql`
   query getAllRatingStar($idStore: ID) {
     getAllRatingStar(idStore: $idStore) {
@@ -148,7 +148,7 @@ export const GET_ALL_RATING_START_STORE = gql`
       createAt
     }
   }
-`;
+`
 export const GET_ALL_VISITOR_STORE = gql`
   query getAllVisitorStore(
     $idStore: ID
@@ -173,13 +173,14 @@ export const GET_ALL_VISITOR_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const GET_MIN_PEDIDO = gql`
   query getMinPrice($idStore: ID) {
     getMinPrice(idStore: $idStore)
   }
-`;
+`
 
+// eslint-disable-next-line camelcase
 export const GET_All_RATING_STORE = gql`
   query getAllRating($idStore: ID) {
     getAllRating(idStore: $idStore) {
@@ -195,7 +196,7 @@ export const GET_All_RATING_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const CREATE_LOGO = gql`
   mutation setALogoStore($logo: Upload, $idStore: ID) {
     setALogoStore(logo: $logo, idStore: $idStore) {
@@ -203,7 +204,7 @@ export const CREATE_LOGO = gql`
       message
     }
   }
-`;
+`
 export const CREATE_BANNER_STORE = gql`
   mutation registerBanner($input: IBanner) {
     registerBanner(input: $input) {
@@ -211,7 +212,7 @@ export const CREATE_BANNER_STORE = gql`
       message
     }
   }
-`;
+`
 export const DELETE_ONE_LOGO_STORE = gql`
   mutation deleteALogoStore($idStore: ID, $Image: String) {
     deleteALogoStore(idStore: $idStore, Image: $Image) {
@@ -219,7 +220,7 @@ export const DELETE_ONE_LOGO_STORE = gql`
       success
     }
   }
-`;
+`
 export const GET_ONE_BANNER_STORE = gql`
   query getOneBanners($idStore: ID, $id: ID) {
     getOneBanners(idStore: $idStore, id: $id) {
@@ -233,7 +234,7 @@ export const GET_ONE_BANNER_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const DELETE_ONE_BANNER_STORE = gql`
   mutation DeleteOneBanner(
     $bnState: Int
@@ -253,4 +254,4 @@ export const DELETE_ONE_BANNER_STORE = gql`
       message
     }
   }
-`;
+`

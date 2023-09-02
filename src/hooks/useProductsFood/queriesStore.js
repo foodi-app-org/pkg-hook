@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const CREATE_SCHEDULE_STORE = gql`
   mutation setStoreSchedule($input: IsStoreSchedule!) {
@@ -7,7 +7,7 @@ export const CREATE_SCHEDULE_STORE = gql`
       message
     }
   }
-`;
+`
 export const GET_SCHEDULE_STORE = gql`
   query getStoreSchedules($schDay: Int, $idStore: ID) {
     getStoreSchedules(schDay: $schDay, idStore: $idStore) {
@@ -19,7 +19,7 @@ export const GET_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
+`
 export const GET_ONE_SCHEDULE_STORE = gql`
   query getOneStoreSchedules($schDay: Int, $idStore: ID) {
     getOneStoreSchedules(schDay: $schDay, idStore: $idStore) {
@@ -30,7 +30,7 @@ export const GET_ONE_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
+`
 export const GET_CAT_OF_PRODUCTS = gql`
   query getAllCatOfProducts($idStore: ID) {
     getAllCatOfProducts(idStore: $idStore) {
@@ -41,7 +41,7 @@ export const GET_CAT_OF_PRODUCTS = gql`
       schState
     }
   }
-`;
+`
 export const REGISTER_CAT_OF_PRODUCTS = gql`
   mutation updatedProducts($input: InputCatProducts) {
     updatedProducts(input: $input) {
@@ -49,7 +49,7 @@ export const REGISTER_CAT_OF_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const REGISTER_CONTRACT_STORE = gql`
   mutation createOneContract($input: InputContractType) {
     createOneContract(input: $input) {
@@ -57,7 +57,7 @@ export const REGISTER_CONTRACT_STORE = gql`
       message
     }
   }
-`;
+`
 export const GET_ALL_EMPLOYEE_STORE = gql`
   query employees($umId: ID, $cId: ID, $aId: ID) {
     employees(umId: $umId, cId: $cId, aId: $aId) {
@@ -73,7 +73,7 @@ export const GET_ALL_EMPLOYEE_STORE = gql`
       eState
     }
   }
-`;
+`
 
 export const GET_ALL_PRODUCT_STORE = gql`
   query productFoodsAll(
@@ -146,7 +146,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       }
     }
   }
-`;
+`
 export const GET_ALL_RATING_START_STORE = gql`
   query getAllRatingStar($idStore: ID) {
     getAllRatingStar(idStore: $idStore) {
@@ -156,7 +156,7 @@ export const GET_ALL_RATING_START_STORE = gql`
       createAt
     }
   }
-`;
+`
 export const GET_ALL_VISITOR_STORE = gql`
   query getAllVisitorStore(
     $idStore: ID
@@ -181,13 +181,14 @@ export const GET_ALL_VISITOR_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const GET_MIN_PEDIDO = gql`
   query getMinPrice($idStore: ID) {
     getMinPrice(idStore: $idStore)
   }
-`;
+`
 
+// eslint-disable-next-line camelcase
 export const GET_All_RATING_STORE = gql`
   query getAllRating($idStore: ID) {
     getAllRating(idStore: $idStore) {
@@ -203,7 +204,7 @@ export const GET_All_RATING_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const CREATE_LOGO = gql`
   mutation setALogoStore($logo: Upload, $idStore: ID) {
     setALogoStore(logo: $logo, idStore: $idStore) {
@@ -211,7 +212,7 @@ export const CREATE_LOGO = gql`
       message
     }
   }
-`;
+`
 export const CREATE_BANNER_STORE = gql`
   mutation registerBanner($input: IBanner) {
     registerBanner(input: $input) {
@@ -219,7 +220,7 @@ export const CREATE_BANNER_STORE = gql`
       message
     }
   }
-`;
+`
 export const DELETE_ONE_LOGO_STORE = gql`
   mutation deleteALogoStore($idStore: ID, $Image: String) {
     deleteALogoStore(idStore: $idStore, Image: $Image) {
@@ -227,7 +228,7 @@ export const DELETE_ONE_LOGO_STORE = gql`
       success
     }
   }
-`;
+`
 export const GET_ONE_BANNER_STORE = gql`
   query getOneBanners($idStore: ID, $id: ID) {
     getOneBanners(idStore: $idStore, id: $id) {
@@ -241,7 +242,7 @@ export const GET_ONE_BANNER_STORE = gql`
       updateAt
     }
   }
-`;
+`
 export const DELETE_ONE_BANNER_STORE = gql`
   mutation DeleteOneBanner(
     $bnState: Int
@@ -261,7 +262,7 @@ export const DELETE_ONE_BANNER_STORE = gql`
       message
     }
   }
-`;
+`
 
 export const GET_ALL_PQR = gql`
   query getOnePqr($hpqrId: ID, $thpId: ID) {
@@ -271,7 +272,7 @@ export const GET_ALL_PQR = gql`
       hpqrQuestion
     }
   }
-`;
+`
 export const GET_ONE_COLOR = gql`
   query getAllColor {
     getAllColor {
@@ -280,7 +281,7 @@ export const GET_ONE_COLOR = gql`
       colorState
     }
   }
-`;
+`
 export const UPDATE = gql`
   mutation updateProducts($input: InputProduct) {
     updateProducts(input: $input) {
@@ -311,7 +312,7 @@ export const UPDATE = gql`
       ProVoltaje
     }
   }
-`;
+`
 export const UPDATE_IMAGE_PRODUCT_FOOD = gql`
   mutation setImageProducts($input: IFileImageProductFood) {
     setImageProducts(input: $input) {
@@ -319,7 +320,7 @@ export const UPDATE_IMAGE_PRODUCT_FOOD = gql`
       message
     }
   }
-`;
+`
 export const UPDATE_PRODUCT_FOOD = gql`
   mutation updateProductFoods($input: InputProductFood) {
     updateProductFoods(input: $input) {
@@ -353,7 +354,7 @@ export const UPDATE_PRODUCT_FOOD = gql`
       ProVoltaje
     }
   }
-`;
+`
 // UPDATE EXTRAS
 export const UPDATE_EXTRAS_PRODUCT_FOOD = gql`
   mutation updateExtProductFoods($input: InputExtProductFood) {
@@ -368,7 +369,7 @@ export const UPDATE_EXTRAS_PRODUCT_FOOD = gql`
       pDatMod
     }
   }
-`;
+`
 // EXTRA PRODUCTS
 export const UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
   mutation updateExtProductFoodsOptional($input: InputExtProductFoodOptional) {
@@ -382,7 +383,7 @@ export const UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
       numbersOptionalOnly
     }
   }
-`;
+`
 export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
   query ExtProductFoodsOptionalAll(
     $search: String
@@ -419,7 +420,7 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
       }
     }
   }
-`;
+`
 export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
   mutation updateExtProductFoodsSubOptional(
     $input: InputExtProductFoodSubOptional
@@ -437,7 +438,7 @@ export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
       pDatMod
     }
   }
-`;
+`
 
 // CREATE EXTRAS PRODUCT
 export const UPDATE_MULTI_EXTRAS_PRODUCT_FOOD = gql`
@@ -455,7 +456,7 @@ export const UPDATE_MULTI_EXTRAS_PRODUCT_FOOD = gql`
       pDatMod
     }
   }
-`;
+`
 
 export const DELETE_ONE_PRODUCT = gql`
   mutation deleteProducts($input: IDeleteProduct) {
@@ -463,7 +464,7 @@ export const DELETE_ONE_PRODUCT = gql`
       pId
     }
   }
-`;
+`
 export const GET_ALL_PRODUCTS = gql`
   query productsAll(
     $search: String
@@ -518,7 +519,7 @@ export const GET_ALL_PRODUCTS = gql`
       }
     }
   }
-`;
+`
 export const GET_ALL_FOOD_PRODUCTS = gql`
   query getFoodAllProduct(
     $search: String
@@ -555,7 +556,7 @@ export const GET_ALL_FOOD_PRODUCTS = gql`
       pDatMod
     }
   }
-`;
+`
 
 export const EDIT_PRODUCT = gql`
   mutation editProductFoods($input: InputProductFood) {
@@ -564,7 +565,7 @@ export const EDIT_PRODUCT = gql`
       message
     }
   }
-`;
+`
 export const SET_EDIT_STORE_NAME = gql`
   mutation setEditNameStore($StoreName: String) {
     setEditNameStore(StoreName: $StoreName) {
@@ -572,7 +573,7 @@ export const SET_EDIT_STORE_NAME = gql`
       message
     }
   }
-`;
+`
 export const GET_ONE_PRODUCTS_FOOD = gql`
   query productFoodsOne($pId: ID) {
     productFoodsOne(pId: $pId) {
@@ -676,7 +677,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       }
     }
   }
-`;
+`
 
 export const CREATE_FOOD_PRODUCT = gql`
   mutation newRegisterFoodProduct($input: FoodProductInput) {
@@ -685,7 +686,7 @@ export const CREATE_FOOD_PRODUCT = gql`
       message
     }
   }
-`;
+`
 export const GET_BANNER_PROMO_DASHBOARD = gql`
   query getPromoStoreAdmin($min: Int, $max: Int) {
     getPromoStoreAdmin(min: $min, max: $max) {
@@ -699,7 +700,7 @@ export const GET_BANNER_PROMO_DASHBOARD = gql`
       updateAt
     }
   }
-`;
+`
 
 export const CREATE_STORE_CALENDAR = gql`
   mutation setStoreSchedule($input: ITstoreSchedule!) {
@@ -708,7 +709,7 @@ export const CREATE_STORE_CALENDAR = gql`
       success
     }
   }
-`;
+`
 export const DELETE_ONE_CAT_PRODUCTS = gql`
   mutation deleteCatOfProducts($idPc: ID!, $pState: Int) {
     deleteCatOfProducts(idPc: $idPc, pState: $pState) {
@@ -716,7 +717,7 @@ export const DELETE_ONE_CAT_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const DELETE_ONE_CAT_PRODUCTS_FINAL = gql`
   mutation deleteCatFinalOfProducts($idPc: ID, $withProduct: Boolean) {
     deleteCatFinalOfProducts(idPc: $idPc, withProduct: $withProduct) {
@@ -724,7 +725,7 @@ export const DELETE_ONE_CAT_PRODUCTS_FINAL = gql`
       message
     }
   }
-`;
+`
 export const DELETE_EXTRA_PRODUCTS = gql`
   mutation deleteextraproductfoods($id: ID, $state: Int) {
     deleteextraproductfoods(id: $id, state: $state) {
@@ -732,7 +733,7 @@ export const DELETE_EXTRA_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const EDIT_EXTRA_PRODUCTS = gql`
   mutation editExtProductFoods($input: InputExtProductFood!) {
     editExtProductFoods(input: $input) {
@@ -740,7 +741,7 @@ export const EDIT_EXTRA_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const DELETE_CAT_EXTRA_PRODUCTS = gql`
   mutation DeleteExtProductFoodsOptional($opExPid: ID, $state: Int) {
     DeleteExtProductFoodsOptional(opExPid: $opExPid, state: $state) {
@@ -748,7 +749,7 @@ export const DELETE_CAT_EXTRA_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const DELETE_CAT_EXTRA_SUB_OPTIONAL_PRODUCTS = gql`
   mutation DeleteExtFoodSubsOptional($opSubExPid: ID, $state: Int) {
     DeleteExtFoodSubsOptional(opSubExPid: $opSubExPid, state: $state) {
@@ -756,7 +757,7 @@ export const DELETE_CAT_EXTRA_SUB_OPTIONAL_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 export const UPDATE_CAT_IN_PRODUCT = gql`
   mutation updatedCatWithProducts($input: LineItemsIdPro) {
     updatedCatWithProducts(input: $input) {
@@ -764,7 +765,7 @@ export const UPDATE_CAT_IN_PRODUCT = gql`
       message
     }
   }
-`;
+`
 export const GET_ULTIMATE_CATEGORY_PRODUCTS = gql`
   query catProductsAll(
     $search: String
@@ -792,7 +793,7 @@ export const GET_ULTIMATE_CATEGORY_PRODUCTS = gql`
       pDatMod
     }
   }
-`;
+`
 export const GET_ALL_EXTRA_PRODUCT = gql`
   query ExtProductFoodsAll($search: String, $min: Int, $max: Int, $pId: ID) {
     ExtProductFoodsAll(search: $search, min: $min, max: $max, pId: $pId) {
@@ -806,7 +807,7 @@ export const GET_ALL_EXTRA_PRODUCT = gql`
       pDatMod
     }
   }
-`;
+`
 export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
   query getCatProductsWithProduct(
     $search: String
@@ -870,7 +871,7 @@ export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
       }
     }
   }
-`;
+`
 
 export const REGISTER_TAGS_PRODUCT = gql`
   mutation registerTag($input: ITag) {
@@ -883,4 +884,4 @@ export const REGISTER_TAGS_PRODUCT = gql`
       aName
     }
   }
-`;
+`

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const GET_ONE_STORE_IN_CATEGORY = gql`
 query getOneCatStore($catStore: ID){

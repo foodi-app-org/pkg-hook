@@ -5,15 +5,15 @@ import { useStore } from '../useStore'
 export const useBanner = () => {
   const [store, { loading: loaStore }] = useStore()
 
-    const {
-      data,
-      loading,
-      error
-      } = useQuery(GET_ONE_BANNER_STORE, {
-        context: { clientName: 'admin-server' },
-        variables: {
-          idStore: !loaStore && ''
-        }
-      })
-    return [data?.getOneBanners, { loading, error }]
+  const {
+    data,
+    loading,
+    error
+  } = useQuery(GET_ONE_BANNER_STORE, {
+    context: { clientName: 'admin-server' },
+    variables: {
+      idStore: !loaStore && store?.idStore
+    }
+  })
+  return [data?.getOneBanners, { loading, error }]
 }

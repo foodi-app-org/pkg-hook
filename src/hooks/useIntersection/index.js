@@ -31,10 +31,10 @@ export const useOnScreen = (threshold = 0.6) => {
 }
 
 const defaultObserverOptions = {
-    root: null,
-    threshold: 0.1,
-    rootMargin: "0px"
-};
+  root: null,
+  threshold: 0.1,
+  rootMargin: '0px'
+}
 
 export const useIntersectionObserver = ({
   active = true,

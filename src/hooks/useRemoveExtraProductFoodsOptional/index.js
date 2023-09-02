@@ -8,8 +8,8 @@ export const useRemoveExtraProductFoodsOptional = () => {
     const { state, opExPid } = elem || {}
     DeleteExtProductFoodsOptional({
       variables: {
-        state: state,
-        opExPid: opExPid,
+        state,
+        opExPid,
         isCustomOpExPid: true
       }
     })
@@ -17,7 +17,7 @@ export const useRemoveExtraProductFoodsOptional = () => {
   return {
     handleDeleteOptional,
     DeleteExtProductFoodsOptional,
-    loading, 
+    loading,
     error
   }
 }

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const GET_ALL_SALES = gql`
   query getAllSalesStore(
@@ -21,13 +21,13 @@ export const GET_ALL_SALES = gql`
       pDatCre
     }
   }
-`;
+`
 
 export const GET_ALL_COUNT_SALES = gql`
   query getTodaySales {
     getTodaySales
   }
-`;
+`
 export const GET_ALL_SALES_STATISTICS = gql`
   query getAllSalesStoreStatistic(
     $idStore: ID
@@ -91,7 +91,7 @@ export const GET_ALL_SALES_STATISTICS = gql`
       }
     }
   }
-`;
+`
 
 export const GET_ONE_SALES = gql`
   query getOnePedidoStore($pCodeRef: String) {
@@ -140,7 +140,7 @@ export const GET_ONE_SALES = gql`
       }
     }
   }
-`;
+`
 
 export const CREATE_CLIENTS = gql`
   mutation createClients($input: IClients) {
@@ -159,7 +159,7 @@ export const CREATE_CLIENTS = gql`
       updateAt
     }
   }
-`;
+`
 export const DELETE_ONE_CLIENTS = gql`
   mutation deleteClient($cliId: ID, $clState: Int!) {
     deleteClient(cliId: $cliId, clState: $clState) {
@@ -167,7 +167,7 @@ export const DELETE_ONE_CLIENTS = gql`
       message
     }
   }
-`;
+`
 export const GET_ALL_CLIENTS = gql`
   query getAllClients(
     $idStore: ID
@@ -205,7 +205,7 @@ export const GET_ALL_CLIENTS = gql`
       updateAt
     }
   }
-`;
+`
 export const GET_ONE_CLIENT = gql`
   query getOneClients($cliId: ID) {
     getOneClients(cliId: $cliId) {
@@ -223,7 +223,7 @@ export const GET_ONE_CLIENT = gql`
       updateAt
     }
   }
-`;
+`
 
 export const CREATE_SHOPPING_CARD = gql`
   mutation registerShoppingCard(
@@ -250,8 +250,8 @@ export const CREATE_SHOPPING_CARD = gql`
       # idSubArray
     }
   }
-`;
-export const  GET_ONE_SALE = gql`
+`
+export const GET_ONE_SALE = gql`
   query getOnePedidoStore($pCodeRef: String) {
     getOnePedidoStore(pCodeRef: $pCodeRef) {
       pdpId
@@ -334,7 +334,7 @@ export const  GET_ONE_SALE = gql`
       }
     }
   }
-`;
+`
 
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
   mutation registerSalesStore(
@@ -387,8 +387,7 @@ export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
       }
     }
   }
-`;
-
+`
 
 export const GET_ALL_PEDIDOS = gql`
 query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int) {

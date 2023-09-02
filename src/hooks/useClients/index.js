@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
-import { useState } from 'react'
 import {
   CREATE_CLIENTS,
   DELETE_ONE_CLIENTS,
@@ -11,22 +10,22 @@ import {
 export const useGetClients = ({
   max,
   search,
-  sendNotification = () => { return }
+  sendNotification = () => { }
 } = {}) => {
-    const { loading, error, called, data } = useQuery(GET_ALL_CLIENTS, {
-      variables: {
-        search: search
-      }
+  const { loading, error, called, data } = useQuery(GET_ALL_CLIENTS, {
+    variables: {
+      search
+    }
   })
   return [data?.getAllClients || [], { loading: called ? false : loading, error }]
 }
 
-export const useDeleteClients = ({ sendNotification = () => { return } } = {}) => {
-  const [deleteClient, {  loading, error }] = useMutation(DELETE_ONE_CLIENTS)
+export const useDeleteClients = ({ sendNotification = () => { } } = {}) => {
+  const [deleteClient, { loading, error }] = useMutation(DELETE_ONE_CLIENTS)
   return [deleteClient, { loading, error }]
 }
 
-export const useCreateClient = ({ sendNotification = () => { return } } = {}) => {
+export const useCreateClient = ({ sendNotification = () => { } } = {}) => {
   const [createClients, { loading, error }] = useMutation(CREATE_CLIENTS, {
     onError: (data) => {
       // sendNotification({
@@ -40,13 +39,12 @@ export const useCreateClient = ({ sendNotification = () => { return } } = {}) =>
   return [createClients || [], { loading, error }]
 }
 
-export const useEditClient = ({ sendNotification = () => { return } } = {}) => {
+export const useEditClient = ({ sendNotification = () => { } } = {}) => {
   const [editOneClient, { loading, error, data }] = useMutation(EDIT_ONE_CLIENT, {
     onCompleted: (data) => {
-      console.log(data)
       if (data?.editOneClient?.success) {
         return sendNotification({
-          title:  'Exito',
+          title: 'Exito',
           description: data?.editOneClient?.message,
           backgroundColor: 'success'
         })
@@ -55,7 +53,7 @@ export const useEditClient = ({ sendNotification = () => { return } } = {}) => {
     onError: (data) => {
       if (data?.editOneClient) {
         return sendNotification({
-          title:  'Error',
+          title: 'Error',
           description: data?.editOneClient?.message,
           backgroundColor: 'error'
         })
@@ -66,7 +64,7 @@ export const useEditClient = ({ sendNotification = () => { return } } = {}) => {
   return [editOneClient, { loading, error, data }]
 }
 
-export const useGetOneClient = ({ sendNotification = () => { return } } = {}) => {
+export const useGetOneClient = ({ sendNotification = () => { } } = {}) => {
   const [getOneClients, { data, loading, error }] = useLazyQuery(GET_ONE_CLIENT)
 
   return [getOneClients || [], { loading, error, data }]

@@ -19,7 +19,7 @@ const getDateDiffs = (timestamp) => {
   }
 }
 
-export const useTimeAgo = (timestamp) =>  {
+export const useTimeAgo = (timestamp) => {
   const [timeAgo, setTimeAgo] = useState(() => { return getDateDiffs(timestamp) })
 
   useEffect(() => {

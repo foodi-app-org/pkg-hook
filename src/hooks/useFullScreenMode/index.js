@@ -6,7 +6,7 @@ export const useFullscreenMode = () => {
   const elementRef = useRef()
 
   useEffect(() => {
-    const changeHandler = () => {return setFullscreen(mode => {return !mode})}
+    const changeHandler = () => { return setFullscreen(mode => { return !mode }) }
 
     document.addEventListener('fullscreenchange', changeHandler, false)
     document.addEventListener('mozfullscreenchange', changeHandler, false)
@@ -32,13 +32,13 @@ export const useFullscreenMode = () => {
     if (elementRef.current.requestFullscreen) {
       elementRef.current.requestFullscreen()
     } else if (elementRef.current.mozRequestFullscreen) {
-      //Firefox
+      // Firefox
       elementRef.current.mozRequestFullscreen()
     } else if (elementRef.current.webkitRequestFullscreen) {
-      //Chrome, safari, opera
+      // Chrome, safari, opera
       elementRef.current.webkitRequestFullscreen()
     } else if (elementRef.current.msRequestFullscreen) {
-      //IE, edge
+      // IE, edge
       elementRef.current.msRequestFullscreen()
     }
   }
@@ -56,9 +56,9 @@ export const useFullscreenMode = () => {
   }
 
   const ToggleIcon = (
-    <Button onDoubleClick={() => {return (!isFullscreen ? goFullscreen() : exitFullScreen())}}>{!isFullscreen ? 'FullScreen' : 'Normal'}</Button>
+    <Button onDoubleClick={() => { return (!isFullscreen ? goFullscreen() : exitFullScreen()) }}>{!isFullscreen ? 'FullScreen' : 'Normal'}</Button>
   )
-  return [elementRef, ToggleIcon] //Icon, ref
+  return [elementRef, ToggleIcon] // Icon, ref
 }
 const Button = styled.button`
 

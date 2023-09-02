@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export const useLocalStorage= (key, initialValue) => {
+export const useLocalStorage = (key, initialValue) => {
   // const { setAlertBox } = useContext(Context)
   // State to store our value
   // Pass initial state function to useState so logic is only executed once

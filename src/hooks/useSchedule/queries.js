@@ -19,7 +19,7 @@ export const GET_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
+`
 
 export const GET_ONE_SCHEDULE_STORE = gql`
   query getOneStoreSchedules($schDay: Int, $idStore: ID) {
@@ -31,5 +31,4 @@ export const GET_ONE_SCHEDULE_STORE = gql`
       schState
     }
   }
-`;
-
+`

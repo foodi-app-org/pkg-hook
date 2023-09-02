@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const DELETE_CAT_EXTRA_PRODUCTS = gql`
   mutation DeleteExtProductFoodsOptional($opExPid: ID, $state: Int, $isCustomOpExPid: Boolean) {
@@ -7,7 +7,7 @@ export const DELETE_CAT_EXTRA_PRODUCTS = gql`
       message
     }
   }
-`;
+`
 
 export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
   query ExtProductFoodsOptionalAll(
@@ -45,4 +45,4 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
       }
     }
   }
-`;
+`

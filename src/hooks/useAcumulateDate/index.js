@@ -1,4 +1,3 @@
-
 const data = [
   { x: '2021-10-17T14:38:45.540Z', y: 2 }
 ]
@@ -13,4 +12,5 @@ export function groupDates (arr) {
   }, 0)
   return total
 }
+// eslint-disable-next-line no-unused-vars
 const result = groupDates(data)

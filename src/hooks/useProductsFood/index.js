@@ -73,7 +73,7 @@ export const useProductsFood = ({
   ]
 }
 
-export const useDeleteProductsFood = ({ sendNotification = () => { return }  } = {}) => {
+export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
   const handleDelete = product => {
@@ -84,17 +84,18 @@ export const useDeleteProductsFood = ({ sendNotification = () => { return }  } =
           pId,
           pState
         }
-      }, update(cache) {
+      },
+      update (cache) {
         cache.modify({
           fields: {
-            productFoodsAll(dataOld = []) {
+            productFoodsAll (dataOld = []) {
               return cache.writeQuery({ query: GET_ALL_PRODUCT_STORE, data: dataOld })
             }
           }
         })
         cache.modify({
           fields: {
-            getCatProductsWithProduct(dataOld = []) {
+            getCatProductsWithProduct (dataOld = []) {
               return cache.writeQuery({ query: GET_ALL_CATEGORIES_WITH_PRODUCT, data: dataOld })
             }
           }
@@ -120,7 +121,6 @@ export const useDeleteProductsFood = ({ sendNotification = () => { return }  } =
   }
 }
 
-
 export const useExtProductFoodsAll = () => {
   const [ExtProductFoodsAll,
     {
@@ -131,7 +131,7 @@ export const useExtProductFoodsAll = () => {
   ] = useLazyQuery(GET_ALL_EXTRA_PRODUCT)
 
   const handleExtProductFoodsAll = (pId) => {
-    ExtProductFoodsAll({
+    return ExtProductFoodsAll({
       variables: {
         pId
       }
@@ -139,20 +139,20 @@ export const useExtProductFoodsAll = () => {
   }
   return [handleExtProductFoodsAll,
     {
-  data: data?.ExtProductFoodsAll || [],
-  loading,
-  error
+      data: data?.ExtProductFoodsAll || [],
+      loading,
+      error
     }
   ]
 }
-export const useExtProductFoodsOptionalAll = () => {
 
-const [ExtProductFoodsOptionalAll,
-  {
-  data,
-  loading,
-  error
-}] = useLazyQuery(GET_EXTRAS_PRODUCT_FOOD_OPTIONAL)
+export const useExtProductFoodsOptionalAll = () => {
+  const [ExtProductFoodsOptionalAll,
+    {
+      data,
+      loading,
+      error
+    }] = useLazyQuery(GET_EXTRAS_PRODUCT_FOOD_OPTIONAL)
 
   const handleGetExtProductFood = (pId) => {
     try {
@@ -167,41 +167,41 @@ const [ExtProductFoodsOptionalAll,
   }
   return [handleGetExtProductFood,
     {
-    data: data?.ExtProductFoodsOptionalAll || [],
-    loading,
-    error,
-  }]
+      data: data?.ExtProductFoodsOptionalAll || [],
+      loading,
+      error
+    }]
 }
 
-
-export const useGetOneProductsFood = () => {
+export const useGetOneProductsFood = ({ fetchOnlyProduct = false } = {}) => {
   const [productFoodsOne,
     {
-    data,
-    loading,
-    error
-}] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
+      data,
+      loading,
+      error
+    }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
   const [handleGetExtProductFood, { data: dataOptional }] = useExtProductFoodsOptionalAll()
   const [handleExtProductFoodsAll, { data: dataExtra }] = useExtProductFoodsAll()
-  const handleGetOneProduct = (food) => {
+  const handleGetOneProduct = async (food) => {
     const { pId } = food
     try {
       productFoodsOne({
         variables: {
-          pId: pId
+          pId
         }
       })
-      handleGetExtProductFood(pId)
-      handleExtProductFoodsAll(pId)
+      if (!fetchOnlyProduct) handleGetExtProductFood(pId)
+      if (!fetchOnlyProduct) handleExtProductFoodsAll(pId)
     } catch (e) {
       console.log(e)
     }
   }
-  return [handleGetOneProduct, {
+  const handleFunctionQuery = fetchOnlyProduct ? productFoodsOne : handleGetOneProduct
+  return [handleFunctionQuery, {
     data: data?.productFoodsOne || {},
     dataExtra,
     dataOptional,
     loading,
-    error,
+    error
   }]
 }

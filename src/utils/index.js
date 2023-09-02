@@ -11,47 +11,46 @@ const validTypes = {
   number: true,
   hidden: true,
   textarea: true
-};
+}
 
 export const validationSubmitHooks = elements => {
-  let errorForm = {};
+  let errorForm = {}
 
   for (const element of elements) {
     if (element.name) {
-      const elementType = element.type || element.tagName.toLowerCase();
+      const elementType = element.type || element.tagName.toLowerCase()
       if (validTypes[elementType]) {
         if (element.dataset.required === 'true') {
           if (!element.value) {
-            errorForm = { ...errorForm, [element.name]: true };
+            errorForm = { ...errorForm, [element.name]: true }
           } else {
-            errorForm = { ...errorForm, [element.name]: false };
+            errorForm = { ...errorForm, [element.name]: false }
           }
         } else {
-          errorForm = { ...errorForm, [element.name]: false };
+          errorForm = { ...errorForm, [element.name]: false }
         }
       }
     }
   }
 
-  return errorForm;
-};
+  return errorForm
+}
 
+export const getCurrentDomain = () => {
+  return typeof window !== 'undefined' && window.location.hostname.split('.').slice(-2).join('.')
+}
 
-  export const getCurrentDomain = () => {
-    return typeof window !== 'undefined' && window.location.hostname.split('.').slice(-2).join('.')
-  }
-
-  export function RandomCode(length) {
-    let result = ''
-    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    let charactersLength = characters.length
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() *
+export function RandomCode (length) {
+  let result = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const charactersLength = characters.length
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() *
         charactersLength))
-    }
-    return result
   }
-  /**
+  return result
+}
+/**
  * actualizar cache de apollo
  * @param {{ cache: object, query: object, nameFun: string, dataNew: object, type: number, id: string }} params Parámetros para actualizar el cachet de apollo
  * @returns {null} no hay retorno
@@ -59,7 +58,7 @@ export const validationSubmitHooks = elements => {
 export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id }) => {
   return cache.modify({
     fields: {
-      [nameFun](dataOld = []) {
+      [nameFun] (dataOld = []) {
         if (type === 1) return cache.writeQuery({ query, data: [...(dataOld || []), { ...(dataNew || {}) }] })
         if (type === 2) return cache.writeQuery({ query, data: { ...(dataOld || {}), ...(dataNew || {}) } })
         if (type === 3) return cache.writeQuery({ query, data: dataOld.filter(x => { return x === id }) })
@@ -67,11 +66,10 @@ export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id 
     }
   })
 }
+const initialState = {}
 export const initializer = (initialValue = initialState) => { return JSON.parse(localStorage.getItem(process.env.LOCAL_SALES_STORE)) || initialValue }
 
-
 export const numberFormat = value => { return value ? (parseInt(value) ? new Intl.NumberFormat('de-DE').format(parseFloat(`${value}`.replace(/\./g, ''))) : value) : (value) }
-
 
 /**
  *
@@ -81,16 +79,16 @@ export const numberFormat = value => { return value ? (parseInt(value) ? new Int
  * @return {Object} devuelve un objeto con los datos filtrados
  */
 export const filterKeyObject = (data, filters, dataFilter) => {
-  let values = {}, valuesFilter = {}
+  let values = {}; let valuesFilter = {}
   for (const elem in data) {
-      let coincidence = false
-      for (let i = 0; i < filters.length; i++) {
-          if (elem === filters[i]) coincidence = true
-          else valuesFilter = filters[i]
-      }
+    let coincidence = false
+    for (let i = 0; i < filters.length; i++) {
+      if (elem === filters[i]) coincidence = true
+      else valuesFilter = filters[i]
+    }
 
-      if (!coincidence) values = { ...values, [elem]: data[elem] }
-      else valuesFilter = { ...valuesFilter, [elem]: data[elem] }
+    if (!coincidence) values = { ...values, [elem]: data[elem] }
+    else valuesFilter = { ...valuesFilter, [elem]: data[elem] }
   }
   if (!dataFilter) return values
   if (dataFilter) return { values, valuesFilter }
@@ -110,20 +108,19 @@ export const MONTHS = [
   'December'
 ]
 export const SPANISH_MONTHS = {
-  0:'Enero',
-  1:'Febrero',
-  2:'Marzo',
-  3:'Abril',
-  4:'Mayo',
-  5:'Junio',
-  6:'Julio',
-  7:'Augosto',
-  8:'Septiembre',
-  9:'Octubre',
-  10:'Noviembre ',
-  11:'Diciembre'
+  0: 'Enero',
+  1: 'Febrero',
+  2: 'Marzo',
+  3: 'Abril',
+  4: 'Mayo',
+  5: 'Junio',
+  6: 'Julio',
+  7: 'Augosto',
+  8: 'Septiembre',
+  9: 'Octubre',
+  10: 'Noviembre ',
+  11: 'Diciembre'
 }
-
 
 export const convertBase64 = file => {
   return new Promise((resolve, reject) => {

@@ -3,13 +3,11 @@
 const {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
 } = require('next/constants')
 const nextConfig = {
   reactStrictMode: true
 }
 module.exports = (phase) => {
-
   // npm run dev or next dev
   const isDev = phase === PHASE_DEVELOPMENT_SERVER
   // npm run build or next build
@@ -98,7 +96,6 @@ module.exports = (phase) => {
       }
     ]
   }
-  const basePath = ''
   // puedes sobre escribir la ruta
   const rewrites = () => {
     return [
@@ -115,7 +112,7 @@ module.exports = (phase) => {
   return {
     env,
     swcMinify: false,
-    images, 
+    images,
     headers,
     optimizeFonts: false,
     nextConfig,

@@ -1,7 +1,5 @@
-
-export  const useStoreCalendar = () => {
+export const useStoreCalendar = () => {
   return {
-    true: true,
+    true: true
   }
 }
-

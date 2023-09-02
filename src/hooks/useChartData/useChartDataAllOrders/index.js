@@ -1,4 +1,4 @@
-import { useGetAllSales } from "../../useSales/useGetAllSales"
+import { useGetAllSales } from '../../useSales/useGetAllSales'
 
 export const useChartDataAllOrders = ({
   onScreen = false
@@ -14,32 +14,32 @@ export const useChartDataAllOrders = ({
     3: 'READY',
     4: 'CONCLUDES',
     5: 'RECHAZADOS'
-  };
+  }
 
   // Objeto para almacenar los totales por estado
-  const totalsByStatus = {};
+  const totalsByStatus = {}
 
   // Inicializar totales en 0 para todos los estados
   for (const status in statusMap) {
-    totalsByStatus[status] = 0;
+    totalsByStatus[status] = 0
   }
 
   // Procesar los datos y acumular los totales por estado
   data?.forEach(item => {
-    const status = item.pSState;
-    const totalPrice = item.totalProductsPrice;
-    totalsByStatus[status] += totalPrice;
-  });
+    const status = item.pSState
+    const totalPrice = item.totalProductsPrice
+    totalsByStatus[status] += totalPrice
+  })
 
   // Preparar los datos en el formato requerido por Chart.js
-  const chartLabels = [];
-  const chartData = [];
+  const chartLabels = []
+  const chartData = []
 
   // Iterar a través del statusMap para llenar los datos
   for (const status in statusMap) {
-    const statusLabel = statusMap[status];
-    chartLabels?.push(statusLabel);
-    chartData?.push(totalsByStatus[status] || 0);
+    const statusLabel = statusMap[status]
+    chartLabels?.push(statusLabel)
+    chartData?.push(totalsByStatus[status] || 0)
   }
 
   const chartJsData = {
@@ -58,37 +58,37 @@ export const useChartDataAllOrders = ({
         '#FFC300', // Yellowish color
         '#FF8C42', // Orange color
         '#138D75', // Gold color
-        '#ff0000', // Tomato color
-      ],
-    }],
-  };
+        '#ff0000' // Tomato color
+      ]
+    }]
+  }
 
   const defaultOptions = {
     animation: {
       animateRotate: true,
-      animateScale: true,
+      animateScale: true
     },
     responsive: true,
     maintainAspectRatio: false,
     legend: {
-      position: 'bottom',
+      position: 'bottom'
     },
     tooltips: {
       callbacks: {
         label: (tooltipItem, data) => {
-          const dataset = data?.datasets[tooltipItem.datasetIndex];
-          const total = dataset?.data?.reduce((previousValue, currentValue) => previousValue + currentValue);
-          const currentValue = dataset?.data[tooltipItem?.index];
-          const percentage = ((currentValue / total) * 100).toFixed(2);
-          return `${data?.labels[tooltipItem?.index]}: ${currentValue} (${percentage}%)`;
-        },
-      },
-    },
-  };
+          const dataset = data?.datasets[tooltipItem.datasetIndex]
+          const total = dataset?.data?.reduce((previousValue, currentValue) => previousValue + currentValue)
+          const currentValue = dataset?.data[tooltipItem?.index]
+          const percentage = ((currentValue / total) * 100).toFixed(2)
+          return `${data?.labels[tooltipItem?.index]}: ${currentValue} (${percentage}%)`
+        }
+      }
+    }
+  }
 
   return {
     loading,
     data: loading ? [] : chartJsData,
     option: loading ? [] : defaultOptions
-  };
+  }
 }

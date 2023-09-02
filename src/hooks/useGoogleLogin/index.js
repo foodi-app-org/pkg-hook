@@ -26,7 +26,7 @@ export const useGoogleLogin = ({
 }) => {
   const [loaded, setLoaded] = useState(false)
 
-  function handleSigninSuccess(res) {
+  function handleSigninSuccess (res) {
     /*
       offer renamed response keys to names that match use
     */
@@ -47,7 +47,7 @@ export const useGoogleLogin = ({
     onSuccess(res)
   }
 
-  function signIn(e) {
+  function signIn (e) {
     if (e) {
       e.preventDefault() // to prevent submit if used within form
     }
@@ -158,4 +158,3 @@ export const useGoogleLogin = ({
 
   return { signIn, loaded }
 }
-

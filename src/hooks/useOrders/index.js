@@ -1,8 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useQuery } from '@apollo/client'
-import {
-  useState
-} from 'react'
 import { GET_ALL_PEDIDOS, GET_ALL_PEDIDOS_FROM_STORE } from './queries'
 
 export const useOrders = ({
@@ -19,19 +15,17 @@ export const useOrders = ({
 }) => {
   const { data, loading, error, fetchMore } = useQuery(GET_ALL_PEDIDOS, {
     notifyOnNetworkStatusChange: true,
-    refetchWritePolicy: refetchWritePolicy,
+    refetchWritePolicy,
     pollInterval,
     fetchPolicy,
     refetch,
     refetchReadPolicy,
-    nextFetchPolicy: nextFetchPolicy,
-    onError: onError
-      ? onError
-      : () => {
-        return
-      },
+    nextFetchPolicy,
+    onError: onError || (() => {
+
+    }),
     variables: {
-      statusOrder: statusOrder,
+      statusOrder,
       fromDate,
       toDate
     }
@@ -73,9 +67,9 @@ export const useOrdersFromStore = ({
       max,
       statusOrder
     }
-  });
+  })
 
-  return [data?.getAllOrdersFromStore || [], { loading: called ? false: loading, error }];
-};
+  return [data?.getAllOrdersFromStore || [], { loading: called ? false : loading, error }]
+}
 
 export * from './queries'

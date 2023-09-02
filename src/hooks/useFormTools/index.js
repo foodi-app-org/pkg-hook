@@ -40,8 +40,8 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
     event,
     msgError = '',
     msgSuccess,
-    action = () => { return },
-    actionAfterSuccess = () => { return }
+    action = () => { },
+    actionAfterSuccess = () => { }
   }) => {
     event.preventDefault()
     setCalledSubmit(true)
@@ -60,8 +60,8 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
     }
     if (errors) {
       setErrorSubmit(true)
-    return setForcedError({ ...errorForm })
-  }
+      return setForcedError({ ...errorForm })
+    }
 
     if (errSub) return setErrorSubmit(errSub)
 
@@ -80,19 +80,20 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
           sendNotification({
             message: msgSuccess || 'Operación exitosa',
             description: 'Operación exitosa',
-            backgroundColor: 'success' })
+            backgroundColor: 'success'
+          })
           !!actionAfterSuccess && actionAfterSuccess()
         }
-
-      }).catch(e => {return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', backgroundColor: 'error' })})
+      }).catch(e => { return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', backgroundColor: 'error' }) })
     }
 
     setErrorSubmit(errSub)
   }
 
-  useEffect(() => {return setCalledSubmit(false)}, [calledSubmit])
+  useEffect(() => { return setCalledSubmit(false) }, [calledSubmit])
   useEffect(() => {
-    return setCalledSubmit(false)},
+    return setCalledSubmit(false)
+  },
   [])
 
   return [handleChange, handleSubmit, handleForcedData, { dataForm, errorForm, errorSubmit, calledSubmit, setForcedError }]

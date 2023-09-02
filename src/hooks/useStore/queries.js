@@ -9,9 +9,10 @@ mutation  newRegisterStore($input: IStore){
   }
 }
 `
+
 export const GET_ONE_STORE = gql`
-query getStore($id: ID){
- getStore(id: $id ){
+query getStore($id: ID, $idStore: ID){
+ getStore(id: $id, idStore: $idStore){
 cId
 id
 dId
@@ -91,46 +92,71 @@ pais {
 }
 `
 export const GET_ONE_STORE_BY_ID = gql`
-query getOneStore($idStore: ID){
- getOneStore(idStore: $idStore ){
-cId
-id
-dId
-idStore
-ctId
-neighborhoodStore
-Viaprincipal
-catStore
-storeOwner
-storeName
-emailStore
-storePhone
-socialRaz
-Image
-banner
-documentIdentifier
-uPhoNum
-ULocation
-upLat
-upLon
-uState
-siteWeb
-description
-secVia
-NitStore
-typeRegiments
-typeContribute
-addressStore
-createAt
-  cateStore {
+query getOneStore($StoreName: String, $idStore: ID){
+  getOneStore(idStore: $idStore, StoreName: $StoreName) {
+    idStore
+    cId
+    id
+    dId
+    ctId
     catStore
-    cName
-    cState
-    cDatCre
-    cDatMod
-    csDescription
-    
+    neighborhoodStore
+    Viaprincipal
+    storeOwner
+    storeName
+    emailStore
+    storePhone
+    socialRaz
+    Image
+    banner
+    documentIdentifier
+    uPhoNum
+    ULocation
+    upLat
+    upLon
+    uState
+    siteWeb
+    description
+    NitStore
+    typeRegiments
+    typeContribute
+    secVia
+    addressStore
+    createdAt
+    pais{
+      cId
+      cName
+      cCalCod
+      cState
+      cDatCre
+      cDatMod
+    }
+    city {
+      ctId
+      dId
+      cName
+      cState
+      cDatCre
+      cDatMod
+    }
+    department {
+      dId
+      cId
+      dName
+      dState
+      dDatCre
+      dDatMod
+    }
+    cateStore {
+      catStore
+      idUser
+      cName
+      cState
+      cDatCre
+      cDatMod
+      csDescription
+      
+    }
   }
-}
 }
 `

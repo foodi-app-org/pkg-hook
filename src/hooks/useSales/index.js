@@ -1,105 +1,107 @@
 import {
-  from,
   useApolloClient,
   useLazyQuery,
   useMutation
-} from "@apollo/client";
+} from '@apollo/client'
 import {
   useCallback,
   useEffect,
   useReducer,
   useMemo,
   useState
-} from "react";
-import { Cookies } from "../../cookies";
-import { RandomCode, getCurrentDomain } from "../../utils";
-import { useFormatDate } from "../useFormatDate";
-import { useProductsFood } from "../useProductsFood";
+} from 'react'
+import { Cookies } from '../../cookies'
+import { RandomCode, getCurrentDomain } from '../../utils'
+import { useFormatDate } from '../useFormatDate'
+import { useProductsFood } from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
-  GET_ONE_PRODUCTS_FOOD,
-} from "../useProductsFood/queriesStore";
-import { useStore } from "../useStore";
+  GET_ONE_PRODUCTS_FOOD
+} from '../useProductsFood/queriesStore'
+import { useStore } from '../useStore'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_COUNT_SALES
-} from "./queries";
+} from './queries'
+import { updateExistingOrders } from '../useUpdateExistingOrders'
+import { useGetSale } from './useGetSale'
 export * from './useGetAllSales'
-export { GET_ALL_COUNT_SALES }  from './queries'
+export { GET_ALL_COUNT_SALES } from './queries'
 
 const initialState = {
   PRODUCT: [],
   totalPrice: 0,
   sortBy: null,
   itemsInCart: 0,
-  animateType: "",
-  startAnimateUp: "",
+  animateType: '',
+  startAnimateUp: '',
   priceRange: 0,
   counter: 0,
   totalAmount: 0,
-  payMethodPState: 0,
-};
+  payMethodPState: 0
+}
 
 const initializer = (initialValue = initialState) => {
   return (
     JSON.parse(
       Cookies.get(process.env.LOCAL_SALES_STORE) || JSON.stringify(initialState)
     ) || initialValue
-  );
-};
+  )
+}
 
 export const useSales = ({
   disabled,
   sendNotification,
   router,
-  setAlertBox,
+  setAlertBox
 }) => {
-  const domain = getCurrentDomain();
-  const [loadingSale, setLoadingSale] = useState(false);
-  const [errorSale, setErrorSale] = useState(false);
-  const [modalItem, setModalItem] = useState(false);
-  const [openCommentModal, setOpenCommentModal] = useState(false);
-  const keyToSaveData = process.env.LOCAL_SALES_STORE;
-  const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || "[]");
-  const [search, setSearch] = useState("");
-  const [arr, setArrayCategory] = useState([]);
-  const [totalProductPrice, setTotalProductPrice] = useState(0);
-  const [showMore, setShowMore] = useState(100);
-  const [inputValue, setInputValue] = useState("");
-  const [_, setFilteredList] = useState([]);
-  const [delivery, setDelivery] = useState(false);
-  const [print, setPrint] = useState(false);
-  const [values, setValues] = useState({});
-  const [dataStore] = useStore();
-  const { createdAt } = dataStore || {};
-  const [code, setCode] = useState(null);
-  const [openCurrentSale, setOpenCurrentSale] = useState(null);
-  const [oneProductToComment, setOneProductToComment] = useState({});
-  const [sumExtraProducts, setSumExtraProducts] = useState(0);
-  const { yearMonthDay } = useFormatDate({ date: createdAt });
+  const domain = getCurrentDomain()
+  const [loadingSale, setLoadingSale] = useState(false)
+  const [errorSale, setErrorSale] = useState(false)
+  const [modalItem, setModalItem] = useState(false)
+  const [openCommentModal, setOpenCommentModal] = useState(false)
+  const keyToSaveData = process.env.LOCAL_SALES_STORE
+  const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
+  const [search, setSearch] = useState('')
+  const [arr, setArrayCategory] = useState([])
+  const [totalProductPrice, setTotalProductPrice] = useState(0)
+  const [showMore, setShowMore] = useState(100)
+  const [inputValue, setInputValue] = useState('')
+  // eslint-disable-next-line no-unused-vars
+  const [_, setFilteredList] = useState([])
+  const [delivery, setDelivery] = useState(false)
+  const [print, setPrint] = useState(false)
+  const [values, setValues] = useState({})
+  const [dataStore] = useStore()
+  const { createdAt } = dataStore || {}
+  const [code, setCode] = useState(null)
+  const [openCurrentSale, setOpenCurrentSale] = useState(null)
+  const [oneProductToComment, setOneProductToComment] = useState({})
+  const [sumExtraProducts, setSumExtraProducts] = useState(0)
+  const { yearMonthDay } = useFormatDate({ date: createdAt })
   const [valuesDates, setValuesDates] = useState(() => {
-    return { fromDate: yearMonthDay, toDate: "" };
-  });
-  const [loadingExtraProduct, setLoadingExtraProduct] = useState(false);
-  const [dataOptional, setDataOptional] = useState([]);
-  const [dataExtra, setDataExtra] = useState([]);
+    return { fromDate: yearMonthDay, toDate: '' }
+  })
+  const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
+  const [dataOptional, setDataOptional] = useState([])
+  const [dataExtra, setDataExtra] = useState([])
 
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
       onCompleted: (data) => {
-        const message = `${data?.registerSalesStore?.Response?.message}`;
+        const message = `${data?.registerSalesStore?.Response?.message}`
         const error = data?.registerSalesStore?.Response.success
-          ? "Éxito"
-          : "Error";
+          ? 'Éxito'
+          : 'Error'
         sendNotification({
           backgroundColor: error ? 'success' : 'error',
           title: error,
           description: message
-        });
-        setAlertBox({ message: message, type: "success" });
-        setOpenCurrentSale(data?.registerSalesStore?.Response.success);
+        })
+        setAlertBox({ message, type: 'success' })
+        setOpenCurrentSale(data?.registerSalesStore?.Response.success)
       },
       onError: (error) => {
         console.log(error)
@@ -107,107 +109,107 @@ export const useSales = ({
           backgroundColor: 'error',
           title: error || 'Lo sentimo',
           description: 'ha ocurrido un error'
-        });
-      },
+        })
+      }
     }
-  );
+  )
   const [product, setProduct] = useState({
-    PRODUCT: {},
-  });
+    PRODUCT: {}
+  })
   const [productFoodsOne, { data: dataProduct }] = useLazyQuery(
     GET_ONE_PRODUCTS_FOOD
-  );
+  )
   const [ExtProductFoodsSubOptionalAll] = useLazyQuery(
     GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
     {
       onError: () => {
-        setDataOptional([]);
-      },
+        setDataOptional([])
+      }
     }
-  );
+  )
   const [ExtProductFoodsAll] = useLazyQuery(GET_ALL_EXTRA_PRODUCT, {
     onError: () => {
-      setDataExtra([]);
-    },
-  });
+      setDataExtra([])
+    }
+  })
   const [productsFood, { loading, fetchMore }] = useProductsFood({
-    search: search?.length >= 4 ? search : "",
+    search: search?.length >= 4 ? search : '',
     gender: [],
     desc: [],
     categories: arr || [],
     toDate: valuesDates?.toDate,
     fromDate: valuesDates?.fromDate,
     max: showMore,
-    min: 0,
-  });
+    min: 0
+  })
   const max = productsFood?.reduce(function (a, b) {
-    return Math.max(a, b?.ProPrice || 0);
-  }, 0);
+    return Math.max(a, b?.ProPrice || 0)
+  }, 0)
   const initialStateSales = {
     PRODUCT: [],
     totalPrice: 0,
     sortBy: null,
     itemsInCart: 0,
-    animateType: "",
-    startAnimateUp: "",
+    animateType: '',
+    startAnimateUp: '',
     priceRange: max || 0,
     counter: 0,
     totalAmount: 0,
-    payMethodPState: 0,
-  };
+    payMethodPState: 0
+  }
   // HANDLESS
   // FILTER PRODUCT DATA_DB
   const handlePrint = ({ callback }) => {
     if (disabled) {
       return sendNotification({
-        title: "Error",
-        description: "Esta es la descr",
-        backgroundColor: "error",
-      });
+        title: 'Error',
+        description: 'Esta es la descr',
+        backgroundColor: 'error'
+      })
     }
-    setPrint(!print);
-  };
+    setPrint(!print)
+  }
   const handleChangeFilter = (e) => {
-    return setSearch(e.target.value);
-  };
+    return setSearch(e.target.value)
+  }
   const handleChange = (e) => {
-    return setValues({ ...values, [e.target.name]: e.target.value });
-  };
+    return setValues({ ...values, [e.target.name]: e.target.value })
+  }
   const onChangeInput = (e) => {
-    return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value });
-  };
+    return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value })
+  }
   const handleChangeFilterProduct = (e) => {
-    let text = searchedInput(e.target.value);
-    if (text === undefined || text === "") {
-      return;
+    const text = searchedInput(e.target.value)
+    if (text === undefined || text === '') {
+      return
     }
-    let filteredData = handleList(text);
-    setFilteredList(filteredData);
-  };
+    const filteredData = handleList(text)
+    setFilteredList(filteredData)
+  }
   const handleComment = (product) => {
     if (product) {
-      setOneProductToComment(product);
+      setOneProductToComment(product)
       setValues({
         ...values,
-        comment: product?.comment || "",
-      });
+        comment: product?.comment || ''
+      })
     }
-    setOpenCommentModal(!openCommentModal);
-  };
+    setOpenCommentModal(!openCommentModal)
+  }
   const handleChangeNumber = useCallback(
     (state, action) => {
-      const event = action.payload;
-      const { value, index, id } = event || {};
+      const event = action.payload
+      const { value, index, id } = event || {}
       const productExist = productsFood?.find((items) => {
-        return items.pId === id;
-      });
+        return items.pId === id
+      })
       const OneProduct = state?.PRODUCT.find((items) => {
-        return items.pId === id;
-      });
+        return items.pId === id
+      })
       if (value <= 0) {
-        dispatch({ type: "REMOVE_PRODUCT_TO_CART", payload: OneProduct });
+        dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: OneProduct })
       }
-      const finalQuantity = (state.PRODUCT["ProQuantity"] = value || 0);
+      const finalQuantity = (state.PRODUCT.ProQuantity = value || 0)
       const ARR_PRODUCT = state?.PRODUCT?.map((items, i) => {
         return i === index
           ? {
@@ -215,61 +217,61 @@ export const useSales = ({
               ProQuantity: finalQuantity,
               ProPrice: value
                 ? value * productExist?.ProPrice
-                : productExist?.ProPrice,
+                : productExist?.ProPrice
             }
-          : items;
-      });
+          : items
+      })
       return {
         ...state,
         PRODUCT: ARR_PRODUCT,
-        counter: state.counter + 1,
-      };
+        counter: state.counter + 1
+      }
     },
     [productsFood]
-  );
+  )
   const PRODUCT = (state, action) => {
     const productExist = state.PRODUCT.find((items) => {
-      return items.pId === action.id;
-    });
+      return items.pId === action.id
+    })
     const OurProduct = productsFood?.find((items) => {
-      return items.pId === action.id;
-    });
-    const isFree = productExist?.free;
+      return items.pId === action.id
+    })
+    const isFree = productExist?.free
 
     switch (action.type) {
-      case "ADD_TO_CART":
-        return addToCartFunc(state, action);
-      case "ADD_PRODUCT":
+      case 'ADD_TO_CART':
+        return addToCartFunc(state, action)
+      case 'ADD_PRODUCT':
         return {
           ...state,
           // eslint-disable-next-line
           PRODUCT: [...state?.PRODUCT, action?.payload],
-        };
-      case "REMOVE_PRODUCT":
-        return removeFunc(state, action);
-      case "REMOVE_PRODUCT_TO_CART":
+        }
+      case 'REMOVE_PRODUCT':
+        return removeFunc(state, action)
+      case 'REMOVE_PRODUCT_TO_CART':
         return {
           ...state,
           PRODUCT: state?.PRODUCT?.filter((t) => {
-            return t.pId !== action?.payload.pId;
+            return t.pId !== action?.payload.pId
           }),
-          counter: state.counter - action.payload.ProQuantity,
-        };
-      case "ON_CHANGE": {
-        return handleChangeNumber(state, action);
+          counter: state.counter - action.payload.ProQuantity
+        }
+      case 'ON_CHANGE': {
+        return handleChangeNumber(state, action)
       }
-      case "REMOVE_ALL_PRODUCTS":
-        setValues({});
+      case 'REMOVE_ALL_PRODUCTS':
+        setValues({})
         return {
           ...state,
           PRODUCT: [],
           sortBy: null,
-          counter: 0,
-        };
+          counter: 0
+        }
 
-      case "TOGGLE_FREE_PRODUCT":
-        return toggleFreeProducts(state, action);
-      case "INCREMENT":
+      case 'TOGGLE_FREE_PRODUCT':
+        return toggleFreeProducts(state, action)
+      case 'INCREMENT':
         return {
           ...state,
           counter: state.counter + 1,
@@ -280,25 +282,25 @@ export const useSales = ({
                   ProQuantity: items.ProQuantity + 1,
                   ProPrice: isFree
                     ? 0
-                    : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
+                    : (productExist.ProQuantity + 1) * OurProduct?.ProPrice
                 }
-              : items;
-          }),
-        };
-      case "PUT_COMMENT":
-        return commentProducts(state, action);
-      case "PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT":
-        return handleUpdateAllExtraAndOptional(state, action);
-      case "PRICE_RANGE":
+              : items
+          })
+        }
+      case 'PUT_COMMENT':
+        return commentProducts(state, action)
+      case 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT':
+        return handleUpdateAllExtraAndOptional(state, action)
+      case 'PRICE_RANGE':
         return {
           ...state,
-          priceRange: action.payload,
-        };
-      case "SORT":
-        return { ...state, sortBy: action.payload };
-      case "DECREMENT":
+          priceRange: action.payload
+        }
+      case 'SORT':
+        return { ...state, sortBy: action.payload }
+      case 'DECREMENT':
         return {
-          ...state,
+          ...state
           // counter: state.counter - 1,
           // PRODUCT: state?.PRODUCT?.map((items) => {
           //   return items.pId === action.id ? {
@@ -307,43 +309,44 @@ export const useSales = ({
           //     // ProPrice: ((productExist.ProQuantity + 1) * OurProduct?.ProPrice),
           //   } : items
           // })
-        };
-      case "PAYMENT_METHOD_TRANSACTION":
+        }
+      case 'PAYMENT_METHOD_TRANSACTION':
         return {
           ...state,
-          payMethodPState: 1,
-        };
-      case "PAYMENT_METHOD_MONEY":
+          payMethodPState: 1
+        }
+      case 'PAYMENT_METHOD_MONEY':
         return {
           ...state,
-          payMethodPState: 0,
-        };
+          payMethodPState: 0
+        }
       default:
-        return state;
+        return state
     }
-  };
-  const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer);
+  }
+  const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
   const handleRemoveValue = useCallback(({ name, value, pId }) => {
     setValues({
       ...values,
-      [name]: value ?? "",
-    });
+      [name]: value ?? ''
+    })
     return dispatch({
-      type: "PUT_COMMENT",
+      type: 'PUT_COMMENT',
       payload: pId,
-      value: "",
-    });
-  }, []);
+      value: ''
+    })
+  }, [])
   useEffect(() => {
-    Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: "/" });
-  }, [data, domain]);
+    Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
+  }, [data, domain])
 
-  const handleAddOptional = ({ exOptional, codeCategory, index }) => {
-    const item = dataOptional.find((item) => item.code === codeCategory);
-    if (!item) return;
+  const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
+    if (!exOptional || !codeCategory) return
+    const item = dataOptional.find((item) => item.code === codeCategory)
+    if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
       (el) => el.opSubExPid === exOptional
-    );
+    )
     if (item && idx !== -1) {
       const updatedItem = {
         ...item,
@@ -351,19 +354,19 @@ export const useSales = ({
           ...item.ExtProductFoodsSubOptionalAll.slice(0, idx),
           {
             ...item.ExtProductFoodsSubOptionalAll[idx],
-            check: !item.ExtProductFoodsSubOptionalAll[idx].check,
+            check: !item.ExtProductFoodsSubOptionalAll[idx].check
           },
-          ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1),
-        ],
-      };
+          ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1)
+        ]
+      }
       const newData = dataOptional.map((el) =>
         el.code === codeCategory ? updatedItem : el
-      );
-      setDataOptional((prevData) => [...newData]);
+      )
+      setDataOptional((prevData) => [...newData])
     }
-  };
+  }
 
-  function handleUpdateAllExtraAndOptional(state, action) {
+  function handleUpdateAllExtraAndOptional (state, action) {
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
@@ -371,11 +374,11 @@ export const useSales = ({
           ? {
               ...items,
               dataOptional: action.dataOptional || [],
-              dataExtra: action.dataExtra || [],
+              dataExtra: action.dataExtra || []
             }
-          : items;
-      }),
-    };
+          : items
+      })
+    }
   }
 
   /**
@@ -386,110 +389,111 @@ export const useSales = ({
     const arr =
       dataExtra?.length > 0
         ? dataExtra?.filter((p) => {
-            return p.quantity !== 0;
-          })
-        : [];
-    const val = arr.findIndex((item) => item.quantity !== 0);
+          return p.quantity !== 0
+        })
+        : []
+    const val = arr.findIndex((item) => item.quantity !== 0)
     if (val === -1) {
-      setSumExtraProducts(0);
+      setSumExtraProducts(0)
     }
-    function sumNewExtraPrice() {
-      let sum = 0;
+    function sumNewExtraPrice () {
+      let sum = 0
       arr.forEach((obj) => {
-        sum += obj.newExtraPrice ?? 0;
-      });
+        sum += obj.newExtraPrice ?? 0
+      })
       if (arr.length === 0) {
-        setSumExtraProducts(0);
+        setSumExtraProducts(0)
       }
-      setSumExtraProducts(sum);
-      return sum;
+      setSumExtraProducts(sum)
+      return sum
     }
     if (arr.length > 0) {
-      sumNewExtraPrice();
+      sumNewExtraPrice()
     }
-  }, [dataExtra]);
+  }, [dataExtra])
 
-  function handleUpdateAllExtra() {
+  function handleUpdateAllExtra () {
     try {
       if (!product?.PRODUCT?.pId) {
         return sendNotification({
-          title: "Error",
+          title: 'Error',
           backgroundColor: 'error',
-          description: "No se puede actualizar el producto sin pId",
-        });
+          description: 'No se puede actualizar el producto sin pId'
+        })
       }
       const filteredDataOptional = dataOptional
         .map((obj) => {
           const filteredSubOptions = obj.ExtProductFoodsSubOptionalAll.filter(
             (subObj) => subObj.check === true
-          );
+          )
           // Excluya todo el objeto padre si filteredSubOptions está vacío
           if (filteredSubOptions.length === 0) {
-            return null;
+            return null
           }
-          return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions };
+          return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
-        .filter((obj) => obj !== null); // Elimine todos los objetos nulos del arreglo
-      const filteredDataExtra = dataExtra.filter((p) => p.quantity !== 0);
+        .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
+      const filteredDataExtra = dataExtra.filter((p) => p.quantity !== 0)
       dispatch({
-        type: "PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT",
+        type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
         payload: product.PRODUCT.pId,
         dataOptional: filteredDataOptional,
-        dataExtra: filteredDataExtra,
-      });
+        dataExtra: filteredDataExtra
+      })
     } catch (_error) {
       return sendNotification({
-        title: "Error",
+        title: 'Error',
         backgroundColor: 'error',
-        description: "No se puedo actualizar el producto",
-      });
+        description: 'No se puedo actualizar el producto'
+      })
     }
   }
 
-  function handleIncrementExtra({ Adicionales, index }) {
-    const { pId } = product?.PRODUCT || {};
-    const exPid = Adicionales.exPid || null;
+  function handleIncrementExtra ({ Adicionales, index }) {
+    const { pId } = product?.PRODUCT || {}
+    const exPid = Adicionales.exPid || null
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity ? producto?.quantity : 0;
+          const initialQuantity = producto?.quantity ? producto?.quantity : 0
           return {
             ...producto,
             quantity: initialQuantity + 1,
-            newExtraPrice: producto.extraPrice * (initialQuantity + 1),
-          };
+            newExtraPrice: producto.extraPrice * (initialQuantity + 1)
+          }
         }
-        return producto;
-      });
-      return setDataExtra(newExtra);
+        return producto
+      })
+      return setDataExtra(newExtra)
     }
   }
-  function handleDecrementExtra({ Adicionales, index }) {
-    const { pId } = product?.PRODUCT || {};
-    const exPid = Adicionales.exPid || null;
+
+  function handleDecrementExtra ({ Adicionales, index }) {
+    const { pId } = product?.PRODUCT || {}
+    const exPid = Adicionales.exPid || null
 
     // Comprobar que el objeto Adicionales existe en dataExtra
-    const extraIndex = dataExtra.findIndex((extra) => extra.exPid === exPid);
+    const extraIndex = dataExtra.findIndex((extra) => extra.exPid === exPid)
     if (extraIndex === -1) {
-      return;
+      return
     }
 
     if (pId && exPid) {
       const newExtra = dataExtra.map((producto, i) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity;
+          const initialQuantity = producto?.quantity
           return {
             ...producto,
             quantity: initialQuantity - 1,
-            newExtraPrice: producto.extraPrice * (initialQuantity - 1),
-          };
+            newExtraPrice: producto.extraPrice * (initialQuantity - 1)
+          }
         }
-        return producto;
-      });
-      setDataExtra(newExtra);
+        return producto
+      })
+      setDataExtra(newExtra)
     }
   }
-/**
+  /**
  * Agrega un producto al carrito de compras.
  * @param {Object} state - Estado actual del carrito.
  * @param {Object} action - Acción que contiene los datos del producto a agregar.
@@ -501,12 +505,12 @@ export const useSales = ({
  * @param {number} action.payload.ProPrice - Precio del producto.
  * @returns {Object} Nuevo estado del carrito con el producto agregado.
  */
-  function addToCartFunc(state, action) {
-    const { pId, pName, getOneTags, ProDescription, ProImage, ProPrice } = action.payload;
+  function addToCartFunc (state, action) {
+    const { pId, pName, getOneTags, ProDescription, ProImage, ProPrice } = action.payload
 
-    const productExist = state.PRODUCT.find((item) => item.pId === pId);
-    const OurProduct = productsFood.find((item) => item.pId === pId);
-    const isFree = productExist?.free;
+    const productExist = state.PRODUCT.find((item) => item.pId === pId)
+    const OurProduct = productsFood.find((item) => item.pId === pId)
+    const isFree = productExist?.free
 
     const updatedProduct = {
       pId,
@@ -516,24 +520,24 @@ export const useSales = ({
       ProDescription,
       ProImage,
       ProPrice,
-      ProQuantity: 1,
-    };
+      ProQuantity: 1
+    }
 
     if (!productExist) {
       return {
         ...state,
         counter: state.counter + 1,
         totalAmount: state.totalAmount + ProPrice,
-        startAnimateUp: "start-animate-up",
-        PRODUCT: [...state.PRODUCT, updatedProduct],
-      };
+        startAnimateUp: 'start-animate-up',
+        PRODUCT: [...state.PRODUCT, updatedProduct]
+      }
     }
-  
+
     return {
       ...state,
       counter: state.counter + 1,
       totalAmount: state.totalAmount + ProPrice,
-      startAnimateUp: "start-animate-up",
+      startAnimateUp: 'start-animate-up',
       PRODUCT: state.PRODUCT.map((item) => {
         if (item.pId === pId) {
           return {
@@ -542,21 +546,21 @@ export const useSales = ({
             unitPrice: OurProduct?.ProPrice,
             ProPrice: isFree ? 0 : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
             ProQuantity: productExist.ProQuantity + 1,
-            free: isFree ? true : false,
-          };
+            free: !!isFree
+          }
         }
-        return item;
-      }),
-    };
+        return item
+      })
+    }
   }
-  
-  function removeFunc(state, action) {
+
+  function removeFunc (state, action) {
     const productExist = state.PRODUCT.find((items) => {
-      return items.pId === action.payload.pId;
-    });
+      return items.pId === action.payload.pId
+    })
     const OurProduct = productsFood.find((items) => {
-      return items.pId === action.payload.pId;
-    });
+      return items.pId === action.payload.pId
+    })
     return {
       ...state,
       counter: state.counter - 1,
@@ -564,26 +568,26 @@ export const useSales = ({
       PRODUCT:
         action.payload.ProQuantity > 1
           ? state.PRODUCT.map((items) => {
-              return items.pId === action.payload.pId
-                ? {
-                    ...items,
-                    pId: action.payload.pId,
-                    ProQuantity: items.ProQuantity - 1,
-                    ProPrice: productExist.ProPrice - OurProduct?.ProPrice,
-                  }
-                : items;
-            })
+            return items.pId === action.payload.pId
+              ? {
+                  ...items,
+                  pId: action.payload.pId,
+                  ProQuantity: items.ProQuantity - 1,
+                  ProPrice: productExist.ProPrice - OurProduct?.ProPrice
+                }
+              : items
+          })
           : state.PRODUCT.filter((items) => {
-              return items.pId !== action.payload.pId;
-            }),
-    };
+            return items.pId !== action.payload.pId
+          })
+    }
   }
 
   // TOGGLE_FREE_PRODUCT
-  function toggleFreeProducts(state, action) {
+  function toggleFreeProducts (state, action) {
     const productExist = productsFood.find((items) => {
-      return items.pId === action.payload.pId;
-    });
+      return items.pId === action.payload.pId
+    })
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
@@ -593,178 +597,179 @@ export const useSales = ({
               free: !items.free,
               ProPrice: items.ProPrice
                 ? 0
-                : items.ProQuantity * productExist?.ProPrice,
+                : items.ProQuantity * productExist?.ProPrice
             }
-          : items;
-      }),
-    };
+          : items
+      })
+    }
   }
 
   // COMMENT_FREE_PRODUCT
-  function commentProducts(state, action, deleteValue) {
+  function commentProducts (state, action, deleteValue) {
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
         return items.pId === action.payload
           ? {
               ...items,
-              comment: deleteValue ? "" : values.comment,
+              comment: deleteValue ? '' : values.comment
             }
-          : items;
-      }),
-    };
+          : items
+      })
+    }
   }
 
   const getSortedProduct = useCallback((data, sort) => {
-    if (sort && sort === "PRICE_HIGH_TO_LOW") {
+    if (sort && sort === 'PRICE_HIGH_TO_LOW') {
       return data.sort((a, b) => {
-        return b["ProPrice"] - a["ProPrice"];
-      });
+        return b.ProPrice - a.ProPrice
+      })
     }
-    if (sort && sort === "PRICE_LOW_TO_HIGH") {
+    if (sort && sort === 'PRICE_LOW_TO_HIGH') {
       return data.sort((a, b) => {
-        return a["ProPrice"] - b["ProPrice"];
-      });
+        return a.ProPrice - b.ProPrice
+      })
     }
-    return data;
+    return data
   }, [])
 
   const PriceRangeFunc = (products, price) => {
     return (
       products?.length > 0 &&
       products?.filter((items) => {
-        return items?.ProPrice >= price;
+        return items?.ProPrice >= price
       })
-    );
-  };
+    )
+  }
 
   const sortedProduct = useMemo(() => {
-    return getSortedProduct(data.PRODUCT, data.sortBy);
+    return getSortedProduct(data.PRODUCT, data.sortBy)
   }, [data.PRODUCT, data.sortBy, getSortedProduct])
-  const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange);
+  const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange)
 
   const handleList = (text) => {
-    let inputText = text.toLowerCase();
-    let dataList = [];
+    const inputText = text.toLowerCase()
+    let dataList = []
     dataList = finalFilter.filter((item) => {
-      return item.pName.toLowerCase().includes(inputText);
-    });
-    return dataList;
-  };
+      return item.pName.toLowerCase().includes(inputText)
+    })
+    return dataList
+  }
   const searchedInput = (words) => {
-    setInputValue(words);
-    let n = words.split(" ");
+    setInputValue(words)
+    const n = words.split(' ')
     if (n.length !== 0) {
-      if (n[n.length - 1] === "") {
-        n.pop();
+      if (n[n.length - 1] === '') {
+        n.pop()
       }
-      return n[n.length - 1];
+      return n[n.length - 1]
     }
-    return "";
-  };
+    return ''
+  }
   const arrayProduct =
     data?.PRODUCT?.length > 0
       ? data?.PRODUCT?.map((product) => {
-          const filteredDataExtra =
-            product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? [];
-          const dataOptional = product?.dataOptional?.map(
-            ({ __typename, ...product }) => {
-              const { ExtProductFoodsSubOptionalAll, ...rest } = product;
-              const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(
-                (subOption) => {
-                  const { __typename, ...subOptionRest } = subOption;
-                  return subOptionRest;
-                }
-              );
-              return {
-                ...rest,
-                ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll,
-              };
+        const filteredDataExtra =
+            product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? []
+        const dataOptional = product?.dataOptional?.map(
+          ({ __typename, ...product }) => {
+            const { ExtProductFoodsSubOptionalAll, ...rest } = product
+            const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(
+              (subOption) => {
+                const { __typename, ...subOptionRest } = subOption
+                return subOptionRest
+              }
+            )
+            return {
+              ...rest,
+              ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll
             }
-          );
-          const refCodePid =  RandomCode(20)
-          return {
-            pId: product?.pId,
-            refCodePid: refCodePid,
-            id: values?.cliId,
-            cantProducts: parseInt(
-              product?.ProQuantity ? product?.ProQuantity : 0
-            ),
-            comments: product?.comment ?? "",
-            dataOptional: dataOptional ?? [],
-            dataExtra: filteredDataExtra || [],
-            ProPrice: product.ProPrice,
-          };
-        })
-      : [];
+          }
+        )
+        const refCodePid = RandomCode(20)
+        return {
+          pId: product?.pId,
+          refCodePid,
+          id: values?.cliId,
+          cantProducts: parseInt(
+            product?.ProQuantity ? product?.ProQuantity : 0
+          ),
+          comments: product?.comment ?? '',
+          dataOptional: dataOptional ?? [],
+          dataExtra: filteredDataExtra || [],
+          ProPrice: product.ProPrice
+        }
+      })
+      : []
   const finalArrayProduct = arrayProduct.map((item) => {
     const totalExtra = item.dataExtra.reduce(
       (accumulator, extra) => accumulator + extra.newExtraPrice,
       0
-    );
-    return { ...item, totalExtra };
-  });
+    )
+    return { ...item, totalExtra }
+  })
 
-  let totalSale = 0;
-  function sumProPriceAndTotalExtra(data) {
+  let totalSale = 0
+  function sumProPriceAndTotalExtra (data) {
     return data.map((item) => {
       const totalExtra = item.dataExtra.reduce((acc, curr) => {
-        const newExtraPrice = parseFloat(curr.newExtraPrice);
+        const newExtraPrice = parseFloat(curr.newExtraPrice)
         if (isNaN(newExtraPrice)) {
-          return acc;
+          return acc
         }
-        return acc + newExtraPrice;
-      }, 0);
-      const total = item.ProPrice + totalExtra;
-      return { ...item, totalExtra, total };
-    });
+        return acc + newExtraPrice
+      }, 0)
+      const total = item.ProPrice + totalExtra
+      return { ...item, totalExtra, total }
+    })
   }
   useEffect(() => {
-    const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct);
+    const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct)
     dataCountTotal.forEach((a) => {
-      const { total } = a || {};
-      totalSale += total;
-      setTotalProductPrice(Math.abs(totalSale));
-    });
+      const { total } = a || {}
+      totalSale += total
+      setTotalProductPrice(Math.abs(totalSale))
+    })
     if (data.PRODUCT.length === 0) {
-      setTotalProductPrice(0);
+      setTotalProductPrice(0)
     }
-  }, [totalProductPrice, totalSale, data, finalArrayProduct]);
+  }, [totalProductPrice, totalSale, data, finalArrayProduct])
 
   const [discount, setDiscount] = useState({
     price: totalProductPrice || 0,
-    discount: 0,
-  });
-  function applyDiscount(percentage) {
+    discount: 0
+  })
+  function applyDiscount (percentage) {
     const validateCondition =
-      isNaN(percentage) || percentage < 0 || percentage > 100;
+      isNaN(percentage) || percentage < 0 || percentage > 100
 
     if (validateCondition) {
       return sendNotification({
-        title: "Error",
+        title: 'Error',
         backgroundColor: 'error',
-        description: "el descuento debe ser un número entre 0 y 100%",
-      });
+        description: 'el descuento debe ser un número entre 0 y 100%'
+      })
     }
-    const decimal = parseFloat(percentage) / 100;
-    const result = decimal * parseFloat(totalProductPrice);
-    setDiscount({ price: result, discount: percentage });
+    const decimal = parseFloat(percentage) / 100
+    const result = decimal * parseFloat(totalProductPrice)
+    setDiscount({ price: result, discount: percentage })
 
-    return { price: result, discount: percentage };
+    return { price: result, discount: percentage }
   }
-  const totalProductsPrice = totalProductPrice;
+  const totalProductsPrice = totalProductPrice
   const client = useApolloClient()
-
+  const { getOnePedidoStore } = useGetSale()
   const handleSubmit = () => {
-    if (!values?.cliId)
+    if (!values?.cliId) {
       return sendNotification({
-        title: "Error",
+        title: 'Error',
         backgroundColor: 'error',
-        description: "Elije primero un cliente",
-      });
-    setLoadingSale(true);
-    const code = RandomCode(10);
-    setCode(code);
+        description: 'Elije primero un cliente'
+      })
+    }
+    setLoadingSale(true)
+    const code = RandomCode(10)
+    setCode(code)
     return registerSalesStore({
       variables: {
         input: finalArrayProduct || [],
@@ -775,14 +780,14 @@ export const useSales = ({
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         discount: discount.discount || 0,
-        totalProductsPrice: totalProductsPrice || 0,
+        totalProductsPrice: totalProductsPrice || 0
       }
     })
       .then((responseRegisterR) => {
         if (responseRegisterR) {
-          const { data } = responseRegisterR || {};
-          const { registerSalesStore } = data || {};
-          const { Response } = registerSalesStore || {};
+          const { data } = responseRegisterR || {}
+          const { registerSalesStore } = data || {}
+          const { Response } = registerSalesStore || {}
           if (Response && Response.success === true) {
             // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
             client.query({
@@ -792,65 +797,85 @@ export const useSales = ({
                 client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
               }
             })
+            getOnePedidoStore({
+              variables: {
+                pCodeRef: code || ''
+              }
+            }).then((responseSale) => {
+              if (responseSale?.data?.getOnePedidoStore) {
+                const currentSale = responseSale?.data?.getOnePedidoStore || {}
+                const inComingCodeRef = currentSale?.pCodeRef || null
+                if (!inComingCodeRef) return
+                client.cache.modify({
+                  fields: {
+                    getAllOrdersFromStore (existingOrders = []) {
+                      try {
+                        return updateExistingOrders(existingOrders, inComingCodeRef, 1, currentSale)
+                      } catch (e) {
+                        return existingOrders
+                      }
+                    }
+                  }
+                })
+              }
+            })
             router.push(
               {
                 query: {
                   ...router.query,
-                  saleId: code,
-                },
+                  saleId: code
+                }
               },
               undefined,
               { shallow: true }
-            );
-            // setValues({})
+            )
+            setValues({})
           }
         }
-        setLoadingSale(false);
+        setLoadingSale(false)
       })
       .catch(() => {
-        setLoadingSale(false);
-        setErrorSale(true);
+        setLoadingSale(false)
+        setErrorSale(true)
       })
       .finally(() => {
-        setLoadingSale(false);
-      });
-  };
-  let suma = 0;
-  let total = 0;
+        setLoadingSale(false)
+      })
+  }
 
   const handleProduct = async (PRODUCT) => {
-    setLoadingExtraProduct(true);
-    const { pId } = PRODUCT || {};
+    setLoadingExtraProduct(true)
+    const { pId } = PRODUCT || {}
     try {
       const originalArray = data.PRODUCT.find((item) => {
-        return item.pId === pId;
-      });
+        return item.pId === pId
+      })
       // OPTIONAL
-      productFoodsOne({ variables: { pId } });
+      productFoodsOne({ variables: { pId } })
       const optionalAll = await ExtProductFoodsSubOptionalAll({
-        variables: { pId },
-      });
-      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll;
-      setDataOptional(optionalFetch || []);
-      const existOptionalCookies = originalArray?.dataOptional;
+        variables: { pId }
+      })
+      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll
+      setDataOptional(optionalFetch || [])
+      const existOptionalCookies = originalArray?.dataOptional
       const filteredDataOptional = existOptionalCookies?.length
         ? existOptionalCookies
-            ?.map((obj) => {
-              const filteredSubOptions =
+          ?.map((obj) => {
+            const filteredSubOptions =
                 obj.ExtProductFoodsSubOptionalAll.filter(
                   (subObj) => subObj.check === true
-                );
-              // Excluya todo el objeto padre si filteredSubOptions está vacío
-              if (filteredSubOptions.length === 0) {
-                return null;
-              }
-              return {
-                ...obj,
-                ExtProductFoodsSubOptionalAll: filteredSubOptions,
-              };
-            })
-            .filter((obj) => obj !== null)
-        : [];
+                )
+            // Excluya todo el objeto padre si filteredSubOptions está vacío
+            if (filteredSubOptions.length === 0) {
+              return null
+            }
+            return {
+              ...obj,
+              ExtProductFoodsSubOptionalAll: filteredSubOptions
+            }
+          })
+          .filter((obj) => obj !== null)
+        : []
 
       // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
       if (optionalFetch && filteredDataOptional) {
@@ -858,51 +883,51 @@ export const useSales = ({
           .map((obj) => {
             const matchingArray = filteredDataOptional.find(
               (o) => o && o.opExPid === obj.opExPid
-            );
+            )
             if (!matchingArray) {
-              return obj;
+              return obj
             }
             const extProductFoodsSubOptionalAll =
-              obj.ExtProductFoodsSubOptionalAll || [];
+              obj.ExtProductFoodsSubOptionalAll || []
             const updateExtProductFoodsSubOptionalAll =
               extProductFoodsSubOptionalAll.map((subObj) => {
                 const newItem =
                   matchingArray.ExtProductFoodsSubOptionalAll.find(
                     (newItem) =>
                       newItem && newItem.opSubExPid === subObj.opSubExPid
-                  );
+                  )
                 if (newItem) {
                   return {
                     ...subObj,
-                    check: true,
-                  };
+                    check: true
+                  }
                 }
-                return subObj;
-              });
+                return subObj
+              })
             return {
               ...obj,
               ExtProductFoodsSubOptionalAll:
-                updateExtProductFoodsSubOptionalAll,
-            };
+                updateExtProductFoodsSubOptionalAll
+            }
           })
-          .filter((obj) => obj);
+          .filter((obj) => obj)
         if (existOptionalCookies) {
-          setDataOptional(updateOption || []);
+          setDataOptional(updateOption || [])
         } else {
-          setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || []);
+          setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || [])
         }
       }
       // NO OPTIONAL
-      const extProduct = await ExtProductFoodsAll({ variables: { pId } });
-      let finalData;
+      const extProduct = await ExtProductFoodsAll({ variables: { pId } })
+      let finalData
       if (!originalArray?.dataExtra) {
-        finalData = extProduct?.data?.ExtProductFoodsAll;
+        finalData = extProduct?.data?.ExtProductFoodsAll
       } else {
         const filteredData = originalArray.dataExtra.filter((item) =>
           extProduct?.data?.ExtProductFoodsAll.some(
             (newItem) => newItem.exPid === item.exPid
           )
-        );
+        )
         finalData = originalArray?.dataExtra?.concat(
           extProduct?.data?.ExtProductFoodsAll?.filter(
             (item) =>
@@ -910,30 +935,30 @@ export const useSales = ({
                 (filteredItem) => filteredItem.exPid === item.exPid
               )
           )
-        );
+        )
       }
-      setDataExtra(finalData);
+      setDataExtra(finalData)
       setProduct(() => {
         return {
-          PRODUCT,
-        };
-      });
-      setLoadingExtraProduct(false);
+          PRODUCT
+        }
+      })
+      setLoadingExtraProduct(false)
     } catch (error) {
-      setLoadingExtraProduct(false);
+      setLoadingExtraProduct(false)
       sendNotification({
         title: 'error',
         backgroundColor: 'error',
-        description: error || "Lo sentimos, ocurrió un error",
-      });
+        description: error || 'Lo sentimos, ocurrió un error'
+      })
     }
-  };
+  }
   const handleCleanFilter = () => {
-    setArrayCategory([]);
-    setValues({});
-    setValuesDates({ fromDate: yearMonthDay, toDate: "" });
-  };
-  const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0;
+    setArrayCategory([])
+    setValues({})
+    setValuesDates({ fromDate: yearMonthDay, toDate: '' })
+  }
+  const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0
   return {
     loading: loading || loadingSale,
     loadingExtraProduct,
@@ -994,6 +1019,6 @@ export const useSales = ({
     handleIncrementExtra,
     setProduct,
     setPrint: handlePrint,
-    PRODUCT,
-  };
-};
+    PRODUCT
+  }
+}

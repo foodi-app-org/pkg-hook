@@ -1,23 +1,26 @@
-import { useMutation, useQuery } from '@apollo/client';
-import { useState } from 'react';
-import { DELETE_ONE_CAT_PRODUCTS, GET_ULTIMATE_CATEGORY_PRODUCTS } from '../useProductsFood/queriesStore';
-import { UPDATE_CAT_IN_PRODUCT } from './../useProductsFood/queriesStore';
-import { GET_ONE_STORE_IN_CATEGORY } from './queries';
+import { useMutation, useQuery } from '@apollo/client'
+import { useState } from 'react'
+import {
+  DELETE_ONE_CAT_PRODUCTS,
+  GET_ULTIMATE_CATEGORY_PRODUCTS,
+  UPDATE_CAT_IN_PRODUCT
+} from '../useProductsFood/queriesStore'
+import { GET_ONE_STORE_IN_CATEGORY } from './queries'
 
-export const useCategoryInStore = ({ catStoreId }) => {
+export const useCategoryInStore = ({ catStoreId, setAlertBox = () => {} } = {}) => {
   // STATES
   const [categories, setOneCategoryInStore] = useState([])
   const [deleteCatOfProducts] = useMutation(DELETE_ONE_CAT_PRODUCTS, {
     onError: (e) => {
       setAlertBox({
         message: e.graphQLErrors[0].message,
-        color: WColor
+        color: 'error'
       })
     },
-    update(cache) {
+    update (cache) {
       cache.modify({
         fields: {
-          catProductsAll(dataOld = []) {
+          catProductsAll (dataOld = []) {
             return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
           }
         }
@@ -28,13 +31,13 @@ export const useCategoryInStore = ({ catStoreId }) => {
     onError: (e) => {
       console.log({
         message: e.graphQLErrors[0].message,
-        color: WColor
+        color: 'error'
       })
     },
-    update(cache) {
+    update (cache) {
       cache.modify({
         fields: {
-          catProductsAll(dataOld = []) {
+          catProductsAll (dataOld = []) {
             return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
           }
         }
@@ -57,32 +60,33 @@ export const useCategoryInStore = ({ catStoreId }) => {
       setOneCategoryInStore(data.getOneCatStore)
     }
   })
-    // HANDLESS
-    const handlerDeleteCategoryInStore = (category) => {
-      const { pState, idPc } = category || {}
-      if (!idPc || !pState) return
-      return deleteCatOfProducts({
-        variables: { idPc, pState }, update(cache) {
-          cache.modify({
-            fields: {
-              catProductsAll(dataOld = []) {
-                return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
-              }
+  // HANDLESS
+  const handlerDeleteCategoryInStore = (category) => {
+    const { pState, idPc } = category || {}
+    if (!idPc || !pState) return
+    return deleteCatOfProducts({
+      variables: { idPc, pState },
+      update (cache) {
+        cache.modify({
+          fields: {
+            catProductsAll (dataOld = []) {
+              return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
             }
-          })
-        }
-      })
-    }
-    const handleUpdateCatInProduct = async ({ data }) => {
-      await updatedCatWithProducts({
-        variables: {
-          input: {
-            setData: data?.map(x => { return { idProduct: x.pId } }),
-            idCat: idCat
           }
+        })
+      }
+    })
+  }
+  const handleUpdateCatInProduct = async ({ data }) => {
+    await updatedCatWithProducts({
+      variables: {
+        input: {
+          setData: data?.map(x => { return { idProduct: x.pId } }),
+          idCat: ''
         }
-      })
-    }
+      }
+    })
+  }
   return {
     categories,
     data: data?.catProductsAll || [],
@@ -92,4 +96,3 @@ export const useCategoryInStore = ({ catStoreId }) => {
     handleUpdateCatInProduct
   }
 }
-
