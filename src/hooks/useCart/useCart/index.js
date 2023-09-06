@@ -1,17 +1,18 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { CREATE_SHOPPING_CARD, GET_ALL_SHOPPING_CARD } from '../queries'
 import { RandomCode, updateCacheMod, numberFormat } from '../../../utils'
 import { useExtProductFoodsAll, useGetOneProductsFood } from '../../useProductsFood'
 import { useGetExtProductFoodsSubOptionalAll } from '../../useGetExtProductFoodsSubOptionalAll'
 import { useGetCart } from '../useGetCart'
-
+import { useRouter } from 'next/router'
 import {
   filterDataOptional,
   filterExtra,
   validateExtraProducts,
   validateRequirements
 } from './helpers'
+import { useManageQueryParams } from '../../useManageQueryParams'
 
 /**
  * Custom hook for managing cart functionality.
@@ -27,10 +28,14 @@ export const useCart = ({
   setAlertBox = () => { }
 } = {}) => {
   // sub products
+  const { handleCleanQuery } = useManageQueryParams()
+
   const [dataOptional, setDataOptional] = useState([])
   const [dataExtra, setDataExtra] = useState([])
   const [quantity, setQuantity] = useState(1)
   const [comments, setComments] = useState('')
+  const location = useRouter()
+  const queryParamProduct = location.query.plato
   const [registerShoppingCard] = useMutation(CREATE_SHOPPING_CARD, {
     onError: (error) => {
       console.error('Error registering shopping card:', error)
@@ -41,29 +46,44 @@ export const useCart = ({
   const [handleExtProductFoodsAll] = useExtProductFoodsAll()
 
   const [ExtProductFoodsSubOptionalAll] = useGetExtProductFoodsSubOptionalAll()
-
+  const [dataOneProduct, setDataOneProduct] = useState({})
   const [handleGetOneProduct,
     {
-      loading: loadingProduct,
-      data: dataOneProduct
+      loading: loadingProduct
     }
   ] = useGetOneProductsFood({ fetchOnlyProduct: true })
 
   const getOneProduct = async food => {
-    const { pId } = food || {}
+    const { pId, intoCart } = food || {}
+    const isEditing = intoCart
     if (!pId) return {}
-    setOpenModalProduct(!openModalProduct)
-    handleGetOneProduct({ variables: { pId } })
+    setOpenModalProduct(true)
+    const product = await handleGetOneProduct({ variables: { pId } })
+    const productFoodsOne = product.data.productFoodsOne || {}
+    setDataOneProduct(productFoodsOne)
+
     const matchingItemInShoppingCart = dataShoppingCard?.find((item) => {
-      return item.productFood && item?.productFood?.pId === pId
+      return item?.productFood && item?.productFood?.pId === pId
     })
-    console.log(matchingItemInShoppingCart)
+    if (matchingItemInShoppingCart && queryParamProduct) {
+      setDataOneProduct({
+        ...productFoodsOne,
+        intoCart: true
+      })
+      const comments = matchingItemInShoppingCart?.comments
+      if (comments) {
+        setComments(comments || '')
+      }
+      const quantityProduct = matchingItemInShoppingCart?.cantProducts
+      if (quantityProduct) {
+        setQuantity(quantityProduct || 1)
+      }
+    }
     const optionalAll = await ExtProductFoodsSubOptionalAll({
       variables: { pId }
     })
     const optionalFetch = optionalAll?.data?.ExtProductFoodsOptionalAll
     const shoppingCartOptionalAll = matchingItemInShoppingCart?.ExtProductFoodsAll || []
-    console.log(shoppingCartOptionalAll)
     if (Array.isArray(optionalFetch)) {
       const filteredDataOptional = optionalFetch
         .map((obj) => {
@@ -276,10 +296,23 @@ export const useCart = ({
   const handleShowModalProduct = () => {
     if (openModalProduct) {
       setDataExtra([])
+      setDataOneProduct({})
+      setQuantity(1)
+      setComments('')
       setDataOptional([])
+    }
+    if (queryParamProduct && openModalProduct) {
+      handleCleanQuery('plato')
     }
     return setOpenModalProduct(!openModalProduct)
   }
+
+  useEffect(() => {
+    if (queryParamProduct) {
+      const product = { pId: queryParamProduct }
+      getOneProduct(product)
+    }
+  }, [queryParamProduct])
 
   return {
     quantity,

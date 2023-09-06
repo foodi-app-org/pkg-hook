@@ -1,7 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import {
+  useState,
+  useEffect,
+  useMemo
+} from 'react'
 import { useMutation } from '@apollo/client'
 import { DELETE_ONE_ITEM_SHOPPING_PRODUCT } from './queries'
-import { useGetCart } from '../useCart'
+import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
 
 /**
@@ -13,10 +17,18 @@ import { useManageQueryParams } from '../useManageQueryParams'
  * @returns {Object} An object with various shopping cart-related functions and data.
  */
 export const useAsideCart = ({
+  openModalProduct = false,
   setCountItemProduct = () => { },
   setAlertBox = () => { },
+  setOpenModalProduct = () => { },
   handleMenu = () => { }
 } = {}) => {
+  const { getOneProduct } = useCart({
+    handleMenu,
+    openModalProduct,
+    setOpenModalProduct
+  })
+
   const { handleQuery } = useManageQueryParams()
 
   const [totalProductPrice, setTotalProductPrice] = useState(0)
@@ -69,7 +81,11 @@ export const useAsideCart = ({
 
   const handleEditProduct = async (item) => {
     const pId = item?.pId || null
-    if (pId) handleQuery('plato', item.pId)
+    if (pId) handleQuery('plato', pId)
+    if (pId) {
+      const product = { pId, intoCart: true }
+      getOneProduct(product)
+    }
   }
   /**
    * Handle the deletion of a shopping cart item.
@@ -78,7 +94,6 @@ export const useAsideCart = ({
   const handleDeleteItemShopping = async (item) => {
     try {
       const { cState, ShoppingCard } = item
-
       await deleteOneItem({
         variables: {
           cState,
@@ -86,7 +101,6 @@ export const useAsideCart = ({
         },
         update: (cache, { data }) => {
           const success = data?.deleteOneItem?.success
-
           if (success && ShoppingCard) {
             cache.modify({
               fields: {
