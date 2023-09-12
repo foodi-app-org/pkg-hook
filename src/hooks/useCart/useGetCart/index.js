@@ -1,7 +1,5 @@
 import { GET_ALL_SHOPPING_CARD } from '../queries'
-import {
-  useQuery
-} from '@apollo/client'
+import { useQuery } from '@apollo/client'
 
 export const useGetCart = ({
   setAlertBox = () => { },
@@ -14,7 +12,7 @@ export const useGetCart = ({
     called
   } = useQuery(GET_ALL_SHOPPING_CARD, {
     onCompleted: data => {
-      if (Array.isArray(data?.getAllShoppingCard) && data?.getAllShoppingCard?.length) {
+      if (Array.isArray(data?.getAllShoppingCard) && Number(data?.getAllShoppingCard?.length)) {
         setCountItemProduct(data?.getAllShoppingCard?.length)
       }
     },

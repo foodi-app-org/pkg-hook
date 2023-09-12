@@ -7,7 +7,8 @@ import { useMutation } from '@apollo/client'
 import { DELETE_ONE_ITEM_SHOPPING_PRODUCT } from './queries'
 import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
-
+import { calculateTotalPrice } from './helpers'
+export * from './helpers'
 /**
  * Custom hook for managing the shopping cart functionality.
  * @param {Object} props - Props to control various UI elements.
@@ -34,6 +35,7 @@ export const useAsideCart = ({
   const [totalProductPrice, setTotalProductPrice] = useState(0)
 
   const [dataShoppingCard, { loading }] = useGetCart({ setCountItemProduct })
+  console.log({ dataShoppingCard })
 
   // Lógica de transformación de los datos
   const result2 = useMemo(() => {
@@ -56,18 +58,11 @@ export const useAsideCart = ({
   }, [result2])
 
   useEffect(() => {
-    if (dataShoppingCard) {
-      let suma = 0
-      dataShoppingCard.forEach((a) => {
-        const { productFood, cantProducts } = a || {}
-        const { ProPrice, ValueDelivery } = productFood || {}
-        const PriceFinal = (ProPrice * cantProducts) + ValueDelivery
-        suma += PriceFinal
-      })
-      setTotalProductPrice(Math.abs(suma))
-    }
+    const totalPrice = calculateTotalPrice(dataShoppingCard)
+    setTotalProductPrice(Math.abs(totalPrice))
   }, [dataShoppingCard])
 
+  console.log(dataShoppingCard)
   const [deleteOneItem] = useMutation(DELETE_ONE_ITEM_SHOPPING_PRODUCT, {
     onCompleted: data => {
       setAlertBox({ message: data?.deleteOneItem?.message })
@@ -105,7 +100,10 @@ export const useAsideCart = ({
             cache.modify({
               fields: {
                 getAllShoppingCard (existingCart, { readField }) {
-                  if (Array.isArray(existingCart) && existingCart.length) {
+                  if (Array.isArray(existingCart) && existingCart) {
+                    if (existingCart.length === 1) {
+                      setCountItemProduct(0)
+                    }
                     const updatedCart = {
                       ...existingCart,
                       ...existingCart?.filter(product =>
@@ -113,7 +111,7 @@ export const useAsideCart = ({
                       )
                     }
                     if (typeof updatedCart === 'object' && updatedCart !== null) {
-                      const newLength = Object.keys(updatedCart)?.length
+                      const newLength = Object.keys(updatedCart)
                       if (updatedCart && newLength) {
                         setCountItemProduct(Object.keys(updatedCart).length)
                       }

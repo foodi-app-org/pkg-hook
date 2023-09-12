@@ -21,6 +21,13 @@ import { useManageQueryParams } from '../../useManageQueryParams'
  * @param {Function} options.setAlertBox - Function to set an alert message.
  * @returns {Object} - Object containing cart state and functions.
  */
+/**
+ * The `useCart` function is a custom hook in JavaScript that handles the management of a shopping
+ * cart, including adding products, managing quantities, and handling optional extras.
+ * @param [] - - `openModalProduct`: A boolean indicating whether the modal for the product is open or
+ * not. Default value is `false`.
+ * @returns The `useCart` function returns an object with the following properties and methods:
+ */
 export const useCart = ({
   openModalProduct = false,
   handleMenu = () => { },
@@ -65,6 +72,7 @@ export const useCart = ({
     const matchingItemInShoppingCart = dataShoppingCard?.find((item) => {
       return item?.productFood && item?.productFood?.pId === pId
     })
+    const matchingItemInShoppingCartOptional = matchingItemInShoppingCart?.salesExtProductFoodOptional || []
     if (matchingItemInShoppingCart && queryParamProduct) {
       setDataOneProduct({
         ...productFoodsOne,
@@ -85,12 +93,12 @@ export const useCart = ({
     const optionalFetch = optionalAll?.data?.ExtProductFoodsOptionalAll
     const shoppingCartOptionalAll = matchingItemInShoppingCart?.ExtProductFoodsAll || []
     if (Array.isArray(optionalFetch)) {
+      // Filtra y procesa los objetos de optionalFetch
       const filteredDataOptional = optionalFetch
         .map((obj) => {
-          const filteredSubOptions =
-            (obj.ExtProductFoodsSubOptionalAll || []).filter(
-              (subObj) => subObj.check !== false
-            )
+          const filteredSubOptions = (obj.ExtProductFoodsSubOptionalAll || []).filter(
+            (subObj) => subObj.check !== false
+          )
 
           if (filteredSubOptions.length === 0) {
             return null
@@ -102,14 +110,51 @@ export const useCart = ({
           }
         })
         .filter((obj) => obj !== null)
-      setDataOptional(filteredDataOptional || [])
+
+      if (matchingItemInShoppingCartOptional?.length === 0) {
+        setDataOptional(filteredDataOptional || [])
+      }
+
+      if (matchingItemInShoppingCartOptional?.length) {
+        // Actualiza los objetos de filteredDataOptional con información de matchingItemInShoppingCartOptional
+        const updateOption = filteredDataOptional?.map((obj) => {
+          const matchingArray = matchingItemInShoppingCartOptional?.find(
+            (o) => o && o.opExPid === obj.opExPid
+          )
+
+          if (!matchingArray) {
+            return obj
+          }
+
+          // Actualiza las propiedades específicas
+          const updatedExtProductFoodsSubOptionalAll = (obj.ExtProductFoodsSubOptionalAll || []).map((subObj) => {
+            const newItem = matchingArray.saleExtProductFoodsSubOptionalAll?.find((newItem) => newItem && newItem.opSubExPid === subObj.opSubExPid)
+
+            if (newItem) {
+              return {
+                ...subObj,
+                check: true
+              }
+            }
+
+            return subObj
+          })
+
+          return {
+            ...obj,
+            ExtProductFoodsSubOptionalAll: updatedExtProductFoodsSubOptionalAll
+          }
+        }).filter((obj) => obj)
+
+        setDataOptional(updateOption || [])
+      }
     }
 
     const resultExtra = await handleExtProductFoodsAll(pId)
     const originalArray = resultExtra?.data?.ExtProductFoodsAll
 
     if (Array.isArray(originalArray) && originalArray?.length) {
-      const fechedDataExtra = originalArray?.map(extra => {
+      const fetchedDataExtra = originalArray?.map(extra => {
         const updatedExtra = shoppingCartOptionalAll?.find(updatedItem => updatedItem.exPid === extra.exPid)
         if (updatedExtra) {
           return {
@@ -124,45 +169,31 @@ export const useCart = ({
         }
       })
 
-      setDataExtra(fechedDataExtra || [])
+      setDataExtra(fetchedDataExtra || [])
     }
   }
 
+  /**
+   * The function `handleIncrementExtra` updates the quantity and price of a specific extra product in
+   * an array based on the provided index and product ID.
+   */
   function handleIncrementExtra ({ extra, index }) {
+    // Desestructura las propiedades necesarias de dataOneProduct
     const { pId } = dataOneProduct || {}
-    const exPid = extra.exPid || null
+
+    // Desestructura exPid de extra o establece un valor predeterminado si no existe
+    const { exPid = null } = extra
+
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity ? producto?.quantity : 0
-          return {
-            ...producto,
-            quantity: initialQuantity + 1,
-            newExtraPrice: producto.extraPrice * (initialQuantity + 1)
-          }
-        }
-        return producto
-      })
-      return setDataExtra(newExtra)
-    }
-  }
+          // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
+          const { quantity = 0, extraPrice = 0 } = producto
 
-  function handleDecrementExtra ({ extra, index }) {
-    const { pId } = dataOneProduct || {}
-    const exPid = extra.exPid || null
+          // Calcula la nueva cantidad y el nuevo precio extra
+          const newQuantity = quantity + 1
+          const newExtraPrice = extraPrice * newQuantity
 
-    // Comprobar que el objeto extra existe en dataExtra
-    const extraIndex = dataExtra.findIndex((extra) => extra.exPid === exPid)
-    if (extraIndex === -1) {
-      return
-    }
-
-    if (pId && exPid) {
-      const newExtra = dataExtra.map((producto, i) => {
-        if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity
-          const newQuantity = Math.max(initialQuantity - 1, 0) // Evitar que el quantity sea negativo
-          const newExtraPrice = newQuantity === 0 ? producto.extraPrice : producto.extraPrice * newQuantity
           return {
             ...producto,
             quantity: newQuantity,
@@ -171,6 +202,44 @@ export const useCart = ({
         }
         return producto
       })
+
+      // Actualiza el estado de dataExtra con el nuevo array
+      setDataExtra(newExtra)
+    }
+  }
+
+  function handleDecrementExtra ({ extra, index }) {
+    // Desestructura las propiedades necesarias de dataOneProduct
+    const { pId } = dataOneProduct || {}
+
+    // Desestructura exPid de extra o establece un valor predeterminado si no existe
+    const { exPid = null } = extra
+
+    // Encuentra el índice del objeto extra en dataExtra
+    const extraIndex = dataExtra.findIndex((item) => item.exPid === exPid)
+
+    if (pId && exPid && extraIndex !== -1) {
+      const newExtra = dataExtra.map((producto, i) => {
+        if (exPid === producto.exPid) {
+          // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
+          const { quantity = 0, extraPrice = 0 } = producto
+
+          // Calcula la nueva cantidad, evitando que sea negativa
+          const newQuantity = Math.max(quantity - 1, 0)
+
+          // Calcula el nuevo precio extra
+          const newExtraPrice = newQuantity === 0 ? extraPrice : extraPrice * newQuantity
+
+          return {
+            ...producto,
+            quantity: newQuantity,
+            newExtraPrice
+          }
+        }
+        return producto
+      })
+
+      // Actualiza el estado de dataExtra con el nuevo array
       setDataExtra(newExtra)
     }
   }
@@ -235,7 +304,6 @@ export const useCart = ({
 
   const disabled = isValid || isValidDataExtra
 
-  const forceOpen = false
   /**
    * Handles the addition of products to the cart.
    *
@@ -243,27 +311,33 @@ export const useCart = ({
    */
 
   const handleAddProducts = async (food) => {
-    if (disabled) return
+    if (disabled || !food) return
     const idStore = food?.getStore?.idStore
     if (!idStore) {
       return
     }
-    handleMenu(1, forceOpen)
+    handleMenu(1)
     const filteredDataOptional = filterDataOptional(dataOptional)
 
     const dataExtraFiltered = filterExtra(dataExtra)
 
     const refCodePid = RandomCode(20)
+    const isExistItemInShoppingCart = dataShoppingCard?.find((item) => {
+      return item?.productFood && item?.productFood?.pId === food.pId
+    }) ?? null
 
+    console.log(isExistItemInShoppingCart)
+    const idShoppingCart = isExistItemInShoppingCart?.ShoppingCard
     try {
       const idStore = food?.getStore?.idStore
       const response = await registerShoppingCard({
         variables: {
           input: {
+            ShoppingCard: idShoppingCart ?? null,
             cState: 1,
             pId: food.pId,
             idStore,
-            refCodePid,
+            refCodePid: idShoppingCart ? null : refCodePid,
             comments,
             cName: '',
             cantProducts: quantity,
@@ -289,7 +363,7 @@ export const useCart = ({
         // Perform actions after adding products to cart
       }
     } catch (error) {
-      setAlertBox({ message: 'Ocurrio un error al añadir el producto al carrito' })
+      setAlertBox({ message: 'Ocurrió un error al añadir el producto al carrito' })
     }
   }
 

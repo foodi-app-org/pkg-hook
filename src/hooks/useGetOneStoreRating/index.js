@@ -14,12 +14,18 @@ export const useGetOneStoreRating = () => {
     onCompleted: res => {
       if (res) {
         setRatings((prevState) => {
+          const {
+            rGoodTemperature,
+            rGoodCondition,
+            rTasty,
+            rAppearance
+          } = res.getOneRating || {}
           return {
             ...prevState,
-            rGoodTemperature: res.getOneRating.rGoodTemperature || 0,
-            rGoodCondition: res.getOneRating.rGoodCondition || 0,
-            rTasty: res.getOneRating.rTasty || 0,
-            appearance: res.getOneRating.rAppearance || 0
+            rGoodTemperature: rGoodTemperature || 0,
+            rGoodCondition: rGoodCondition || 0,
+            rTasty: rTasty || 0,
+            appearance: rAppearance || 0
           }
         })
       }

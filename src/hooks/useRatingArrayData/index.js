@@ -9,10 +9,10 @@ export const useRatingArrayData = () => {
   const calculateTotalRatings = (ratings = []) => {
     return ratings.reduce(
       (total, rating) => ({
-        rAppearance: total?.rAppearance + rating.rAppearance,
-        rTasty: total?.rTasty + rating.rTasty,
-        rGoodCondition: total?.rGoodCondition + rating.rGoodCondition,
-        rGoodTemperature: total?.rGoodTemperature + rating.rGoodTemperature
+        rAppearance: total?.rAppearance + rating?.rAppearance,
+        rTasty: total?.rTasty + rating?.rTasty,
+        rGoodCondition: total?.rGoodCondition + rating?.rGoodCondition,
+        rGoodTemperature: total?.rGoodTemperature + rating?.rGoodTemperature
       }),
       {
         rAppearance: 0,

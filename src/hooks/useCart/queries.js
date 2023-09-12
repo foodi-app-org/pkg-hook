@@ -1,8 +1,11 @@
-import { gql } from '@apollo/client'
+import { gql } from '@apollo/client';
 
 export const CREATE_SHOPPING_CARD = gql`
-mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS){
-    registerShoppingCard(input: $input, idSubArray: $idSubArray){
+  mutation registerShoppingCard(
+    $input: IShoppingCard
+    $idSubArray: IID_SUB_ITEMS
+  ) {
+    registerShoppingCard(input: $input, idSubArray: $idSubArray) {
       ShoppingCard
       id
       pId
@@ -19,8 +22,8 @@ mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS
       csDescription
       cantProducts
       comments
+    }
   }
-}
 `
 
 export const GET_ALL_SHOPPING_CARD = gql`
@@ -32,7 +35,30 @@ export const GET_ALL_SHOPPING_CARD = gql`
       refCodePid
       pId
       comments
-     ExtProductFoodsAll {
+      salesExtProductFoodOptional {
+        pId
+        opExPid
+        OptionalProName
+        state
+        code
+        required
+        numbersOptionalOnly
+        pDatCre
+        pDatMod
+        saleExtProductFoodsSubOptionalAll {
+          pId
+          opExPid
+          idStore
+          opSubExPid
+          OptionalSubProName
+          exCodeOptionExtra
+          exCode
+          state
+          pDatCre
+          pDatMod
+        }
+      }
+      ExtProductFoodsAll {
         pId
         exPid
         exState
@@ -43,7 +69,7 @@ export const GET_ALL_SHOPPING_CARD = gql`
         state
         pDatCre
         pDatMod
-      }    
+      }
       productFood {
         pId
         carProId
