@@ -316,15 +316,15 @@ export const useCart = ({
     if (!idStore) {
       return
     }
-    handleMenu(1)
+    const isExistItemInShoppingCart = dataShoppingCard?.find((item) => {
+      return item?.productFood && item?.productFood?.pId === food.pId
+    }) ?? null
+    if (!isExistItemInShoppingCart) handleMenu(1)
     const filteredDataOptional = filterDataOptional(dataOptional)
 
     const dataExtraFiltered = filterExtra(dataExtra)
 
     const refCodePid = RandomCode(20)
-    const isExistItemInShoppingCart = dataShoppingCard?.find((item) => {
-      return item?.productFood && item?.productFood?.pId === food.pId
-    }) ?? null
 
     console.log(isExistItemInShoppingCart)
     const idShoppingCart = isExistItemInShoppingCart?.ShoppingCard

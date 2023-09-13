@@ -12,7 +12,7 @@ export const useLogout = ({ setAlertBox = () => { } } = {}) => {
   const onClickLogout = async () => {
     setLoading(true)
     await window
-      .fetch(`${process.env.URL_BASE}api/auth/logout/`, {})
+      .fetch(`${process.env.URL_BASE}/api/auth/logout/`, {})
       .then(res => {
         if (res) {
           localStorage.removeItem('session')
