@@ -131,6 +131,7 @@ export const useExtProductFoodsAll = () => {
   ] = useLazyQuery(GET_ALL_EXTRA_PRODUCT)
 
   const handleExtProductFoodsAll = (pId) => {
+    if (!pId) return
     return ExtProductFoodsAll({
       variables: {
         pId

@@ -49,7 +49,7 @@ query getOneUserProfile($id: ID) {
 
 export const GET_USER = gql`
 query getUser($id: ID){
- getUser(id: $id ){
+getUser(id: $id ){
 id
 name
 username

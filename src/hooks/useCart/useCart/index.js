@@ -149,7 +149,7 @@ export const useCart = ({
         setDataOptional(updateOption || [])
       }
     }
-
+    if (!pId || pId === '') return
     const resultExtra = await handleExtProductFoodsAll(pId)
     const originalArray = resultExtra?.data?.ExtProductFoodsAll
 
@@ -326,7 +326,6 @@ export const useCart = ({
 
     const refCodePid = RandomCode(20)
 
-    console.log(isExistItemInShoppingCart)
     const idShoppingCart = isExistItemInShoppingCart?.ShoppingCard
     try {
       const idStore = food?.getStore?.idStore

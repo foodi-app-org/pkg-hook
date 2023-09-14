@@ -35,7 +35,6 @@ export const useAsideCart = ({
   const [totalProductPrice, setTotalProductPrice] = useState(0)
 
   const [dataShoppingCard, { loading }] = useGetCart({ setCountItemProduct })
-  console.log({ dataShoppingCard })
 
   // Lógica de transformación de los datos
   const result2 = useMemo(() => {
