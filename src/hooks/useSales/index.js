@@ -26,6 +26,7 @@ import {
 } from './queries'
 import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
+import { convertToIntegerOrFloat } from './helpers'
 export * from './useGetAllSales'
 export { GET_ALL_COUNT_SALES } from './queries'
 
@@ -72,7 +73,11 @@ export const useSales = ({
   const [_, setFilteredList] = useState([])
   const [delivery, setDelivery] = useState(false)
   const [print, setPrint] = useState(false)
-  const [values, setValues] = useState({})
+  const [values, setValues] = useState({
+    comment: '',
+    change: '',
+    valueDelivery: ''
+  })
   const [dataStore] = useStore()
   const { createdAt } = dataStore || {}
   const [code, setCode] = useState(null)
@@ -261,7 +266,11 @@ export const useSales = ({
         return handleChangeNumber(state, action)
       }
       case 'REMOVE_ALL_PRODUCTS':
-        setValues({})
+        setValues({
+          comment: '',
+          change: '',
+          valueDelivery: ''
+        })
         return {
           ...state,
           PRODUCT: [],
@@ -362,7 +371,7 @@ export const useSales = ({
       const newData = dataOptional.map((el) =>
         el.code === codeCategory ? updatedItem : el
       )
-      setDataOptional((prevData) => [...newData])
+      setDataOptional(() => [...newData])
     }
   }
 
@@ -739,6 +748,7 @@ export const useSales = ({
     price: totalProductPrice || 0,
     discount: 0
   })
+
   function applyDiscount (percentage) {
     const validateCondition =
       isNaN(percentage) || percentage < 0 || percentage > 100
@@ -770,17 +780,19 @@ export const useSales = ({
     setLoadingSale(true)
     const code = RandomCode(10)
     setCode(code)
+    const changeValue = values.change ? convertToIntegerOrFloat(values.change) : null;
+
     return registerSalesStore({
       variables: {
         input: finalArrayProduct || [],
         id: values?.cliId,
         pCodeRef: code,
-        change: values.change,
-        valueDelivery: parseInt(values.valueDelivery),
+        change: changeValue,
+        valueDelivery: convertToIntegerOrFloat(values.valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         discount: discount.discount || 0,
-        totalProductsPrice: totalProductsPrice || 0
+        totalProductsPrice: convertToIntegerOrFloat(totalProductsPrice) || 0
       }
     })
       .then((responseRegisterR) => {

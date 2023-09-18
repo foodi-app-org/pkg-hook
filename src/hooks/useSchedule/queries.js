@@ -32,3 +32,12 @@ export const GET_ONE_SCHEDULE_STORE = gql`
     }
   }
 `
+
+export const SET_STATUS_ALL_SCHEDULE_STORE = gql`
+mutation setScheduleOpenAll($scheduleOpenAll: Boolean!) {
+  setScheduleOpenAll(scheduleOpenAll: $scheduleOpenAll) {
+    success
+    message
+  }
+}
+`

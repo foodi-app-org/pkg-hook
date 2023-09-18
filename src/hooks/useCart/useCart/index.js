@@ -311,7 +311,7 @@ export const useCart = ({
    */
 
   const handleAddProducts = async (food) => {
-    if (disabled || !food) return
+    if (!food) return
     const idStore = food?.getStore?.idStore
     if (!idStore) {
       return

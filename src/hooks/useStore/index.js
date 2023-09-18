@@ -4,6 +4,7 @@ import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con 
 import { errorHandler } from '../../config/client'
 import { useLogout } from '../useLogout'
 export const useStore = ({ isClient = false, idStore = '' } = {}) => {
+
   const client = useApolloClient();
   const [onClickLogout, { loading: load }] = useLogout();
 
@@ -17,8 +18,9 @@ export const useStore = ({ isClient = false, idStore = '' } = {}) => {
 
   useEffect(() => {
     if (cachedData) {
+      const array = store ? Object.keys(store) : []
       // Comprobar si los datos de la caché ya están establecidos en el estado
-      if (!store || Object.keys(store).length === 0) {
+      if (!store || Array.isArray(array) && array?.length === 0) {
         setStore(cachedData.getStore);
       }
     }
@@ -40,7 +42,7 @@ export const useStore = ({ isClient = false, idStore = '' } = {}) => {
       error: errorStoreClient
     }];
   } else {
-    const { data, loading: loadingServer, error: errorServer } = useQuery(GET_ONE_STORE, {
+    const { loading: loadingServer, error: errorServer } = useQuery(GET_ONE_STORE, {
       skip: isClient && !idStore,
       variables: {
         idStore
@@ -63,16 +65,6 @@ export const useStore = ({ isClient = false, idStore = '' } = {}) => {
       }
     });
 
-    // Actualizar manualmente la caché después de cada petición exitosa
-    useEffect(() => {
-      if (!loadingServer && !errorServer && !cachedData) {
-        client.writeQuery({
-          query: GET_ONE_STORE,
-          data: { getStore: store }
-        });
-      }
-    }, [loadingServer, errorServer, cachedData, client, store]);
-
-    return [store, { loading: load || loadingServer, error }];
+    return [store, { loading: load || loadingServer || loading, error }];
   }
 };

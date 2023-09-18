@@ -15,6 +15,7 @@ query getStore($id: ID, $idStore: ID){
  getStore(id: $id, idStore: $idStore){
 cId
 id
+scheduleOpenAll
 dId
 idStore
 ctId
@@ -100,7 +101,7 @@ query getOneStore($StoreName: String, $idStore: ID){
     dId
     ctId
     catStore
-    neighborhoodStore
+    neighborhoodStore 
     Viaprincipal
     storeOwner
     storeName

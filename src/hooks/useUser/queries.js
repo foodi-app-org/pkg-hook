@@ -65,7 +65,6 @@ upLon
 upIdeDoc
 siteWeb
 description
-password
 createAt
   role {
     id
