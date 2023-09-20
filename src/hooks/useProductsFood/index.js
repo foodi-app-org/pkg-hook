@@ -84,19 +84,45 @@ export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => 
           pId,
           pState
         }
-      },
-      update (cache) {
+      }, update (cache) {
         cache.modify({
           fields: {
             productFoodsAll (dataOld = []) {
-              return cache.writeQuery({ query: GET_ALL_PRODUCT_STORE, data: dataOld })
+              if (Array.isArray(dataOld) && dataOld?.length) {
+                const product = dataOld?.find((product) => {
+                  return product.pId === pId
+                })
+                if (product) {
+                  const newProductList = dataOld?.filter((product) => {
+                      return product?.pId !== pId
+                  })
+                  return newProductList
+                }
+                return dataOld
+              } else {
+                return []
+              }
             }
           }
         })
         cache.modify({
           fields: {
             getCatProductsWithProduct (dataOld = []) {
-              return cache.writeQuery({ query: GET_ALL_CATEGORIES_WITH_PRODUCT, data: dataOld })
+                if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
+                  const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories) => {
+                    return  {
+                      ...categories,
+                      productFoodsAll: categories?.productFoodsAll?.length ? categories?.productFoodsAll?.filter((product) => {
+                        return product?.pId !== pId
+                      }) : []
+                    }
+                  })
+                  return {
+                    catProductsWithProduct: newListCatProducts,
+                    totalCount: newListCatProducts?.length,
+                  }
+                }
+                return dataOld
             }
           }
         })

@@ -343,7 +343,7 @@ export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
     $idStore: ID
     $pCodeRef: String
     $discount: Int
-    $change: String
+    $change: Float
     $valueDelivery: Float
     $payMethodPState: Int
     $pickUp: Int

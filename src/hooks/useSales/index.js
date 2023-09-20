@@ -27,6 +27,8 @@ import {
 import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
 import { convertToIntegerOrFloat } from './helpers'
+import { useCatWithProduct } from './../useCatWithProduct/index';
+import { useCheckboxState } from '../useCheckbox';
 export * from './useGetAllSales'
 export { GET_ALL_COUNT_SALES } from './queries'
 
@@ -65,7 +67,14 @@ export const useSales = ({
   const keyToSaveData = process.env.LOCAL_SALES_STORE
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
   const [search, setSearch] = useState('')
-  const [arr, setArrayCategory] = useState([])
+  const [datCat] = useCatWithProduct({})
+  const {
+    checkedItems,
+    disabledItems,
+    setCheckedItems,
+    handleChangeCheck
+  } = useCheckboxState(datCat, [], [])
+    const arr = checkedItems ?  Array.from(checkedItems) : []
   const [totalProductPrice, setTotalProductPrice] = useState(0)
   const [showMore, setShowMore] = useState(100)
   const [inputValue, setInputValue] = useState('')
@@ -109,7 +118,6 @@ export const useSales = ({
         setOpenCurrentSale(data?.registerSalesStore?.Response.success)
       },
       onError: (error) => {
-        console.log(error)
         sendNotification({
           backgroundColor: 'error',
           title: error || 'Lo sentimo',
@@ -427,22 +435,24 @@ export const useSales = ({
         return sendNotification({
           title: 'Error',
           backgroundColor: 'error',
-          description: 'No se puede actualizar el producto sin pId'
+          description: 'Ha ocurrido un error'
         })
       }
       const filteredDataOptional = dataOptional
         .map((obj) => {
-          const filteredSubOptions = obj.ExtProductFoodsSubOptionalAll.filter(
-            (subObj) => subObj.check === true
+          const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
+            (subObj) => subObj?.check === true
           )
           // Excluya todo el objeto padre si filteredSubOptions está vacío
-          if (filteredSubOptions.length === 0) {
+          if (filteredSubOptions?.length === 0) {
             return null
           }
           return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
         .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
-      const filteredDataExtra = dataExtra.filter((p) => p.quantity !== 0)
+        const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0);
+
+      console.log(filteredDataExtra)
       dispatch({
         type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
         payload: product.PRODUCT.pId,
@@ -458,24 +468,30 @@ export const useSales = ({
     }
   }
 
-  function handleIncrementExtra ({ Adicionales, index }) {
-    const { pId } = product?.PRODUCT || {}
-    const exPid = Adicionales.exPid || null
+  function handleIncrementExtra({ Adicionales, index }) {
+    const { pId } = product?.PRODUCT || {};
+    const exPid = Adicionales.exPid || null;
+
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity ? producto?.quantity : 0
+          const initialQuantity = producto?.quantity ? producto?.quantity : 0;
+          const newQuantity = initialQuantity + 1;
+          const newExtraPrice = producto.extraPrice * newQuantity;
+
           return {
             ...producto,
-            quantity: initialQuantity + 1,
-            newExtraPrice: producto.extraPrice * (initialQuantity + 1)
-          }
+            quantity: newQuantity,
+            newExtraPrice: newExtraPrice,
+          };
         }
-        return producto
-      })
-      return setDataExtra(newExtra)
+        return producto;
+      });
+
+      setDataExtra(newExtra);
     }
   }
+
 
   function handleDecrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
@@ -487,18 +503,28 @@ export const useSales = ({
       return
     }
 
-    if (pId && exPid) {
+    if (pId && exPid && extraIndex !== -1) {
       const newExtra = dataExtra.map((producto, i) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity
+          // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
+          const { quantity = 0, extraPrice = 0 } = producto
+
+          // Calcula la nueva cantidad, evitando que sea negativa
+          const newQuantity = Math.max(quantity - 1, 0)
+
+          // Calcula el nuevo precio extra
+          const newExtraPrice = newQuantity === 0 ? extraPrice : extraPrice * newQuantity
+
           return {
             ...producto,
-            quantity: initialQuantity - 1,
-            newExtraPrice: producto.extraPrice * (initialQuantity - 1)
+            quantity: newQuantity,
+            newExtraPrice
           }
         }
         return producto
       })
+
+      // Actualiza el estado de dataExtra con el nuevo array
       setDataExtra(newExtra)
     }
   }
@@ -515,10 +541,17 @@ export const useSales = ({
  * @returns {Object} Nuevo estado del carrito con el producto agregado.
  */
   function addToCartFunc (state, action) {
-    const { pId, pName, getOneTags, ProDescription, ProImage, ProPrice } = action.payload
+    const {
+      pId,
+      pName,
+      getOneTags,
+      ProDescription,
+      ProImage,
+      ProPrice
+    } = action.payload
 
-    const productExist = state.PRODUCT.find((item) => item.pId === pId)
-    const OurProduct = productsFood.find((item) => item.pId === pId)
+    const productExist = state?.PRODUCT.find((item) => item.pId === pId)
+    const OurProduct = productsFood?.find((item) => item.pId === pId)
     const isFree = productExist?.free
 
     const updatedProduct = {
@@ -541,7 +574,6 @@ export const useSales = ({
         PRODUCT: [...state.PRODUCT, updatedProduct]
       }
     }
-
     return {
       ...state,
       counter: state.counter + 1,
@@ -554,7 +586,7 @@ export const useSales = ({
             getOneTags: OurProduct.genderTags,
             unitPrice: OurProduct?.ProPrice,
             ProPrice: isFree ? 0 : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
-            ProQuantity: productExist.ProQuantity + 1,
+            ProQuantity: productExist.ProQuantity + +1,
             free: !!isFree
           }
         }
@@ -564,7 +596,7 @@ export const useSales = ({
   }
 
   function removeFunc (state, action) {
-    const productExist = state.PRODUCT.find((items) => {
+    const productExist = state?.PRODUCT.find((items) => {
       return items.pId === action.payload.pId
     })
     const OurProduct = productsFood.find((items) => {
@@ -654,6 +686,7 @@ export const useSales = ({
   const sortedProduct = useMemo(() => {
     return getSortedProduct(data.PRODUCT, data.sortBy)
   }, [data.PRODUCT, data.sortBy, getSortedProduct])
+
   const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange)
 
   const handleList = (text) => {
@@ -966,7 +999,6 @@ export const useSales = ({
     }
   }
   const handleCleanFilter = () => {
-    setArrayCategory([])
     setValues({})
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
   }
@@ -1004,9 +1036,13 @@ export const useSales = ({
     dataExtra: dataExtra || [],
     fetchMore,
     discount,
+    checkedItems,
+    datCat,
+    disabledItems,
+    setCheckedItems,
+    handleChangeCheck,
     handleUpdateAllExtra,
     dispatch,
-    setArrayCategory,
     handleComment,
     setModalItem,
     handleChangeFilter,
