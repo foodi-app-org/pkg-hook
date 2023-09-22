@@ -50,15 +50,16 @@ export const useDessert = ({
     }
   })
 
-  // Transform initialData using useMemo to prevent unnecessary re-computation
-  const transformedData = useMemo(() => transformDataToDessert(initialData), [initialData])
-
   // Use useEffect to update the data state when the initialData prop changes
   useEffect(() => {
     if (initialData) {
-      setData(transformedData)
+      // Only update the data state if it's different from initialData
+      if (JSON.stringify(data) !== JSON.stringify(transformDataToDessert(initialData))) {
+        const transformedInitialData = transformDataToDessert(initialData);
+        setData(transformedInitialData);
+      }
     }
-  }, [])
+  }, [initialData]);  // Include data as a dependency
 
   // Filter the 'listIds' from 'data' and store the filtered result in 'dataListIds'
   // Here, it seems to exclude a specific list ID ('01list') from the listIds.

@@ -347,6 +347,11 @@ export const useSales = ({
       ...values,
       [name]: value ?? ''
     })
+    sendNotification({
+      backgroundColor: 'sucess',
+      title: 'Comentario eliminado',
+      description: 'Has eliminado el comentario!'
+    })
     return dispatch({
       type: 'PUT_COMMENT',
       payload: pId,
@@ -647,6 +652,14 @@ export const useSales = ({
 
   // COMMENT_FREE_PRODUCT
   function commentProducts (state, action, deleteValue) {
+    if (values.comment) {
+      sendNotification({
+        backgroundColor: 'success',
+        title: deleteValue ? 'Comentario eliminado' : 'Producto comentado',
+        description: deleteValue ? 'Has eliminado el comentario!' : 'Has comentado!'
+      })
+    }
+    setOpenCommentModal(!openCommentModal)
     return {
       ...state,
       PRODUCT: state?.PRODUCT?.map((items) => {
@@ -834,7 +847,9 @@ export const useSales = ({
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
           if (Response && Response.success === true) {
-            // dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+            dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
+            setValues({})
+            setPrint(false)
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only',
@@ -855,7 +870,8 @@ export const useSales = ({
                   fields: {
                     getAllOrdersFromStore (existingOrders = []) {
                       try {
-                        return updateExistingOrders(existingOrders, inComingCodeRef, 1, currentSale)
+                        const newGetAllOrdersFromStore = updateExistingOrders(existingOrders, inComingCodeRef, 4, currentSale)
+                        return newGetAllOrdersFromStore
                       } catch (e) {
                         return existingOrders
                       }
@@ -874,7 +890,6 @@ export const useSales = ({
               undefined,
               { shallow: true }
             )
-            setValues({})
           }
         }
         setLoadingSale(false)
@@ -882,8 +897,10 @@ export const useSales = ({
       .catch(() => {
         setLoadingSale(false)
         setErrorSale(true)
+        setPrint(false)
       })
       .finally(() => {
+        setPrint(false)
         setLoadingSale(false)
       })
   }
