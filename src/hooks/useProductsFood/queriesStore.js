@@ -575,7 +575,7 @@ export const SET_EDIT_STORE_NAME = gql`
   }
 `
 export const GET_ONE_PRODUCTS_FOOD = gql`
-  query productFoodsOne($pId: ID) {
+   query productFoodsOne($pId: ID) {
     productFoodsOne(pId: $pId) {
       pId
       carProId
@@ -588,7 +588,6 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       dId
       ctId
       tpId
-
       fId
       pName
       ProPrice
@@ -612,6 +611,22 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       sTateLogistic
       pDatCre
       pDatMod
+      getOneTags {
+        tPsId
+        idUser
+        idStore
+        pId
+        nameTag
+        aName
+      }
+      getAllAvailableProduct {
+        availableProductId
+        idStore
+        pId
+        dayAvailable
+        pDatCre
+        pDatMod
+      }
       ExtProductFoodsAll {
         pId
         exPid

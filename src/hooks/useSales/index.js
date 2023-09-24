@@ -456,14 +456,14 @@ export const useSales = ({
         })
         .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
         const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0);
-
-      console.log(filteredDataExtra)
-      dispatch({
-        type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
-        payload: product.PRODUCT.pId,
-        dataOptional: filteredDataOptional,
-        dataExtra: filteredDataExtra
-      })
+        if (product?.PRODUCT?.pId) {
+          dispatch({
+            type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
+            payload: product.PRODUCT.pId,
+            dataOptional: filteredDataOptional,
+            dataExtra: filteredDataExtra
+          })
+        }
     } catch (_error) {
       return sendNotification({
         title: 'Error',
@@ -847,8 +847,6 @@ export const useSales = ({
           const { registerSalesStore } = data || {}
           const { Response } = registerSalesStore || {}
           if (Response && Response.success === true) {
-            dispatch({ type: 'REMOVE_ALL_PRODUCTS' })
-            setValues({})
             setPrint(false)
             client.query({
               query: GET_ALL_COUNT_SALES,

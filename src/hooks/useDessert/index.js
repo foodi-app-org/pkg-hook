@@ -11,7 +11,7 @@ import { useRemoveExtraProductFoodsOptional } from '../useRemoveExtraProductFood
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useRemoveExtraProductFoodsOptional/queries'
 import { transformDataToDessert } from './helpers'
 import { useDeleteSubProductOptional } from '../useDeleteSubProductOptional'
-
+export * from './helpers'
 export const useDessert = ({
   pId = null,
   initialData = null,
