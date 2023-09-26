@@ -11,7 +11,6 @@ export const useDeleteSubProductOptional = ({ setAlertBox = () => { } } = {}) =>
   }] = useMutation(DELETE_CAT_EXTRA_SUB_OPTIONAL_PRODUCTS)
 
   const handleRemoveSubProductOptional = ({ state, opSubExPid }) => {
-    console.log(state, opSubExPid)
     DeleteExtFoodSubsOptional({
       variables: {
         state,

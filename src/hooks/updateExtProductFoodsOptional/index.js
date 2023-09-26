@@ -8,15 +8,17 @@ export const useUpdateExtProductFoodsOptional = () => {
   const handleUpdateExtProduct = async ({
     pId,
     code,
+    opExPid,
     OptionalProName,
     required,
     numbersOptionalOnly
   }) => {
-    await updateExtProductFoodsOptional({
+    return await updateExtProductFoodsOptional({
       variables: {
         input: {
           pId,
           code,
+          opExPid,
           OptionalProName,
           required,
           numbersOptionalOnly

@@ -12,7 +12,7 @@ import {
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE } from '../useStore/queries'
 export { GET_MIN_PEDIDO } from './queries'
-
+export * from './queries'
 export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) => {
   // STATES
   const fileInputRef = useRef(null)

@@ -1,7 +1,6 @@
 import {
   useState,
-  useEffect,
-  useMemo
+  useEffect
 } from 'react'
 import { MockData } from '../../mock'
 import { RandomCode, updateCacheMod } from '../../utils'
@@ -11,6 +10,7 @@ import { useRemoveExtraProductFoodsOptional } from '../useRemoveExtraProductFood
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useRemoveExtraProductFoodsOptional/queries'
 import { transformDataToDessert } from './helpers'
 import { useDeleteSubProductOptional } from '../useDeleteSubProductOptional'
+import { useEditSubProductOptional } from '../useEditSubProductOptional'
 export * from './helpers'
 export const useDessert = ({
   pId = null,
@@ -18,10 +18,11 @@ export const useDessert = ({
   sendNotification = () => { }
 }) => {
   // Initialize state variables using the useState hook
-  const [setCheck, setChecker] = useState({}) // State for checkboxes
+  const [setCheck, setChecker] = useState({
+    exState: false
+  }) // State for checkboxes
   const [valueItems, setValueItems] = useState('') // State for input values
   const [title, setTitle] = useState('') // State for title input value
-
   // Initialize the data state with the transformedData or MockData
   const [data, setData] = useState(MockData)
   const dataListIds = data?.listIds?.filter(x => x !== '01list')
@@ -69,6 +70,7 @@ export const useDessert = ({
   const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional()
   const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional()
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
+  const [editExtFoodSubsOptional, { loading: loadingEditSubOptional }] = useEditSubProductOptional()
 
   // HANDLESS
   /**
@@ -156,12 +158,12 @@ export const useDessert = ({
     isCustomSubOpExPid = false
   }) => {
     try {
-      const forRemove = Boolean(isCustomSubOpExPid && listID && id)
+      const forRemove = Boolean(listID && id)
       if (forRemove) {
         DeleteExtFoodSubsOptional({
           variables: {
             isCustomSubOpExPid,
-            opSubExPid: listID,
+            opSubExPid: id,
             state: 1
           }
         })
@@ -180,7 +182,7 @@ export const useDessert = ({
       const currentList = data.lists[listID]
 
       // Filter out the item with the specified ID from the current list's cards array
-      const totalCart = currentList.cards.filter((cart) => cart.id !== id)
+      const filteredCart = currentList?.cards?.filter((cart) => cart.id !== id)
 
       // Update the current list's cards with the filtered array to remove the specified item
       setData({
@@ -189,12 +191,152 @@ export const useDessert = ({
           ...data.lists,
           [listID]: {
             ...currentList,
-            cards: totalCart
+            cards: filteredCart
           }
         }
       })
     } catch (error) {
       console.error(error)
+    }
+  }
+  const [selectedItem, setSelectedItem] = useState({})
+
+  const editOneItem = ({
+    listID = '',
+    id = '',
+    title = null
+  }) => {
+    try {
+        setSelectedItem(() => {
+          return { listID, id }
+        })
+        const currentList = data.lists[listID];
+        const findItem = currentList?.cards?.find(item => item.id === id)
+        const checkDifferentText = findItem?.title !== title
+        if (title && checkDifferentText) {
+          editExtFoodSubsOptional({
+            variables: {
+              isCustomSubOpExPid: false,
+              opSubExPid: id,
+              OptionalSubProName: title
+            }
+          }).then(({ data: response }) => {
+            const { editExtFoodSubsOptional } = response || {}
+            const { success } = editExtFoodSubsOptional || { success: false }
+            if (success) {
+              sendNotification({
+                description: 'El sub item actualizado con exito',
+                title: 'Actualizado',
+                backgroundColor: 'success'
+              })
+              const currentList = data.lists[listID];
+              const updatedCards = currentList?.cards?.map((card) => {
+                if (card.id === id) {
+                  return {
+                    ...card,
+                    title: title
+                  };
+                }
+                return card;
+              });
+              setData({
+                listIds: [...data.listIds],
+                lists: {
+                  ...data.lists,
+                  [listID]: {
+                    ...currentList,
+                    cards: updatedCards
+                  }
+                }
+              });
+            }
+          })
+        }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+  const [selectedExtra, setSelectedExtra] = useState({})
+  const [openModalEditExtra, setOpenModalEditExtra] = useState(false)
+
+  const updateListById = (listId, updatedFields) => {
+    setData((prevData) => {
+      const updatedLists = {
+        ...prevData.lists,
+        [listId]: {
+          ...prevData.lists[listId],
+          ...updatedFields
+        }
+      };
+
+      return {
+        ...prevData,
+        lists: updatedLists
+      };
+    });
+  };
+/**
+ * Edit a extra.
+ * @async
+ * @param {Object} options - Opciones para la edición del extra.
+ * @param {string} options.id - ID del extra.
+ * @param {number|null} options.numberLimit - Límite de número para el extra.
+ * @param {string} options.title - Título del extra.
+ * @param {boolean} options.required - Indica si el extra es requerido.
+ * @throws {Error} Se lanza un error si no se proporciona un ID válido.
+ * @returns {Promise<void>}
+ */
+  const editOneExtra = async ({
+    id = '',
+    numberLimit = null,
+    title,
+    required
+  }) => {
+    try {
+      if (id) {
+  const response = await handleUpdateExtProduct({
+          opExPid: id,
+          code: id,
+          OptionalProName: title,
+          required: required ? 1 : 0,
+          numbersOptionalOnly: numberLimit
+        })
+        const { data } = response || {}
+        if (!data?.updateExtProductFoodsOptional) return  sendNotification({
+          description: 'Ocurrió un error, intenta de nuevo',
+          title: 'Error',
+          backgroundColor: 'warning'
+        })
+        const { success, message } = data?.updateExtProductFoodsOptional || {}
+        if (success) {
+          setSelectedExtra({})
+          setOpenModalEditExtra(false)
+          sendNotification({
+            description: message,
+            title: 'Actualizado',
+            backgroundColor: 'success'
+          })
+          return updateListById(id, {
+            title: title,
+            numberLimit: numberLimit,
+            required: required ? 1 : 0
+          });
+        }
+      }
+
+      if (!id) return sendNotification({
+        description: 'Ocurrió un error, intenta de nuevo',
+        title: 'Error',
+        backgroundColor: 'warning'
+      })
+    } catch (error) {
+      setSelectedExtra({})
+      setOpenModalEditExtra(false)
+      sendNotification({
+        description: 'Ocurrió un error, intenta de nuevo',
+        title: 'Error',
+        backgroundColor: 'warning'
+      })
     }
   }
 
@@ -316,6 +458,7 @@ export const useDessert = ({
     addCard,
     data,
     dataListIds,
+    loadingEditSubOptional,
     isCompleteRequired,
     handleAdd,
     handleAddList,
@@ -323,9 +466,16 @@ export const useDessert = ({
     handleCheck,
     handleRemoveList,
     removeOneItem,
+    editOneExtra,
+    editOneItem,
     setCheck,
+    selectedItem,
     setData,
     setTitle,
-    title
+    title,
+    selectedExtra,
+    openModalEditExtra,
+    setSelectedExtra,
+    setOpenModalEditExtra,
   }
 }

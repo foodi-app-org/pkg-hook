@@ -374,13 +374,8 @@ export const UPDATE_EXTRAS_PRODUCT_FOOD = gql`
 export const UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
   mutation updateExtProductFoodsOptional($input: InputExtProductFoodOptional) {
     updateExtProductFoodsOptional(input: $input) {
-      pId
-      opExPid
-      OptionalProName
-      code
-      required
-      state
-      numbersOptionalOnly
+      success,
+      message
     }
   }
 `
