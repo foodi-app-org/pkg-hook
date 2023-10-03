@@ -37,7 +37,7 @@ export const validationSubmitHooks = elements => {
 }
 
 export const getCurrentDomain = () => {
-  return typeof window !== 'undefined' && window.location.hostname.split('.').slice(-2).join('.')
+  return typeof window !== 'undefined' && window.location.hostname;
 }
 
 export function RandomCode (length) {
@@ -50,6 +50,7 @@ export function RandomCode (length) {
   }
   return result
 }
+
 /**
  * actualizar cache de apollo
  * @param {{ cache: object, query: object, nameFun: string, dataNew: object, type: number, id: string }} params Parámetros para actualizar el cachet de apollo
