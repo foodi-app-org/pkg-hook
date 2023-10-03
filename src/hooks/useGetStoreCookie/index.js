@@ -6,7 +6,7 @@ export const useGetStoreCookie = () => {
 
   useEffect(() => {
     const getCookieValue = () => {
-      const cookieValue = Cookies.get('vp.store');
+      const cookieValue = Cookies.get(process.env.SESSION_NAME);
       console.log('Cookie Value:', cookieValue);
 
       if (cookieValue) {

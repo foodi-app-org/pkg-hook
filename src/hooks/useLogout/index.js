@@ -24,7 +24,7 @@ export const useLogout = ({ setAlertBox = () => { } } = {}) => {
           localStorage.removeItem('latitude')
           localStorage.removeItem('userlogin')
           localStorage.removeItem('restaurant')
-          Cookies.remove('vp.store')
+          Cookies.remove(process.env.SESSION_NAME)
           Cookies.remove('app.cart.sales')
           Cookies.remove('restaurant')
           client?.clearStore()
