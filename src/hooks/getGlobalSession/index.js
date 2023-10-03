@@ -26,6 +26,7 @@ export const encryptSession = (text) => {
 }
 
 export const decryptSession = (text) => {
+  if (!text) return
   const textParts = text.split(':')
   const iv = Buffer.from(textParts.shift(), 'hex')
   const encryptedText = Buffer.from(textParts.join(':'), 'hex')
