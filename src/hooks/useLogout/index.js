@@ -1,12 +1,12 @@
 import { useApolloClient } from '@apollo/client'
 import { useState } from 'react'
-import { useRouter } from 'next/router'
 import { Cookies } from '../../cookies'
+import { signOutAuth } from './helpers'
+export { signOutAuth } from './helpers'
 
 export const useLogout = ({ setAlertBox = () => { } } = {}) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const router = useRouter()
   const client = useApolloClient()
 
   const onClickLogout = async () => {
@@ -15,23 +15,18 @@ export const useLogout = ({ setAlertBox = () => { } } = {}) => {
       .fetch(`${process.env.URL_BASE}/api/auth/logout/`, {})
       .then(res => {
         if (res) {
-          localStorage.removeItem('session')
-          localStorage.removeItem('usuario')
-          localStorage.removeItem('location')
-          localStorage.removeItem('sessionGoogle')
-          localStorage.removeItem('namefood')
-          localStorage.removeItem('longitude')
-          localStorage.removeItem('latitude')
-          localStorage.removeItem('userlogin')
-          localStorage.removeItem('restaurant')
           Cookies.remove(process.env.SESSION_NAME)
-          Cookies.remove('app.cart.sales')
+          Cookies.remove(process.env.LOCAL_SALES_STORE)
           Cookies.remove('restaurant')
+          Cookies.remove('usuario')
+          Cookies.remove('session')
           client?.clearStore()
-          router.replace('/entrar')
           setLoading(false)
+          console.log('Borrado todo')
+
         }
       })
+      signOutAuth({ redirect: true, callbackUrl: '/' })
       .catch(() => {
         setError(true)
         setAlertBox({ message: 'Ocurrió un error al cerrar session' })

@@ -82,9 +82,11 @@ export const useSales = ({
   const [_, setFilteredList] = useState([])
   const [delivery, setDelivery] = useState(false)
   const [print, setPrint] = useState(false)
+  const [errors, setErrors] = useState({})
   const [values, setValues] = useState({
     comment: '',
     change: '',
+    cliId: '',
     valueDelivery: ''
   })
   const [dataStore] = useStore()
@@ -185,8 +187,13 @@ export const useSales = ({
   const handleChangeFilter = (e) => {
     return setSearch(e.target.value)
   }
-  const handleChange = (e) => {
-    return setValues({ ...values, [e.target.name]: e.target.value })
+  const handleChange = (e, error) => {
+    const { name, value } = e.target;
+    setErrors({ ...errors, [e.target.name]: error })
+    setValues((prevValues) => ({
+      ...prevValues,
+      [name]: value,
+    }));
   }
   const onChangeInput = (e) => {
     return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value })
@@ -816,29 +823,35 @@ export const useSales = ({
   const client = useApolloClient()
   const { getOnePedidoStore } = useGetSale()
   const handleSubmit = () => {
-    if (!values?.cliId) {
+
+    if (errors?.change  || errors?.valueDelivery) {
       return sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'Elije primero un cliente'
+        title: 'error',
+        backgroundColor: 'warning',
+        description: 'Completa los campos requeridos'
       })
     }
     setLoadingSale(true)
     const code = RandomCode(10)
     setCode(code)
-    const changeValue = values.change ? convertToIntegerOrFloat(values.change) : null;
-
+    function convertirAEntero(cadena) {
+      if (typeof cadena === 'string') {
+        const numeroEntero = parseInt(cadena?.replace('.', ''));
+        return numeroEntero
+      }
+      return cadena ||  0
+    }
     return registerSalesStore({
       variables: {
         input: finalArrayProduct || [],
         id: values?.cliId,
         pCodeRef: code,
-        change: changeValue,
-        valueDelivery: convertToIntegerOrFloat(values.valueDelivery),
+        change: convertirAEntero(values.change),
+        valueDelivery: convertirAEntero(values.valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         discount: discount.discount || 0,
-        totalProductsPrice: convertToIntegerOrFloat(totalProductsPrice) || 0
+        totalProductsPrice: convertirAEntero(totalProductsPrice) || 0
       }
     })
       .then((responseRegisterR) => {
@@ -1056,6 +1069,7 @@ export const useSales = ({
     disabledItems,
     setCheckedItems,
     handleChangeCheck,
+    errors,
     handleUpdateAllExtra,
     dispatch,
     handleComment,
@@ -1064,6 +1078,7 @@ export const useSales = ({
     handleProduct,
     handleChange,
     setOpenCurrentSale,
+    setErrors,
     onChangeInput,
     handleRemoveValue,
     applyDiscount,
