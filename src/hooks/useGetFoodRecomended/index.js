@@ -4,7 +4,6 @@ import { GET_ALL_PRODUCT_STORE_RECOMENDED } from './queries'
 export const useGetFoodRecomended = ({
   name = ''
 }) => {
-  console.log({ name })
   const {
     data,
     called,

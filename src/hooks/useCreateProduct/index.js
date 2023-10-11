@@ -11,6 +11,7 @@ import {
 import { useStore } from '../useStore'
 import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
+import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 
 export const useCreateProduct = ({
   setAlertBox = () => { },
@@ -174,6 +175,10 @@ export const useCreateProduct = ({
             fields: {
               productFoodsAll (dataOld = []) {
                 return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
+              },
+              getCatProductsWithProduct (dataOld = {}) {
+                const updatedData = getCatProductsWithProduct(data, carProId)
+                return updatedData
               }
             }
           })
@@ -203,7 +208,7 @@ export const useCreateProduct = ({
           pId
         }
         handleRegisterTags(objTag)
-        // setValues({})
+        setValues({})
       }).catch(err => {
         return sendNotification({
           backgroundColor: 'error',
@@ -219,7 +224,7 @@ export const useCreateProduct = ({
               pCode
             }
           }
-        }).then((response) => {
+        }).then(() => {
         }).catch(() => {
           sendNotification({
             backgroundColor: 'error',
@@ -229,7 +234,7 @@ export const useCreateProduct = ({
         })
       }
     } catch (error) {
-      setAlertBox({ message: `${error.message}`, duration: 7000 })
+      setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }
 

@@ -10,28 +10,36 @@ export const useLogout = ({ setAlertBox = () => { } } = {}) => {
   const client = useApolloClient()
 
   const onClickLogout = async () => {
-    setLoading(true)
-    await window
-      .fetch(`${process.env.URL_BASE}/api/auth/logout/`, {})
-      .then(res => {
-        if (res) {
-          Cookies.remove(process.env.SESSION_NAME)
-          Cookies.remove(process.env.LOCAL_SALES_STORE)
-          Cookies.remove('restaurant')
-          Cookies.remove('usuario')
-          Cookies.remove('session')
-          client?.clearStore()
-          setLoading(false)
-          console.log('Borrado todo')
-
-        }
-      })
+    try {
+      setLoading(true)
+      // Logout from the server
+      const logoutResponse = await window.fetch(`${process.env.URL_BASE}/api/auth/logout/`, {})
+      if (!logoutResponse.ok) return
+      await window
+        .fetch(`${process.env.URL_BASE}/api/auth/logout/`, {})
+        .then(res => {
+          if (res) {
+            Cookies.remove(process.env.SESSION_NAME)
+            Cookies.remove(process.env.LOCAL_SALES_STORE)
+            Cookies.remove('restaurant')
+            Cookies.remove('usuario')
+            Cookies.remove('session')
+            client?.clearStore()
+            setLoading(false)
+            console.log('Borrado todo')
+          }
+        })
       signOutAuth({ redirect: true, callbackUrl: '/' })
-      .catch(() => {
-        setError(true)
-        setAlertBox({ message: 'Ocurrió un error al cerrar session' })
-      })
-    setLoading(false)
+        .catch(() => {
+          setError(true)
+          setAlertBox({ message: 'Ocurrió un error al cerrar session' })
+        })
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+      setError(true)
+      setAlertBox({ message: 'Ocurrió un error al cerrar session' })
+    }
   }
 
   return [onClickLogout, { loading, error }]

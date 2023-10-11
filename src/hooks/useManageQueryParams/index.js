@@ -17,12 +17,13 @@ export const useManageQueryParams = () => {
   }
 
   const handleCleanQuery = (name, value = '') => {
+    const updatedQuery = {
+      ...router.query,
+      [name]: value || ''
+    }
     router.push(
       {
-        query: {
-          ...router.query,
-          [name]: value || ''
-        }
+        query: updatedQuery
       },
       undefined,
       { shallow: true }

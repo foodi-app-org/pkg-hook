@@ -13,6 +13,7 @@ import {
 import { GET_ONE_STORE } from '../useStore/queries'
 export { GET_MIN_PEDIDO } from './queries'
 export * from './queries'
+
 export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) => {
   // STATES
   const fileInputRef = useRef(null)
@@ -22,20 +23,20 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   const fileInputRefLogo = useRef(null)
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
-    onCompleted: (data) => { return console.log({ message: data?.registerBanner?.message }) },
+    onCompleted: (data) => { return sendNotification({ message: data?.registerBanner?.message }) },
     context: { clientName: 'admin-server' }
   })
   const [setALogoStore] = useMutation(CREATE_LOGO, {
-    onCompleted: (data) => { return console.log({ message: data?.setALogoStore?.message }) },
+    onCompleted: (data) => { return sendNotification({ message: data?.setALogoStore?.message }) },
     context: { clientName: 'admin-server' }
   })
   const [DeleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
-    onCompleted: (data) => { return console.log({ message: data?.DeleteOneBanner?.message }) },
+    onCompleted: (data) => { return sendNotification({ message: data?.DeleteOneBanner?.message }) },
     context: { clientName: 'admin-server' }
   })
   const [deleteALogoStore] = useMutation(DELETE_ONE_LOGO_STORE, {
     onCompleted: (data) => {
-      console.log({
+      sendNotification({
         message: data.deleteALogoStore.message
       })
       setPreviewImgLogo(initialState)
