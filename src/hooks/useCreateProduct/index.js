@@ -100,7 +100,7 @@ export const useCreateProduct = ({
     })
   }
 
-  const [updateProductFoods] = useMutation(UPDATE_PRODUCT_FOOD, {
+  const [updateProductFoods, { loading }] = useMutation(UPDATE_PRODUCT_FOOD, {
   })
   const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD, {
     context: { clientName: 'admin-server' }
@@ -207,7 +207,7 @@ export const useCreateProduct = ({
           nameTag: tags.tag,
           pId
         }
-        handleRegisterTags(objTag)
+        if (tags?.tag) handleRegisterTags(objTag)
         setValues({})
       }).catch(err => {
         return sendNotification({
@@ -265,6 +265,7 @@ export const useCreateProduct = ({
     pId,
     dataTags: data,
     tags,
+    loading,
     active,
     idStore: dataStore?.getStore?.idStore || '',
     arrTags,
