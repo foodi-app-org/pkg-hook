@@ -13,11 +13,15 @@ export const useSaveAvailableProduct = () => {
       setSelectedDays([...selectedDays, day])
     }
   }
+  const handleCleanSelectedDays = () => {
+    setSelectedDays([])
+  }
   const [registerAvailableProduct, { loading }] = useMutation(CREATE_AVAILABLE_PRODUCTS_DAYS, {
     onError: () => { return console.log({ message: 'Lo sentimos ocurrió un error, vuelve a intentarlo' }) }
   })
   return {
     handleDaySelection,
+    handleCleanSelectedDays,
     selectedDays,
     days,
     Loading: loading,

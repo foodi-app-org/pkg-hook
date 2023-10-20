@@ -5,7 +5,6 @@ import {
 } from '@apollo/client'
 import { useState } from 'react'
 import {
-  GET_ALL_CATEGORIES_WITH_PRODUCT,
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
@@ -84,7 +83,8 @@ export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => 
           pId,
           pState
         }
-      }, update (cache) {
+      },
+      update (cache) {
         cache.modify({
           fields: {
             productFoodsAll (dataOld = []) {
@@ -94,7 +94,7 @@ export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => 
                 })
                 if (product) {
                   const newProductList = dataOld?.filter((product) => {
-                      return product?.pId !== pId
+                    return product?.pId !== pId
                   })
                   return newProductList
                 }
@@ -108,21 +108,23 @@ export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => 
         cache.modify({
           fields: {
             getCatProductsWithProduct (dataOld = []) {
-                if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
-                  const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories) => {
-                    return  {
-                      ...categories,
-                      productFoodsAll: categories?.productFoodsAll?.length ? categories?.productFoodsAll?.filter((product) => {
-                        return product?.pId !== pId
-                      }) : []
-                    }
-                  })
+              if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
+                const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories) => {
                   return {
-                    catProductsWithProduct: newListCatProducts,
-                    totalCount: newListCatProducts?.length,
+                    ...categories,
+                    productFoodsAll: categories?.productFoodsAll?.length
+                      ? categories?.productFoodsAll?.filter((product) => {
+                        return product?.pId !== pId
+                      })
+                      : []
                   }
+                })
+                return {
+                  catProductsWithProduct: newListCatProducts,
+                  totalCount: newListCatProducts?.length
                 }
-                return dataOld
+              }
+              return dataOld
             }
           }
         })

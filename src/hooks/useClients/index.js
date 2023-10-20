@@ -1,4 +1,8 @@
-import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
+import {
+  useQuery,
+  useMutation,
+  useLazyQuery
+} from '@apollo/client'
 import {
   CREATE_CLIENTS,
   DELETE_ONE_CLIENTS,
@@ -28,11 +32,11 @@ export const useDeleteClients = ({ sendNotification = () => { } } = {}) => {
 export const useCreateClient = ({ sendNotification = () => { } } = {}) => {
   const [createClients, { loading, error }] = useMutation(CREATE_CLIENTS, {
     onError: (data) => {
-      // sendNotification({
-      //   title:  '',
-      //   description: 'Error',
-      //   backgroundColor: 'error'
-      // })
+      sendNotification({
+        title: '',
+        description: 'Error',
+        backgroundColor: 'error'
+      })
     }
   })
 

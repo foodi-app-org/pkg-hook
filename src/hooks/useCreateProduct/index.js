@@ -12,6 +12,7 @@ import { useStore } from '../useStore'
 import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
+export * from './helpers'
 
 export const useCreateProduct = ({
   setAlertBox = () => { },
@@ -92,7 +93,6 @@ export const useCreateProduct = ({
     setSearchFilter({ ...filter })
   }
   const handleCheckFreeShipping = e => {
-    // setCheck(e.target.checked)
     handleCheck(e)
     setValues({
       ...values,
@@ -140,6 +140,7 @@ export const useCreateProduct = ({
       ValueDelivery,
       carProId
     } = values
+    const formatPrice = ProPrice ? parseFloat(ProPrice?.replace(/\./g, '')) : 0
     if (!carProId && !names) return setErrors({ ...errors, carProId: true })
 
     if (!ProPrice?.length > 0) {
@@ -147,7 +148,6 @@ export const useCreateProduct = ({
     }
     const ProImage = `https:${process.env.URL_ADMIN_SERVER}static/platos/${image?.name}`
     const pCode = RandomCode(9)
-    const formatPrice = ProPrice ? parseFloat(ProPrice.replace(/\./g, '')) : 0
     try {
       updateProductFoods({
         variables: {
@@ -278,6 +278,7 @@ export const useCreateProduct = ({
     onClickSearch,
     changeHandler,
     setErrors,
+    setCheck,
     handleRegister,
     setActive,
     onFileInputChange,

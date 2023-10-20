@@ -25,6 +25,9 @@ export const useDessert = ({
   const [title, setTitle] = useState('') // State for title input value
   // Initialize the data state with the transformedData or MockData
   const [data, setData] = useState(MockData)
+  const handleCleanData = () => {
+    setData(MockData)
+  }
   const dataListIds = data?.listIds?.filter(x => x !== '01list')
 
   /**
@@ -56,11 +59,11 @@ export const useDessert = ({
     if (initialData) {
       // Only update the data state if it's different from initialData
       if (JSON.stringify(data) !== JSON.stringify(transformDataToDessert(initialData))) {
-        const transformedInitialData = transformDataToDessert(initialData);
-        setData(transformedInitialData);
+        const transformedInitialData = transformDataToDessert(initialData)
+        setData(transformedInitialData)
       }
     }
-  }, [initialData]);  // Include data as a dependency
+  }, [initialData]) // Include data as a dependency
 
   // Filter the 'listIds' from 'data' and store the filtered result in 'dataListIds'
   // Here, it seems to exclude a specific list ID ('01list') from the listIds.
@@ -207,51 +210,51 @@ export const useDessert = ({
     title = null
   }) => {
     try {
-        setSelectedItem(() => {
-          return { listID, id }
+      setSelectedItem(() => {
+        return { listID, id }
+      })
+      const currentList = data.lists[listID]
+      const findItem = currentList?.cards?.find(item => item.id === id)
+      const checkDifferentText = findItem?.title !== title
+      if (title && checkDifferentText) {
+        editExtFoodSubsOptional({
+          variables: {
+            isCustomSubOpExPid: false,
+            opSubExPid: id,
+            OptionalSubProName: title
+          }
+        }).then(({ data: response }) => {
+          const { editExtFoodSubsOptional } = response || {}
+          const { success } = editExtFoodSubsOptional || { success: false }
+          if (success) {
+            sendNotification({
+              description: 'El sub item actualizado con exito',
+              title: 'Actualizado',
+              backgroundColor: 'success'
+            })
+            const currentList = data.lists[listID]
+            const updatedCards = currentList?.cards?.map((card) => {
+              if (card.id === id) {
+                return {
+                  ...card,
+                  title
+                }
+              }
+              return card
+            })
+            setData({
+              listIds: [...data.listIds],
+              lists: {
+                ...data.lists,
+                [listID]: {
+                  ...currentList,
+                  cards: updatedCards
+                }
+              }
+            })
+          }
         })
-        const currentList = data.lists[listID];
-        const findItem = currentList?.cards?.find(item => item.id === id)
-        const checkDifferentText = findItem?.title !== title
-        if (title && checkDifferentText) {
-          editExtFoodSubsOptional({
-            variables: {
-              isCustomSubOpExPid: false,
-              opSubExPid: id,
-              OptionalSubProName: title
-            }
-          }).then(({ data: response }) => {
-            const { editExtFoodSubsOptional } = response || {}
-            const { success } = editExtFoodSubsOptional || { success: false }
-            if (success) {
-              sendNotification({
-                description: 'El sub item actualizado con exito',
-                title: 'Actualizado',
-                backgroundColor: 'success'
-              })
-              const currentList = data.lists[listID];
-              const updatedCards = currentList?.cards?.map((card) => {
-                if (card.id === id) {
-                  return {
-                    ...card,
-                    title: title
-                  };
-                }
-                return card;
-              });
-              setData({
-                listIds: [...data.listIds],
-                lists: {
-                  ...data.lists,
-                  [listID]: {
-                    ...currentList,
-                    cards: updatedCards
-                  }
-                }
-              });
-            }
-          })
-        }
+      }
     } catch (error) {
       console.error(error)
     }
@@ -267,15 +270,15 @@ export const useDessert = ({
           ...prevData.lists[listId],
           ...updatedFields
         }
-      };
+      }
 
       return {
         ...prevData,
         lists: updatedLists
-      };
-    });
-  };
-/**
+      }
+    })
+  }
+  /**
  * Edit a extra.
  * @async
  * @param {Object} options - Opciones para la edición del extra.
@@ -294,7 +297,7 @@ export const useDessert = ({
   }) => {
     try {
       if (id) {
-  const response = await handleUpdateExtProduct({
+        const response = await handleUpdateExtProduct({
           opExPid: id,
           code: id,
           OptionalProName: title,
@@ -302,11 +305,13 @@ export const useDessert = ({
           numbersOptionalOnly: numberLimit
         })
         const { data } = response || {}
-        if (!data?.updateExtProductFoodsOptional) return  sendNotification({
-          description: 'Ocurrió un error, intenta de nuevo',
-          title: 'Error',
-          backgroundColor: 'warning'
-        })
+        if (!data?.updateExtProductFoodsOptional) {
+          return sendNotification({
+            description: 'Ocurrió un error, intenta de nuevo',
+            title: 'Error',
+            backgroundColor: 'warning'
+          })
+        }
         const { success, message } = data?.updateExtProductFoodsOptional || {}
         if (success) {
           setSelectedExtra({})
@@ -317,18 +322,20 @@ export const useDessert = ({
             backgroundColor: 'success'
           })
           return updateListById(id, {
-            title: title,
-            numberLimit: numberLimit,
+            title,
+            numberLimit,
             required: required ? 1 : 0
-          });
+          })
         }
       }
 
-      if (!id) return sendNotification({
-        description: 'Ocurrió un error, intenta de nuevo',
-        title: 'Error',
-        backgroundColor: 'warning'
-      })
+      if (!id) {
+        return sendNotification({
+          description: 'Ocurrió un error, intenta de nuevo',
+          title: 'Error',
+          backgroundColor: 'warning'
+        })
+      }
     } catch (error) {
       setSelectedExtra({})
       setOpenModalEditExtra(false)
@@ -384,7 +391,7 @@ export const useDessert = ({
     // Check if the title is not empty
     if (title.trim() === '') {
       sendNotification({
-        description: 'El titulo no debe estar vacio',
+        description: 'El titulo no debe estar vacío',
         title: 'Error',
         backgroundColor: 'warning'
       })
@@ -471,11 +478,12 @@ export const useDessert = ({
     setCheck,
     selectedItem,
     setData,
+    handleCleanData,
     setTitle,
     title,
     selectedExtra,
     openModalEditExtra,
     setSelectedExtra,
-    setOpenModalEditExtra,
+    setOpenModalEditExtra
   }
 }
