@@ -27,8 +27,9 @@ import {
 import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
 import { convertToIntegerOrFloat } from './helpers'
-import { useCatWithProduct } from './../useCatWithProduct/index';
-import { useCheckboxState } from '../useCheckbox';
+import { useCatWithProduct } from './../useCatWithProduct/index'
+import { useCheckboxState } from '../useCheckbox'
+import { useLogout } from '../useLogout'
 export * from './useGetAllSales'
 export { GET_ALL_COUNT_SALES } from './queries'
 
@@ -62,6 +63,8 @@ export const useSales = ({
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
   const [errorSale, setErrorSale] = useState(false)
+  const [onClickLogout] = useLogout({})
+
   const [modalItem, setModalItem] = useState(false)
   const [openCommentModal, setOpenCommentModal] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
@@ -74,7 +77,7 @@ export const useSales = ({
     setCheckedItems,
     handleChangeCheck
   } = useCheckboxState(datCat, [], [])
-    const arr = checkedItems ?  Array.from(checkedItems) : []
+  const arr = checkedItems ? Array.from(checkedItems) : []
   const [totalProductPrice, setTotalProductPrice] = useState(0)
   const [showMore, setShowMore] = useState(100)
   const [inputValue, setInputValue] = useState('')
@@ -117,6 +120,9 @@ export const useSales = ({
           description: message
         })
         setAlertBox({ message, type: 'success' })
+        if (message === 'Token expired') {
+          onClickLogout()
+        }
         setOpenCurrentSale(data?.registerSalesStore?.Response.success)
       },
       onError: (error) => {
@@ -188,12 +194,12 @@ export const useSales = ({
     return setSearch(e.target.value)
   }
   const handleChange = (e, error) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setErrors({ ...errors, [e.target.name]: error })
     setValues((prevValues) => ({
       ...prevValues,
-      [name]: value,
-    }));
+      [name]: value
+    }))
   }
   const onChangeInput = (e) => {
     return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value })
@@ -462,15 +468,15 @@ export const useSales = ({
           return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
         .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
-        const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0);
-        if (product?.PRODUCT?.pId) {
-          dispatch({
-            type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
-            payload: product.PRODUCT.pId,
-            dataOptional: filteredDataOptional,
-            dataExtra: filteredDataExtra
-          })
-        }
+      const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0)
+      if (product?.PRODUCT?.pId) {
+        dispatch({
+          type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
+          payload: product.PRODUCT.pId,
+          dataOptional: filteredDataOptional,
+          dataExtra: filteredDataExtra
+        })
+      }
     } catch (_error) {
       return sendNotification({
         title: 'Error',
@@ -480,30 +486,29 @@ export const useSales = ({
     }
   }
 
-  function handleIncrementExtra({ Adicionales, index }) {
-    const { pId } = product?.PRODUCT || {};
-    const exPid = Adicionales.exPid || null;
+  function handleIncrementExtra ({ Adicionales, index }) {
+    const { pId } = product?.PRODUCT || {}
+    const exPid = Adicionales.exPid || null
 
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
         if (exPid === producto.exPid) {
-          const initialQuantity = producto?.quantity ? producto?.quantity : 0;
-          const newQuantity = initialQuantity + 1;
-          const newExtraPrice = producto.extraPrice * newQuantity;
+          const initialQuantity = producto?.quantity ? producto?.quantity : 0
+          const newQuantity = initialQuantity + 1
+          const newExtraPrice = producto.extraPrice * newQuantity
 
           return {
             ...producto,
             quantity: newQuantity,
-            newExtraPrice: newExtraPrice,
-          };
+            newExtraPrice
+          }
         }
-        return producto;
-      });
+        return producto
+      })
 
-      setDataExtra(newExtra);
+      setDataExtra(newExtra)
     }
   }
-
 
   function handleDecrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
@@ -823,8 +828,7 @@ export const useSales = ({
   const client = useApolloClient()
   const { getOnePedidoStore } = useGetSale()
   const handleSubmit = () => {
-
-    if (errors?.change  || errors?.valueDelivery) {
+    if (errors?.change || errors?.valueDelivery) {
       return sendNotification({
         title: 'error',
         backgroundColor: 'warning',
@@ -834,12 +838,12 @@ export const useSales = ({
     setLoadingSale(true)
     const code = RandomCode(10)
     setCode(code)
-    function convertirAEntero(cadena) {
+    function convertirAEntero (cadena) {
       if (typeof cadena === 'string') {
-        const numeroEntero = parseInt(cadena?.replace('.', ''));
+        const numeroEntero = parseInt(cadena?.replace('.', ''))
         return numeroEntero
       }
-      return cadena ||  0
+      return cadena || 0
     }
     return registerSalesStore({
       variables: {
