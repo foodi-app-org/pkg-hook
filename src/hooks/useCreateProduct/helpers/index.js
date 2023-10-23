@@ -14,7 +14,7 @@ export const verifyPriceInRange = ({ values = [], sendNotification }) => {
     sendNotification({
       backgroundColor: 'warning',
       title: 'Alerta',
-      description: 'El valor del producto es muy elevado'
+      description: 'El valor es muy elevado'
     })
     return false
   }
