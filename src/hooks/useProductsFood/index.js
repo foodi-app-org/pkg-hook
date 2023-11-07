@@ -75,9 +75,9 @@ export const useProductsFood = ({
 export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
-  const handleDelete = product => {
+  const handleDelete = async product => {
     const { pId, pState } = product || {}
-    updateProductFoods({
+    return await updateProductFoods({
       variables: {
         input: {
           pId,

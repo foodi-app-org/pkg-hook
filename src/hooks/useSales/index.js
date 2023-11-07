@@ -26,7 +26,6 @@ import {
 } from './queries'
 import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
-import { convertToIntegerOrFloat } from './helpers'
 import { useCatWithProduct } from './../useCatWithProduct/index'
 import { useCheckboxState } from '../useCheckbox'
 import { useLogout } from '../useLogout'
@@ -488,7 +487,7 @@ export const useSales = ({
 
   function handleIncrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
-    const exPid = Adicionales.exPid || null
+    const exPid = Adicionales?.exPid || null
 
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
@@ -512,7 +511,7 @@ export const useSales = ({
 
   function handleDecrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
-    const exPid = Adicionales.exPid || null
+    const exPid = Adicionales?.exPid || null
 
     // Comprobar que el objeto Adicionales existe en dataExtra
     const extraIndex = dataExtra.findIndex((extra) => extra.exPid === exPid)

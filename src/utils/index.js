@@ -37,7 +37,7 @@ export const validationSubmitHooks = elements => {
 }
 
 export const getCurrentDomain = () => {
-  return typeof window !== 'undefined' && window.location.hostname;
+  return typeof window !== 'undefined' && window.location.hostname
 }
 
 export function RandomCode (length) {
@@ -70,8 +70,35 @@ export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id 
 const initialState = {}
 export const initializer = (initialValue = initialState) => { return JSON.parse(localStorage.getItem(process.env.LOCAL_SALES_STORE)) || initialValue }
 
-export const numberFormat = value => { return value ? (parseInt(value) ? new Intl.NumberFormat('de-DE').format(parseFloat(`${value}`.replace(/\./g, ''))) : value) : (value) }
+/**
+ * Formatea un valor como un número siguiendo el formato de Colombia.
+ * Si el valor no es un número válido, lo devuelve tal como está.
+ *
+ * @param {string|number} value - El valor a formatear.
+ * @returns {string} El valor formateado como número o el valor original si no es numérico.
+ */
+export const numberFormat = value => {
+  // Verifica si el valor es nulo o indefinido, devolviendo el mismo valor.
+  if (value === null || value === undefined) {
+    return value
+  }
 
+  // Convierte el valor a string y elimina puntos.
+  const stringValue = `${value}`.replace(/\./g, '')
+
+  // Intenta convertir a número y formatear si es posible.
+  const numberValue = parseFloat(stringValue)
+  if (!isNaN(numberValue)) {
+    return new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 0,
+      style: 'decimal',
+      maximumFractionDigits: 0
+    }).format(numberValue)
+  }
+
+  // Devuelve el valor original si no es un número.
+  return value
+}
 /**
  *
  * @param {Object} data objeto a filtrar

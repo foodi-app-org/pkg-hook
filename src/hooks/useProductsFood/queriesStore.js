@@ -435,24 +435,6 @@ export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
   }
 `
 
-// CREATE EXTRAS PRODUCT
-export const UPDATE_MULTI_EXTRAS_PRODUCT_FOOD = gql`
-  mutation updateMultipleExtProductFoods(
-    $inputLineItems: ILineItemsExtraFinal
-  ) {
-    updateMultipleExtProductFoods(inputLineItems: $inputLineItems) {
-      pId
-      exPid
-      exState
-      extraName
-      extraPrice
-      state
-      pDatCre
-      pDatMod
-    }
-  }
-`
-
 export const DELETE_ONE_PRODUCT = gql`
   mutation deleteProducts($input: IDeleteProduct) {
     deleteProducts(input: $input) {

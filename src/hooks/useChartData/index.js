@@ -5,9 +5,8 @@ import { GET_ALL_SALES } from '../useReport/queries'
 export * from './useChartDataAllOrders'
 
 export const useChartData = ({ year }) => {
-  // Construcción del nuevo array:
   const { data, loading } = useQuery(GET_ALL_SALES)
-  const [chartType, setChartType] = useState('bar')
+  const [chartType, setChartType] = useState('line')
   const [chartTypeYear, setChartTypeYear] = useState(new Date().getFullYear())
   const [asFilter, setFilter] = useState(false)
   const [newResult, setNewResult] = useState([])

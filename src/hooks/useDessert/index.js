@@ -17,6 +17,10 @@ export const useDessert = ({
   initialData = null,
   sendNotification = () => { }
 }) => {
+  const [selectedExtra, setSelectedExtra] = useState({})
+  const [openModalEditExtra, setOpenModalEditExtra] = useState(false)
+  const [selectedItem, setSelectedItem] = useState({})
+
   // Initialize state variables using the useState hook
   const [setCheck, setChecker] = useState({
     exState: false
@@ -202,8 +206,24 @@ export const useDessert = ({
       console.error(error)
     }
   }
-  const [selectedItem, setSelectedItem] = useState({})
 
+  /**
+ * Edits a single item within a list.
+ *
+ * The `editOneItem` function is responsible for editing the title of a specific item in a list.
+ * It first updates the state of the selected item, then searches for the item in the current list
+ * using its ID, and compares the existing title with the new title provided. If the title is
+ * different and not null, it makes an API call (`editExtFoodSubsOptional`) to update the
+ * title in the database. If the update is successful, a success notification is sent, and
+ * the local state is updated to reflect the changes in the item. The function handles errors
+ * internally and logs them to the console.
+ *
+ * @param {Object} params - Parameters for editing an item.
+ * @param {string} params.listID - The ID of the list containing the item to be edited.
+ * @param {string} params.id - The ID of the specific item to be edited.
+ * @param {string|null} [params.title=null] - The new title for the item. If null, no
+ *                                            update is performed.
+ */
   const editOneItem = ({
     listID = '',
     id = '',
@@ -214,7 +234,7 @@ export const useDessert = ({
         return { listID, id }
       })
       const currentList = data.lists[listID]
-      const findItem = currentList?.cards?.find(item => item.id === id)
+      const findItem = currentList?.cards?.find(item => { return item.id === id })
       const checkDifferentText = findItem?.title !== title
       if (title && checkDifferentText) {
         editExtFoodSubsOptional({
@@ -228,7 +248,7 @@ export const useDessert = ({
           const { success } = editExtFoodSubsOptional || { success: false }
           if (success) {
             sendNotification({
-              description: 'El sub item actualizado con exito',
+              description: 'El sub item actualizado con éxito',
               title: 'Actualizado',
               backgroundColor: 'success'
             })
@@ -259,8 +279,6 @@ export const useDessert = ({
       console.error(error)
     }
   }
-  const [selectedExtra, setSelectedExtra] = useState({})
-  const [openModalEditExtra, setOpenModalEditExtra] = useState(false)
 
   const updateListById = (listId, updatedFields) => {
     setData((prevData) => {
