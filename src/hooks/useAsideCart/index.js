@@ -61,7 +61,6 @@ export const useAsideCart = ({
     setTotalProductPrice(Math.abs(totalPrice))
   }, [dataShoppingCard])
 
-  console.log(dataShoppingCard)
   const [deleteOneItem] = useMutation(DELETE_ONE_ITEM_SHOPPING_PRODUCT, {
     onCompleted: data => {
       setAlertBox({ message: data?.deleteOneItem?.message })
@@ -82,53 +81,45 @@ export const useAsideCart = ({
     }
   }
   /**
-   * Handle the deletion of a shopping cart item.
-   * @param {Object} item - The item to be deleted from the shopping cart.
-   */
+ * Handle the deletion of a shopping cart item.
+ * @param {Object} item - The item to be deleted from the shopping cart.
+ */
   const handleDeleteItemShopping = async (item) => {
+    if (!item) {
+      return setAlertBox({
+        message: 'Error borrando el producto. Por favor intenta nuevamente.',
+        color: 'error'
+      })
+    }
+
     try {
       const { cState, ShoppingCard } = item
       await deleteOneItem({
-        variables: {
-          cState,
-          ShoppingCard
-        },
-        update: (cache, { data }) => {
-          const success = data?.deleteOneItem?.success
-          if (success && ShoppingCard) {
-            cache.modify({
-              fields: {
-                getAllShoppingCard (existingCart, { readField }) {
-                  if (Array.isArray(existingCart) && existingCart) {
-                    if (existingCart.length === 1) {
-                      setCountItemProduct(0)
-                    }
-                    const updatedCart = {
-                      ...existingCart,
-                      ...existingCart?.filter(product =>
-                        readField('ShoppingCard', product) !== ShoppingCard
-                      )
-                    }
-                    if (typeof updatedCart === 'object' && updatedCart !== null) {
-                      const newLength = Object.keys(updatedCart)
-                      if (updatedCart && newLength) {
-                        setCountItemProduct(Object.keys(updatedCart).length)
-                      }
-                    }
-                    return updatedCart
-                  } else {
-                    return []
-                  }
-                }
+        variables: { cState, ShoppingCard },
+        update: (cache) => {
+          cache.modify({
+            fields: {
+              getAllShoppingCard (existingCart, { readField }) {
+                if (!Array.isArray(existingCart)) return []
+
+                const filteredCart = existingCart.filter(product =>
+                  readField('ShoppingCard', product) !== ShoppingCard
+                )
+
+                // Actualizar el contador de productos
+                setCountItemProduct(filteredCart.length)
+
+                return filteredCart?.length > 0 ? filteredCart : []
               }
-            })
-          }
+            }
+          })
         }
       })
     } catch (error) {
-      setAlertBox({ message: 'Error borranto el  item. Por favor intenta nuevamente.', color: 'error' })
+      setAlertBox({ message: 'Error borrando el producto. Por favor intenta nuevamente.', color: 'error' })
     }
   }
+
   /**
    * Calculate the total price of a product.
    * @param {number} ProPrice - The price of the product.

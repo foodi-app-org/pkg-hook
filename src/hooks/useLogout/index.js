@@ -1,6 +1,6 @@
 import { useApolloClient } from '@apollo/client'
 import { useState } from 'react'
-import { Cookies } from '../../cookies'
+import { Cookies } from '../../cookies/index'
 import { signOutAuth } from './helpers'
 export { signOutAuth } from './helpers'
 

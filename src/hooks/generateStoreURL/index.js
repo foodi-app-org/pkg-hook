@@ -6,7 +6,12 @@
  * @param {string} idStore - The ID of the store
  * @returns {string} - The generated URL or null if any field is missing
  */
-export const generateStoreURL = ({ city, department, storeName, idStore }) => {
+export const generateStoreURL = ({
+  city,
+  department,
+  storeName,
+  idStore
+}) => {
   try {
     // Validate all necessary fields
     if (
@@ -16,7 +21,7 @@ export const generateStoreURL = ({ city, department, storeName, idStore }) => {
         !storeName ||
         !idStore
     ) {
-      return null // Return null or any default case you'd prefer
+      return '/' // Return null or any default case you'd prefer
     }
 
     const cityName = city.cName.toLocaleLowerCase()
@@ -27,6 +32,6 @@ export const generateStoreURL = ({ city, department, storeName, idStore }) => {
 
     return `${process.env.MAIN_URL_BASE}/delivery/${cityName}-${departmentName}/${formattedStoreName}/${idStore}`
   } catch (_) {
-    return null
+    return '/'
   }
 }
