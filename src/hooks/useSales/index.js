@@ -54,10 +54,10 @@ const initializer = (initialValue = initialState) => {
 }
 
 export const useSales = ({
-  disabled,
-  sendNotification,
+  disabled = false,
   router,
-  setAlertBox
+  sendNotification = () => { return },
+  setAlertBox = () => { return }
 }) => {
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
@@ -330,14 +330,6 @@ export const useSales = ({
       case 'DECREMENT':
         return {
           ...state
-          // counter: state.counter - 1,
-          // PRODUCT: state?.PRODUCT?.map((items) => {
-          //   return items.pId === action.id ? {
-          //     ...items,
-          //     ProQuantity: items.ProQuantity - 1,
-          //     // ProPrice: ((productExist.ProQuantity + 1) * OurProduct?.ProPrice),
-          //   } : items
-          // })
         }
       case 'PAYMENT_METHOD_TRANSACTION':
         return {
@@ -826,6 +818,7 @@ export const useSales = ({
   const totalProductsPrice = totalProductPrice
   const client = useApolloClient()
   const { getOnePedidoStore } = useGetSale()
+
   const handleSubmit = () => {
     if (errors?.change || errors?.valueDelivery) {
       return sendNotification({
@@ -837,7 +830,7 @@ export const useSales = ({
     setLoadingSale(true)
     const code = RandomCode(10)
     setCode(code)
-    function convertirAEntero (cadena) {
+    function convertInteger (cadena) {
       if (typeof cadena === 'string') {
         const numeroEntero = parseInt(cadena?.replace('.', ''))
         return numeroEntero
@@ -849,12 +842,12 @@ export const useSales = ({
         input: finalArrayProduct || [],
         id: values?.cliId,
         pCodeRef: code,
-        change: convertirAEntero(values.change),
-        valueDelivery: convertirAEntero(values.valueDelivery),
+        change: convertInteger(values.change),
+        valueDelivery: convertInteger(values.valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         discount: discount.discount || 0,
-        totalProductsPrice: convertirAEntero(totalProductsPrice) || 0
+        totalProductsPrice: convertInteger(totalProductsPrice) || 0
       }
     })
       .then((responseRegisterR) => {

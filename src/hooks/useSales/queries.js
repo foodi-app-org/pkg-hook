@@ -275,6 +275,7 @@ export const GET_ONE_SALE = gql`
         getAllShoppingCard {
           ShoppingCard
           cantProducts
+          priceProduct
           refCodePid
           subProductsId
           comments
@@ -416,6 +417,7 @@ query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int
         pDatMod
         getAllShoppingCard {
           ShoppingCard
+          priceProduct
           comments
           cantProducts
           pId
