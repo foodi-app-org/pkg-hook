@@ -75,6 +75,5 @@ query getAllStoreInStore($search: String, $min: Int, $max: Int){
       createAt
     }
   }
-  
 }
 `

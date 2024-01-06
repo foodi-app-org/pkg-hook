@@ -6,8 +6,8 @@ export const GET_ALL_SALES = gql`
     $search: String
     $min: Int
     $max: Int
-    $fromDate: DateTime
-    $toDate: DateTime
+    $fromDate: String
+    $toDate: String
   ) {
     getAllSalesStore(
       idStore: $idStore

@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 
 export const GET_ALL_SALES = gql`
-query getAllSalesStore($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: DateTime, $toDate: DateTime ) {
+query getAllSalesStore($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: String, $toDate: String ) {
   getAllSalesStore(idStore: $idStore, search: $search, min: $min, max: $max, toDate: $toDate, fromDate: $fromDate) {
     totalProductsPrice
     channel
@@ -12,7 +12,7 @@ query getAllSalesStore($idStore: ID,$search: String, $min: Int, $max: Int $fromD
 `
 
 export const GET_ALL_TOTAL_SALES = gql`
-query getAllSalesStoreTotal($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: DateTime, $toDate: DateTime ) {
+query getAllSalesStoreTotal($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: String, $toDate: String) {
     getAllSalesStoreTotal(idStore: $idStore, search: $search, min: $min, max: $max, toDate: $toDate, fromDate: $fromDate) {
     restaurant
     delivery

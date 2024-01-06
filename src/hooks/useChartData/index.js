@@ -11,30 +11,29 @@ export const useChartData = ({ year }) => {
   const [asFilter, setFilter] = useState(false)
   const [newResult, setNewResult] = useState([])
   const result = []
-  data?.getAllSalesStore?.length > 0 && data?.getAllSalesStore.reduce(function (res, value) {
-    // Creamos la posición del array para cada mes
-    const mes = new Date(value.pDatCre).getMonth()
-    const Year = new Date(value.pDatCre).getFullYear()
-    if (!res[mes]) {
-      res[mes] = { Mes: mes, Year }
-      // Inicializamos a 0 el valor de cada key
-      Object.keys(value).forEach((key) => {
-        if (key !== 'pDatCre') {
-          res[mes][key] = 0
-        }
-      })
+  const sumByMonth = {}
 
-      result.push(res[mes])
-    }
-    // Sumamos el valor de cada clave dentro de un bucle
-    Object.keys(value).forEach(function (key) {
-      if (key !== 'pDatCre') {
-        res[mes].totalProductsPrice += value.totalProductsPrice
+  data?.getAllSalesStore?.forEach(function (value) {
+    const month = new Date(value.pDatCre).getMonth()
+    const year = new Date(value.pDatCre).getFullYear()
+    const key = `${month}-${year}`
+
+    if (!sumByMonth[key]) {
+      sumByMonth[key] = {
+        Mes: month,
+        Year: year,
+        totalProductsPrice: 0
       }
-    })
-    return res
-  }, {})
 
+      result.push(sumByMonth[key])
+    }
+
+    sumByMonth[key].totalProductsPrice += value.totalProductsPrice
+  })
+
+  console.log(result)
+
+  console.log(data?.getAllSalesStore)
   const allMonths = Array.from({ length: 12 }, (_, i) => { return i })
   const missingMonths = allMonths.filter(month => { return !result.some(data => { return data.Mes === month }) })
 
@@ -89,6 +88,7 @@ export const useChartData = ({ year }) => {
       }
     ]
   }
+  console.log(result)
   const options = {
     interaction: {
       mode: 'index',

@@ -30,15 +30,15 @@ export const useReport = ({
     variables: {
       fromDate,
       toDate
-    },
-    skip: !data || data?.getAllSalesStore?.length === 0 // Skip if main query hasn't loaded or has no data
+    }
   })
-
+  console.log(fromDate,
+    toDate)
   const totalSales = totalSalesData?.getAllSalesStoreTotal ?? {}
 
   return {
     getAllSalesStore: lazyQuery ? getAllSalesStore : () => { }, // Return function only if in lazy mode
-    data: lazyQuery ? data || lazyDataSales : data, // Use data from lazy query if available
+    data: lazyQuery ? lazyDataSales : data, // Use data from lazy query if available
     loading: lazyQuery ? lazyLoading || loading : loading,
     totalSales: totalSales.TOTAL || 0,
     restaurant: totalSales.restaurant || 0,
