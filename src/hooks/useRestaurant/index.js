@@ -10,7 +10,9 @@ export const useRestaurant = ({
   }
 } = {}) => {
   const [loadingFilter, setLoadingFilter] = useState(false)
-  const { handleQuery, handleCleanQuery } = useManageQueryParams()
+  const { handleQuery, handleCleanQuery } = useManageQueryParams({
+    location
+  })
 
   const [getAllStoreInStore, {
     data,

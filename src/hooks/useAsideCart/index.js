@@ -9,6 +9,7 @@ import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
 import { calculateTotalPrice } from './helpers'
 export * from './helpers'
+
 /**
  * Custom hook for managing the shopping cart functionality.
  * @param {Object} props - Props to control various UI elements.
@@ -19,18 +20,23 @@ export * from './helpers'
  */
 export const useAsideCart = ({
   openModalProduct = false,
+  location = {},
   setCountItemProduct = () => { },
   setAlertBox = () => { },
   setOpenModalProduct = () => { },
   handleMenu = () => { }
 } = {}) => {
+
   const { getOneProduct } = useCart({
     handleMenu,
     openModalProduct,
+    location,
     setOpenModalProduct
   })
 
-  const { handleQuery } = useManageQueryParams()
+  const { handleQuery } = useManageQueryParams({
+    location
+  })
 
   const [totalProductPrice, setTotalProductPrice] = useState(0)
 

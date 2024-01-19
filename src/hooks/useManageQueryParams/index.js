@@ -1,7 +1,7 @@
-import { useRouter } from 'next/router'
 // Hola mundo
-export const useManageQueryParams = () => {
-  const router = useRouter()
+export const useManageQueryParams = ({
+  router
+} = {}) => {
 
   const handleQuery = (name, value = '') => {
     router.push(

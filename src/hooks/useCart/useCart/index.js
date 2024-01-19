@@ -5,7 +5,6 @@ import { RandomCode, updateCacheMod, numberFormat } from '../../../utils'
 import { useExtProductFoodsAll, useGetOneProductsFood } from '../../useProductsFood'
 import { useGetExtProductFoodsSubOptionalAll } from '../../useGetExtProductFoodsSubOptionalAll'
 import { useGetCart } from '../useGetCart'
-import { useRouter } from 'next/router'
 import {
   filterDataOptional,
   filterExtra,
@@ -29,19 +28,21 @@ import { useManageQueryParams } from '../../useManageQueryParams'
  * @returns The `useCart` function returns an object with the following properties and methods:
  */
 export const useCart = ({
+  location = {},
   openModalProduct = false,
   handleMenu = () => { },
   setOpenModalProduct = () => { },
   setAlertBox = () => { }
 } = {}) => {
   // sub products
-  const { handleCleanQuery } = useManageQueryParams()
+  const { handleCleanQuery } = useManageQueryParams({
+    location
+  })
 
   const [dataOptional, setDataOptional] = useState([])
   const [dataExtra, setDataExtra] = useState([])
   const [quantity, setQuantity] = useState(1)
   const [comments, setComments] = useState('')
-  const location = useRouter()
   const queryParamProduct = location.query.plato
   const [registerShoppingCard] = useMutation(CREATE_SHOPPING_CARD, {
     onError: (error) => {
