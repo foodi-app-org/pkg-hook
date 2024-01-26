@@ -36,6 +36,12 @@ export const useLogout = ({ setAlertBox = () => {} } = {}) => {
   const onClickLogout = async () => {
     try {
       setLoading(true)
+   // Eliminar la cookie process.env.SESSION_NAME
+      await eliminarCookie(process.env.SESSION_NAME)
+      await eliminarCookie(process.env.LOCAL_SALES_STORE)
+      await eliminarCookie('restaurant')
+      await eliminarCookie('usuario')
+      await eliminarCookie('session')
 
       // Logout from the server
       const logoutResponse = await fetch(`${process.env.URL_BASE}/api/auth/logout/`, {
@@ -48,7 +54,6 @@ export const useLogout = ({ setAlertBox = () => {} } = {}) => {
 
       if (!logoutResponse.ok) {
         setLoading(false)
-        // Handle unsuccessful logout request, e.g., show an error message
         return
       }
 

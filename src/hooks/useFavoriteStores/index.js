@@ -1,5 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GET_ALL_FAV_STORE } from './queries'
+import { filterAndSortByDate } from '../useRestaurant/helpers'
+import { getStatusForStores } from '../useRestaurant/helpers/manageStatusOpen'
 
 export const useFavoriteStores = () => {
   const {
@@ -12,8 +14,16 @@ export const useFavoriteStores = () => {
       console.log('')
     }
   })
+  const newArray = data?.getFavorite?.map(store => {
+    return {
+      ...store.getOneStore
+    }
+  }) || []
+  const dataSort = filterAndSortByDate(newArray)
 
-  const favoriteStores = data?.getFavorite || []
+  const statuses = getStatusForStores(dataSort)
 
-  return [favoriteStores, { loading, error }]
+  const favoriteStores = statuses || []
+
+  return [loading ? [] : favoriteStores, { loading, error }]
 }

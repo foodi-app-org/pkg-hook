@@ -15,7 +15,9 @@ import { useFormatDate } from '../useFormatDate'
 export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
   const [open, setOpen] = useState('')
   const [openNow, setOpenNow] = useState(false)
-  const { handleHourPmAM } = useFormatDate({})
+  const { handleHourPmAM } = useFormatDate({
+    date: null
+  })
 
   const handleMessageHour = (message, open) => {
     setOpen(message)

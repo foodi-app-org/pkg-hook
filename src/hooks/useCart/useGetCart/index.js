@@ -2,8 +2,10 @@ import { GET_ALL_SHOPPING_CARD } from '../queries'
 import { useQuery } from '@apollo/client'
 
 export const useGetCart = ({
-  setAlertBox = () => { },
-  setCountItemProduct = () => { }
+  setAlertBox = ({
+    message
+  }) => { return { message } },
+  setCountItemProduct = (number) => { return number }
 } = {}) => {
   const {
     data,

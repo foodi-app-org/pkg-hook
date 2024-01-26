@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from '@apollo/client'
 
 export const CREATE_SHOPPING_CARD = gql`
   mutation registerShoppingCard(
@@ -109,9 +109,19 @@ export const GET_ALL_SHOPPING_CARD = gql`
       getStore {
         idStore
         cId
+        scheduleOpenAll
+        getStoreSchedules {
+          schId
+          idStore
+          schDay
+          schHoSta
+          schHoEnd
+          schState
+        }
         id
         dId
         ctId
+        scheduleOpenAll
         catStore
         neighborhoodStore
         Viaprincipal

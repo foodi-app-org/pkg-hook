@@ -3,6 +3,7 @@ export const GET_ALL_RESTAURANT = gql`
 query getAllStoreInStore($search: String, $min: Int, $max: Int){
   getAllStoreInStore(search: $search, min: $min, max: $max) {
     open
+    scheduleOpenAll
     getStoreSchedules {
       idStore
       schId

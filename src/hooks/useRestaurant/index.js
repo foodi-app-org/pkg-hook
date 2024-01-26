@@ -3,10 +3,14 @@ import { useLazyQuery } from '@apollo/client'
 import { GET_ALL_RESTAURANT } from './queries'
 import { filterAndSortByDate } from './helpers'
 import { useManageQueryParams } from '../useManageQueryParams'
+import { getStatusForStores } from './helpers/manageStatusOpen'
 
 export const useRestaurant = ({
   location = {
-    pathname: ''
+    query: {},
+    push: (props, state, { shallow }) => {
+      return { ...props, state, shallow }
+    }
   }
 } = {}) => {
   const [loadingFilter, setLoadingFilter] = useState(false)
@@ -40,7 +44,7 @@ export const useRestaurant = ({
   const handleFilterStore = async () => {
     setLoadingFilter(true)
     try {
-      getAllStoreInStore({
+      await getAllStoreInStore({
 
       }).then(() => {
         setLoadingFilter(false)
@@ -51,7 +55,9 @@ export const useRestaurant = ({
   }
   const dataRestaurant = data?.getAllStoreInStore || []
   const dataSort = filterAndSortByDate(dataRestaurant)
-  return [dataSort, {
+  const statuses = getStatusForStores(dataSort)
+
+  return [statuses, {
     loading,
     loadingFilter,
     error,

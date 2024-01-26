@@ -8,6 +8,7 @@ import { DELETE_ONE_ITEM_SHOPPING_PRODUCT } from './queries'
 import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
 import { calculateTotalPrice } from './helpers'
+import { statusOpenStores } from '../statusOpenStores'
 export * from './helpers'
 
 /**
@@ -21,12 +22,13 @@ export * from './helpers'
 export const useAsideCart = ({
   openModalProduct = false,
   location = {},
-  setCountItemProduct = () => { },
+  setCountItemProduct = (number) => { return number },
   setAlertBox = () => { },
   setOpenModalProduct = () => { },
   handleMenu = () => { }
-} = {}) => {
+} = {
 
+}) => {
   const { getOneProduct } = useCart({
     handleMenu,
     openModalProduct,
@@ -134,10 +136,57 @@ export const useAsideCart = ({
    * @returns {number} The calculated total price.
    */
   const sumProduct = (ProPrice, ProDelivery, cant) => {
+    // Convertir a números, con manejo de posibles errores
     const price = parseInt(ProPrice)
-    const priceFinal = cant * price
     const delivery = parseInt(ProDelivery || 0)
+    const quantity = parseInt(cant)
+
+    // Verificar si las conversiones fueron exitosas
+    if (isNaN(price) || isNaN(delivery) || isNaN(quantity)) {
+      throw new Error('Los valores proporcionados no son números válidos.')
+    }
+
+    // Calcular el precio final
+    const priceFinal = quantity * price
+
+    // Devolver la suma total, incluyendo el costo de entrega si es aplicable
     return delivery ? priceFinal + delivery : priceFinal
+  }
+  console.log(dataShoppingCard)
+
+  /**
+ * Verifica el estado de apertura de la tienda.
+ *
+ * @returns {Object|null} Objeto con el estado de apertura de la tienda o null en caso de error.
+ * @throws {Error} Si ocurre un error durante la verificación del estado de la tienda.
+ */
+  const handleVerifyStoreOpenStatus = () => {
+  /**
+   * @type {Array} dataShoppingCard - El array de la tarjeta de compras.
+   */
+    if (!Array.isArray(dataShoppingCard)) {
+      return { open: false } // Retorna un objeto indicando que la tienda no está abierta
+    }
+
+    /**
+   * @type {Object} store - La primera tienda en el array de la tarjeta de compras.
+   */
+    const store = dataShoppingCard[0] || {}
+    /**
+     * @type {Object} getStore - El objeto que contiene información de la tienda.
+    */
+    const { getStore } = store
+
+    /**
+     * @type {Array} storeSchedules - El array de horarios de la tienda.
+    */
+    const storeSchedules = Array.isArray(getStore?.getStoreSchedules) ? getStore?.getStoreSchedules : []
+    try {
+      const status = getStore?.scheduleOpenAll ? { open: true } : statusOpenStores({ dataSchedules: storeSchedules })
+      return status
+    } catch (error) {
+      return null
+    }
   }
 
   return {
@@ -147,6 +196,7 @@ export const useAsideCart = ({
     dataShoppingCard,
     handleDeleteItemShopping,
     handleEditProduct,
+    handleVerifyStoreOpenStatus,
     sumProduct
   }
 }

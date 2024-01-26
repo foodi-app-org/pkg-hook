@@ -3,6 +3,7 @@ import { useApolloClient, useQuery } from '@apollo/client'
 import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con la importación correcta de tu consulta
 import { errorHandler } from '../../config/client'
 import { useLogout } from '../useLogout'
+
 export const useStore = ({ isClient = false, idStore = '' } = {}) => {
   const client = useApolloClient()
   const [onClickLogout, { loading: load }] = useLogout()

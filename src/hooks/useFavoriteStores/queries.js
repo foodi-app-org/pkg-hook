@@ -1,47 +1,53 @@
 import { gql } from '@apollo/client'
 
 export const GET_ALL_FAV_STORE = gql`
-query getFavorite{
-  getFavorite{
-    fIStoreId
-    fState
-    createAt
-    updateAt
-    idStore
-    
-    getOneStore {
+  query getFavorite {
+    getFavorite {
+      fIStoreId
+      fState
+      createAt
+      updateAt
       idStore
-      cId
-      id
-      Image
-      open
-      cateStore{
-      catStore
-      cName
-      
-    }
-      ctId
-      catStore
-      dId
-      storeName
-      Image
-      city{
+
+      getOneStore {
+        getStoreSchedules {
+          schId
+          idStore
+          schDay
+          schHoSta
+          schHoEnd
+          schState
+        }
+        scheduleOpenAll
+        idStore
+        cId
+        id
+        Image
+        open
+        cateStore {
+          catStore
+          cName
+        }
         ctId
+        catStore
         dId
-        cName
-      }
-      department {
-        dId
-        cId
-        dName
-        
-      }
-      pais {
-        cId
-        cName
-        
+        storeName
+        Image
+        city {
+          ctId
+          dId
+          cName
+        }
+        department {
+          dId
+          cId
+          dName
+        }
+        pais {
+          cId
+          cName
+        }
       }
     }
   }
-}
 `

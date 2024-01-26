@@ -1,13 +1,17 @@
 // Hola mundo
 export const useManageQueryParams = ({
-  router
+  location = {
+    query: {},
+    push: (props, state, { shallow }) => {
+      return { ...props, state, shallow }
+    }
+  }
 } = {}) => {
-
   const handleQuery = (name, value = '') => {
-    router.push(
+    location.push(
       {
         query: {
-          ...router.query,
+          ...location.query,
           [name]: value
         }
       },
@@ -18,10 +22,10 @@ export const useManageQueryParams = ({
 
   const handleCleanQuery = (name, value = '') => {
     const updatedQuery = {
-      ...router.query,
+      ...location.query,
       [name]: value || ''
     }
-    router.push(
+    location.push(
       {
         query: updatedQuery
       },
