@@ -166,3 +166,10 @@ export const convertBase64 = file => {
 }
 
 export const validationImg = file => { return (/\.(jpg|png|gif|jpeg)$/i).test(file.name) }
+
+export const SERVICES = Object.freeze({
+  WEB_SOCKET_CHAT: 'web-socket-chat',
+  ADMIN_SERVER: 'admin-server',
+  ADMIN_STORE: 'admin-store',
+  MAIN: 'main'
+})
