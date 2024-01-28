@@ -60,7 +60,7 @@ export const useChartData = ({ year }) => {
     datasets: [
       {
         label: labelTitle,
-        data: asFilter ? newResult.map(data => { return data.totalProductsPrice }) : result.map(data => { return data.totalProductsPrice }),
+        data: asFilter ? newResult.map(data => { return data?.totalProductsPrice }) : result.map(data => { return data?.totalProductsPrice }),
         backgroundColor: [
           'rgba(255, 99, 132, 0.2)',
           'rgba(54, 162, 235, 0.2)',
@@ -111,7 +111,7 @@ export const useChartData = ({ year }) => {
   }
   const groupedData = {}
 
-  data && data.getAllSalesStore.forEach((item) => {
+  Boolean(data?.getAllSalesStore?.length) && data?.getAllSalesStore?.forEach((item) => {
     const year = new Date(item.pDatCre).getFullYear()
     if (!groupedData[year]) {
       groupedData[year] = []
@@ -119,7 +119,8 @@ export const useChartData = ({ year }) => {
     groupedData[year].push(item)
   })
   const years = []
-  data && data.getAllSalesStore.forEach((item) => {
+
+  Boolean(data?.getAllSalesStore?.length) && data?.getAllSalesStore?.forEach((item) => {
     const y = new Date(item.pDatCre).getFullYear()
     if (!years.includes(y)) {
       years.push(y)
