@@ -47,7 +47,7 @@ export const getStartTimestampDaysAgo = (daysAgo) => {
 }
 
 export function convertDateFormat ({ dateString, start }) {
-  const parsedDate = new Date(dateString)
+  const parsedDate = dateString ? new Date(dateString) : new Date()
   const year = parsedDate.getFullYear()
   const month = `0${parsedDate.getMonth() + 1}`.slice(-2)
   const day = `0${parsedDate.getDate()}`.slice(-2)

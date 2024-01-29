@@ -57,7 +57,9 @@ export const useCategoryInStore = ({ catStoreId, setAlertBox = () => {} } = {}) 
       console.log({ message: '', duration: 5000 })
     },
     onCompleted: () => {
-      setOneCategoryInStore(data.getOneCatStore)
+      if (data?.getOneCatStore) {
+        setOneCategoryInStore(data?.getOneCatStore)
+      }
     }
   })
   // HANDLESS

@@ -31,9 +31,6 @@ export const useChartData = ({ year }) => {
     sumByMonth[key].totalProductsPrice += value.totalProductsPrice
   })
 
-  console.log(result)
-
-  console.log(data?.getAllSalesStore)
   const allMonths = Array.from({ length: 12 }, (_, i) => { return i })
   const missingMonths = allMonths.filter(month => { return !result.some(data => { return data.Mes === month }) })
 
@@ -88,7 +85,6 @@ export const useChartData = ({ year }) => {
       }
     ]
   }
-  console.log(result)
   const options = {
     interaction: {
       mode: 'index',
