@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   useGetSale,
   updateExistingOrders,
   convertDateFormat,
   useOrdersFromStore
 } from '../../hooks'
+import { findOrderByCodeRef, isDateInRange } from './helpers'
 
 export const useManageNewOrder = ({
   client,
@@ -13,6 +14,7 @@ export const useManageNewOrder = ({
     return { message, duration }
   },
   playNotificationSound = () => {},
+  setCountOrders = (number) => { return number },
   sendNotification = ({ title, description, backgroundColor }) => {
     return {
       title,
@@ -26,9 +28,23 @@ export const useManageNewOrder = ({
 
   const [data] = useOrdersFromStore({
     idStore,
+    search: '',
     fromDate: convertDateFormat({ start: true }),
     toDate: convertDateFormat({ start: false })
   })
+
+  useEffect(() => {
+    if (data) {
+      const dataOrder = data[KEY_STATUS_ORDER]
+      if (Array.isArray(dataOrder) && dataOrder) {
+        const filteredOrders = dataOrder.filter(order =>
+          isDateInRange(order?.pDatCre) && order?.pSState === 1
+        ) ?? []
+        setOrders(filteredOrders)
+        setCountOrders(filteredOrders.length)
+      }
+    }
+  }, [data])
 
   const [isOpenOrder, setIsOpenOrder] = useState(false)
   const { getOnePedidoStore } = useGetSale()
@@ -38,7 +54,7 @@ export const useManageNewOrder = ({
     setOrders(dataOrder)
     const { pCodeRef } = order || {}
     if (pCodeRef) {
-      const isCodeRefExists = orders.some(item => item.pCodeRef === pCodeRef)
+      const isCodeRefExists = findOrderByCodeRef(data, pCodeRef)
       if (isCodeRefExists) {
         return
       }
@@ -50,60 +66,7 @@ export const useManageNewOrder = ({
         }
       }).then((response) => {
         console.log(response)
-        const currentSale = {
-          __typename: 'StorePedidos',
-          pdpId: null,
-          idStore: 'MjcyMDg4ODE0ODUxNTE2NDUw',
-          pCodeRef,
-          payMethodPState: 0,
-          pPRecoger: null,
-          totalProductsPrice: 36000,
-          pSState: 1,
-          pDatCre: '2023-05-23T18:00:36.000Z',
-          channel: 1,
-          locationUser: null,
-          pDatMod: '2023-05-23T18:10:12.000Z',
-          getAllPedidoStore: [
-            {
-              __typename: 'StorePedidos',
-              pdpId: 'MTg3NzQxMjgyMjQ3NTQ2MzUwMDA=',
-              pId: null,
-              idStore: 'MjcyMDg4ODE0ODUxNTE2NDUw',
-              ShoppingCard: 'Mjc0ODA5NzAzMDAwMDMxNjQwMDA=',
-              pCodeRef: 'Gi8OfUk9X6',
-              pPStateP: 1,
-              payMethodPState: 0,
-              pPRecoger: null,
-              pDatCre: '2023-05-23T18:00:36.000Z',
-              pDatMod: '2023-05-23T18:00:36.000Z',
-              getAllShoppingCard: {
-                __typename: 'ShoppingCard',
-                ShoppingCard: 'Mjc0ODA5NzAzMDAwMDMxNjQwMDA=',
-                comments: '',
-                cantProducts: 3,
-                pId: 'NDM1MzQyMTAzNzYyNDI2MzAwMA==',
-                productFood: {
-                  __typename: 'ProductFood',
-                  pId: 'MjUwMzIxNzA5NjYzMzk1MTQwMDA=',
-                  carProId: 'MTM2MDQ0NDA3NDI1NzU4MjMwMA==',
-                  colorId: null,
-                  idStore: 'MjcyMDg4ODE0ODUxNTE2NDUw',
-                  pName: 'Hamburguesa mas papas y gaseosa',
-                  ProPrice: 12000,
-                  ProDescuento: '12',
-                  ProDescription: '12312312312',
-                  ValueDelivery: null,
-                  ProImage:
-                    '//front-back-server.fly.dev/static/platos/undefined',
-                  ProStar: 0,
-                  pState: 1,
-                  pDatCre: '2023-05-19T22:42:50.000Z',
-                  pDatMod: '2023-05-19T22:42:50.000Z'
-                }
-              }
-            }
-          ]
-        }
+        const currentSale = response?.data?.getOnePedidoStore || {}
         client.cache.modify({
           fields: {
             getAllOrdersFromStore (existingOrders = []) {
@@ -115,13 +78,11 @@ export const useManageNewOrder = ({
                   currentSale
                 )
                 const currentOrder = cache[KEY_STATUS_ORDER]
-                const isCodeRefExists = currentOrder.some(item => item.pCodeRef === pCodeRef)
-                if (isCodeRefExists) {
-                  return
-                }
-                if (currentOrder) {
-                  setOrders(currentOrder)
-                }
+                const filteredOrders = currentOrder.filter(order =>
+                  isDateInRange(order.pDatCre)
+                )
+                setOrders(filteredOrders)
+                playNotificationSound()
                 return cache
               } catch (e) {
                 return existingOrders
