@@ -15,6 +15,7 @@ query getStore($id: ID, $idStore: ID){
  getStore(id: $id, idStore: $idStore){
 cId
 id
+deliveryTimeMinutes
 scheduleOpenAll
 dId
 idStore
