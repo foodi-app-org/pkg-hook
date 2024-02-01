@@ -16,6 +16,7 @@ query getAllStoreInStore($search: String, $min: Int, $max: Int){
     cId
     id
     dId
+    deliveryTimeMinutes
     ctId
     catStore
     neighborhoodStore
