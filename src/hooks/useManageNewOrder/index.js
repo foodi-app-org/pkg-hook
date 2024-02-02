@@ -59,7 +59,6 @@ export const useManageNewOrder = ({
         return
       }
       setIsOpenOrder(true)
-      playNotificationSound()
       getOnePedidoStore({
         variables: {
           pCodeRef: pCodeRef ?? ''

@@ -18,6 +18,7 @@ export const GET_ALL_FAV_STORE = gql`
           schHoEnd
           schState
         }
+        deliveryTimeMinutes
         scheduleOpenAll
         idStore
         cId

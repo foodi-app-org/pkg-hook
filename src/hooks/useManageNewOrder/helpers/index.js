@@ -1,11 +1,33 @@
-export const findOrderByCodeRef = (data, pCodeRef) => {
+/**
+ * Busca un objeto dentro de un conjunto de columnas por su código de referencia.
+ * @param {Object} data - El objeto que contiene las columnas.
+ * @param {string} pCodeRef - El código de referencia a buscar.
+ * @returns {Object|null} - El objeto encontrado o null si no se encuentra.
+ */
+export function findOrderByCodeRef (data, pCodeRef) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('El parámetro "data" debe ser un objeto no nulo.')
+  }
+
+  if (typeof pCodeRef !== 'string') {
+    throw new Error('El parámetro "pCodeRef" debe ser una cadena de texto.')
+  }
+
   // Iterar sobre cada columna en el objeto data
-  for (const column of Object.values(data)) {
-    // Buscar el objeto por pCodeRef dentro de la columna actual
-    const foundOrder = column.find(order => order.pCodeRef === pCodeRef)
-    // Si se encuentra el objeto, devolverlo
-    if (foundOrder) {
-      return foundOrder
+  for (const columnKey in data) {
+    if (Object.hasOwnProperty.call(data, columnKey)) {
+      const column = data[columnKey]
+      // Verificar si la columna es un array
+      if (Array.isArray(column)) {
+        // Buscar el objeto por pCodeRef dentro de la columna actual
+        const foundOrder = column.find(
+          (order) => order && order.pCodeRef === pCodeRef
+        )
+        // Si se encuentra el objeto, devolverlo
+        if (foundOrder) {
+          return foundOrder
+        }
+      }
     }
   }
   // Si no se encuentra el objeto en ninguna columna, devolver null

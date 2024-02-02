@@ -19,6 +19,14 @@ export const useCreateDeliveryTime = ({
 
   const createDeliveryTime = async (minutes) => {
     try {
+      if (!minutes) {
+        sendNotification({
+          backgroundColor: 'error',
+          title: 'Error',
+          description: 'The delivery time is required.'
+        })
+        return
+      }
       const { data } = await createDeliveryTimeMutation({
         variables: { minutes: parseInt(minutes) }
       })
