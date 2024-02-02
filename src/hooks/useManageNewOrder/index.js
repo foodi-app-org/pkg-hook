@@ -14,6 +14,7 @@ export const useManageNewOrder = ({
     return { message, duration }
   },
   playNotificationSound = () => {},
+  setIsOpenOrder = (boolean) => { return boolean },
   setCountOrders = (number) => { return number },
   sendNotification = ({ title, description, backgroundColor }) => {
     return {
@@ -46,7 +47,6 @@ export const useManageNewOrder = ({
     }
   }, [data])
 
-  const [isOpenOrder, setIsOpenOrder] = useState(false)
   const { getOnePedidoStore } = useGetSale()
 
   const handleNewOrder = (order) => {
@@ -90,7 +90,6 @@ export const useManageNewOrder = ({
           }
         })
       })
-      setAlertBox({ message: 'Nuevo pedido', duration: 100000 })
       sendNotification({
         title: 'Pedido',
         description: 'Nuevo pedido',
@@ -99,5 +98,5 @@ export const useManageNewOrder = ({
     }
   }
 
-  return [orders, { handleNewOrder, isOpenOrder, setIsOpenOrder }]
+  return [orders, { handleNewOrder }]
 }
