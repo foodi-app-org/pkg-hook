@@ -4,8 +4,10 @@
  * @returns {string} A string indicating the original number and the result of adding 10 minutes.
  */
 export const addTenMinutes = (num) => {
+  if (num > 60) return ''
   if (num >= 50) {
-    return `${num} - ${60} min`
+    const newNum = num - 10
+    return `${newNum} - ${60} min`
   } else {
     return `${num} - ${num + 10} min`
   }

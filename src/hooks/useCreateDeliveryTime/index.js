@@ -9,16 +9,33 @@ const CREATE_DELIVERY_TIME = gql`
   }
 `
 
-export const useCreateDeliveryTime = () => {
-  const [createDeliveryTimeMutation, { loading, error }] = useMutation(CREATE_DELIVERY_TIME)
+export const useCreateDeliveryTime = ({
+  sendNotification = ({ description, title, backgroundColor }) => {
+    return { description, title, backgroundColor }
+  }
+}) => {
+  const [createDeliveryTimeMutation, { loading, error }] =
+    useMutation(CREATE_DELIVERY_TIME)
 
   const createDeliveryTime = async (minutes) => {
     try {
-      const { data } = await createDeliveryTimeMutation({ variables: { minutes } })
+      const { data } = await createDeliveryTimeMutation({
+        variables: { minutes: parseInt(minutes) }
+      })
+      if (data?.createDeliveryTime?.success) {
+        sendNotification({
+          title: 'Delivery Time Created',
+          description: data.createDeliveryTime.message,
+          backgroundColor: 'success'
+        })
+      }
       return data.createDeliveryTime
     } catch (error) {
-      console.error('Error creating delivery time:', error)
-      return { success: false, message: 'An error occurred while creating delivery time' }
+      sendNotification({
+        backgroundColor: 'error',
+        title: 'Error',
+        description: 'An error occurred while creating the delivery time.'
+      })
     }
   }
 

@@ -9,7 +9,7 @@ export const getStatusForStores = (stores = []) => {
         ...store,
         status: { message: '', open: true },
         open: 1,
-        min
+        min: min ?? ''
       }
     }
     const dataSchedules =
@@ -19,7 +19,7 @@ export const getStatusForStores = (stores = []) => {
     return {
       ...store,
       status,
-      min,
+      min: min ?? '',
       open: status?.open ? 1 : 0
     }
   }).sort((a, b) => b.open - a.open)
