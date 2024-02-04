@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-function generateEncryptionKey(password, salt) {
+function generateEncryptionKey (password, salt) {
   return crypto
     .pbkdf2Sync(password, salt, 100000, 32, 'sha256')
     .toString('hex')

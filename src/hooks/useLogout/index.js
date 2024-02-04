@@ -5,7 +5,11 @@ import { signOutAuth } from './helpers'
 import { getCurrentDomain } from '../../utils'
 export { signOutAuth } from './helpers'
 
-export const useLogout = ({ setAlertBox = () => {} } = {}) => {
+export const useLogout = ({
+  setAlertBox = ({
+    message
+  }) => { return { message } }
+} = {}) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const client = useApolloClient()
@@ -32,17 +36,19 @@ export const useLogout = ({ setAlertBox = () => {} } = {}) => {
       throw new Error('Error al eliminar la cookie. ')
     }
   }
-
-  const onClickLogout = async () => {
+  const deleteCookie = async () => {
+    await eliminarCookie(process.env.SESSION_NAME)
+    await eliminarCookie(process.env.LOCAL_SALES_STORE)
+    await eliminarCookie('restaurant')
+    await eliminarCookie('usuario')
+    await eliminarCookie('session')
+  }
+  const onClickLogout = async ({ redirect = true } = { redirect: true }) => {
+    console.log(redirect)
     try {
+      if (!redirect) return await deleteCookie()
       setLoading(true)
-   // Eliminar la cookie process.env.SESSION_NAME
-      await eliminarCookie(process.env.SESSION_NAME)
-      await eliminarCookie(process.env.LOCAL_SALES_STORE)
-      await eliminarCookie('restaurant')
-      await eliminarCookie('usuario')
-      await eliminarCookie('session')
-
+      await deleteCookie()
       // Logout from the server
       const logoutResponse = await fetch(`${process.env.URL_BASE}/api/auth/logout/`, {
         method: 'POST',
@@ -57,8 +63,7 @@ export const useLogout = ({ setAlertBox = () => {} } = {}) => {
         return
       }
 
-      const response = await logoutResponse.json()
-      const { status } = response || {}
+      await logoutResponse.json()
       console.log('Intentando borrar cookies...')
 
       // Eliminar la cookie process.env.SESSION_NAME
