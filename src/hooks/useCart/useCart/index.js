@@ -13,32 +13,25 @@ import {
 } from './helpers'
 import { useManageQueryParams } from '../../useManageQueryParams'
 
-/**
- * Custom hook for managing cart functionality.
- *
- * @param {Object} options - Options object.
- * @param {Function} options.setAlertBox - Function to set an alert message.
- * @returns {Object} - Object containing cart state and functions.
- */
-/**
- * The `useCart` function is a custom hook in JavaScript that handles the management of a shopping
- * cart, including adding products, managing quantities, and handling optional extras.
- * @param [] - - `openModalProduct`: A boolean indicating whether the modal for the product is open or
- * not. Default value is `false`.
- * @returns The `useCart` function returns an object with the following properties and methods:
- */
 export const useCart = ({
-  location = {},
+  location = {
+    push: (props, state, { shallow }) => {
+      return { ...props, state, shallow }
+    },
+    query: {
+      plato: ''
+    }
+  },
   openModalProduct = false,
-  handleMenu = () => { },
-  setOpenModalProduct = () => { },
-  setAlertBox = () => { }
+  handleMenu = (number) => { return number },
+  setOpenModalProduct = (boolean) => { return boolean },
+  setAlertBox = (args) => { return args }
 } = {}) => {
   // sub products
   const { handleCleanQuery } = useManageQueryParams({
     location
   })
-
+  const [loadingButton, setLoadingButton] = useState(false)
   const [dataOptional, setDataOptional] = useState([])
   const [dataExtra, setDataExtra] = useState([])
   const [quantity, setQuantity] = useState(1)
@@ -62,8 +55,8 @@ export const useCart = ({
   ] = useGetOneProductsFood({ fetchOnlyProduct: true })
 
   const getOneProduct = async food => {
-    const { pId, intoCart } = food || {}
-    const isEditing = intoCart
+    const { pId } = food || {}
+
     if (!pId) return {}
     setOpenModalProduct(true)
     const product = await handleGetOneProduct({ variables: { pId } })
@@ -81,7 +74,7 @@ export const useCart = ({
       })
       const comments = matchingItemInShoppingCart?.comments
       if (comments) {
-        setComments(comments || '')
+        setComments(comments)
       }
       const quantityProduct = matchingItemInShoppingCart?.cantProducts
       if (quantityProduct) {
@@ -170,7 +163,7 @@ export const useCart = ({
         }
       })
 
-      setDataExtra(fetchedDataExtra || [])
+      setDataExtra(fetchedDataExtra)
     }
   }
 
@@ -310,13 +303,13 @@ export const useCart = ({
    *
    * @param {Object} food - The selected food item.
    */
-
   const handleAddProducts = async (food) => {
     if (!food) return
     const idStore = food?.getStore?.idStore
     if (!idStore) {
       return
     }
+    setLoadingButton(true)
     const isExistItemInShoppingCart = dataShoppingCard?.find((item) => {
       return item?.productFood && item?.productFood?.pId === food.pId
     }) ?? null
@@ -360,11 +353,18 @@ export const useCart = ({
       })
 
       if (response?.data) {
+        if (!idShoppingCart) {
+          setAlertBox({ message: 'producto agregado al carrito' })
+        }
+        if (idShoppingCart) {
+          setAlertBox({ message: 'producto actualizado' })
+        }
         // Perform actions after adding products to cart
       }
     } catch (error) {
       setAlertBox({ message: 'Ocurrió un error al añadir el producto al carrito' })
     }
+    setLoadingButton(false)
   }
 
   const handleShowModalProduct = () => {
@@ -394,6 +394,7 @@ export const useCart = ({
     comments,
     loading: loadingProduct || loading,
     dataOneProduct,
+    loadingButton,
     dataExtra,
     dataOptional,
     setQuantity,
