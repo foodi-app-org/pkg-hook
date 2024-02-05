@@ -16,8 +16,7 @@ export const useSchedules = ({ schDay = 1, idStore = '' }) => {
     data,
     loading,
     error
-  } = useQuery(GET_SCHEDULE_STORE, { variables: { schDay: schDay, idStore } })
-
+  } = useQuery(GET_SCHEDULE_STORE, { variables: { schDay, idStore } })
 
   return [data?.getStoreSchedules, { loading, error }]
 }

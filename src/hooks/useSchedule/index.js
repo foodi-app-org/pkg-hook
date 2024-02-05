@@ -19,15 +19,16 @@ export const useSchedule = ({ day = null, idStore = '' }) => {
 export const useSetScheduleOpenAll = () => {
   const [setStoreSchedule, { loading, error }] = useMutation(SET_STATUS_ALL_SCHEDULE_STORE, {
     onError: (e) => {
-      console.error(e);
+      console.error(e)
     }
-  });
+  })
 
   const handleSetStoreSchedule = (scheduleOpenAll) => {
     setStoreSchedule({
       variables: {
-        scheduleOpenAll: scheduleOpenAll
-      }, update: (cache, { data }) => {
+        scheduleOpenAll
+      },
+      update: (cache, { data }) => {
         const success = data?.setScheduleOpenAll?.success
         if (success) {
           cache.modify({
@@ -36,20 +37,19 @@ export const useSetScheduleOpenAll = () => {
                 const store = readField('getStore')
                 const updatedCart = {
                   ...store,
-                  scheduleOpenAll: scheduleOpenAll
-                  }
-                  return updatedCart
+                  scheduleOpenAll
+                }
+                return updatedCart
               }
             }
           })
         }
       }
-    });
-  };
+    })
+  }
 
-  return [handleSetStoreSchedule, { loading, error }];
-};
-
+  return [handleSetStoreSchedule, { loading, error }]
+}
 
 export const useSchedules = ({ schDay = 1, idStore = '' }) => {
   const {

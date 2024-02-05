@@ -42,7 +42,7 @@ export function useScheduleData (data) {
      * Calcula la duración en horas entre dos horas de inicio y final.
      * @param {string} startTime - Hora de inicio en formato 'HH:mm'.
      * @param {string} endTime - Hora de fin en formato 'HH:mm'.
-     * @returns {number} Duración en horas con dos decimales.
+     * @returns {number|string} Duración en horas con dos decimales.
      */
 
   // Función para calcular la duración en horas de un horario
