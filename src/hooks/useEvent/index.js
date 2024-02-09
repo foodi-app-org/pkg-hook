@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+
 export const on = ({ eventType, callBack }) => {
   document.addEventListener(eventType, callBack)
 }

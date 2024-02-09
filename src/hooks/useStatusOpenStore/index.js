@@ -94,7 +94,7 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
         if (findNextDay && findDataNextDay?.schHoSta) {
           const nameOfDayTomorrow = weekDays[dayOfWeekTomorrow]
           return handleMessageHour(
-                `Cerrado - Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
+                `Cerrado abre Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
                   findDataNextDay?.schHoSta ? findDataNextDay?.schHoSta : ''
                 }`,
                 false

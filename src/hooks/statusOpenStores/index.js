@@ -92,7 +92,7 @@ export const statusOpenStores = ({
         if (findNextDay && findDataNextDay?.schHoSta) {
           const nameOfDayTomorrow = weekDays[dayOfWeekTomorrow]
           return handleState(
-                `Cerrado - Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
+                `Cerrado abre - Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
                   findDataNextDay?.schHoSta ? findDataNextDay?.schHoSta : ''
                 }`,
                 false

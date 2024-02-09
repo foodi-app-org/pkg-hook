@@ -56,7 +56,7 @@ const initializer = (initialValue = initialState) => {
 export const useSales = ({
   disabled = false,
   router,
-  sendNotification = () => { return },
+  sendNotification = (arsg) => { return arsg },
   setAlertBox = () => { return }
 }) => {
   const domain = getCurrentDomain()
@@ -104,7 +104,6 @@ export const useSales = ({
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState([])
   const [dataExtra, setDataExtra] = useState([])
-
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
