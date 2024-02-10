@@ -904,6 +904,11 @@ export const useSales = ({
         setLoadingSale(false)
         setErrorSale(true)
         setPrint(false)
+        sendNotification({
+          title: 'error',
+          backgroundColor: 'error',
+          description: 'Lo sentimos, ocurrió un error'
+        })
       })
       .finally(() => {
         setPrint(false)

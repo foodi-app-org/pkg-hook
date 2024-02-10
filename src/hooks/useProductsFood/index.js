@@ -72,7 +72,13 @@ export const useProductsFood = ({
   ]
 }
 
-export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => {
+export const useDeleteProductsFood = ({
+  sendNotification = (asrg) => { return asrg },
+  onSuccess = (asrg) => { return asrg }
+} = {
+  sendNotification: (asrg) => { return asrg },
+  onSuccess: (asrg) => { return asrg }
+}) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
   const handleDelete = async product => {
@@ -130,8 +136,9 @@ export const useDeleteProductsFood = ({ sendNotification = () => { } } = {}) => 
         })
       }
     }).then(() => {
+      onSuccess()
       return sendNotification({
-        title: 'Success',
+        title: 'Exito',
         description: 'El producto se ha eliminado correctamente',
         backgroundColor: 'success'
       })

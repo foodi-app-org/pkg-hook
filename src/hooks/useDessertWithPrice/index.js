@@ -1,12 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState, createRef } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  createRef
+} from 'react'
 import { useUpdateMultipleExtProductFoods } from '../useUpdateMultipleExtProductFoods'
 import { useMutation } from '@apollo/client'
-import { DELETE_EXTRA_PRODUCTS, EDIT_EXTRA_PRODUCT_FOODS } from './queries'
+import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
+import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
+import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
 
 export const useDessertWithPrice = ({
   dataExtra = [],
-  sendNotification = () => { },
-  setAlertBox = () => { }
+  sendNotification = ({
+    title,
+    description,
+    backgroundColor
+  }) => {
+    return {
+      title,
+      description,
+      backgroundColor
+    }
+  },
+  setAlertBox = ({ message, duration = 10000, success = true }) => { return { message, duration, success } }
 } = {}) => {
   const [selected, setSelected] = useState({
     loading: false,
@@ -34,19 +53,11 @@ export const useDessertWithPrice = ({
       ]
     }
   }, [initialLine])
-  const transformedData = dataExtra?.map(item => ({
-    extraName: item.extraName || '',
-    extraPrice: item?.extraPrice?.toString() || '', // Convierte a string si es necesario
-    exState: !!item.exState,
-    forEdit: true,
-    ...item
-  }))
+  const transformedData = transformData(dataExtra)
+
   const [LineItems, setLine] = useState(
     Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems
   )
-  useEffect(() => {
-    setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
-  }, [dataExtra.length])
 
   const inputRefs = useRef(LineItems.Lines.map(() => createRef()))
 
@@ -58,7 +69,7 @@ export const useDessertWithPrice = ({
         inputRefs.current[index].current.focus()
       }
     } catch (error) {
-      console.log(error)
+      return null
     }
   }
 
@@ -66,11 +77,12 @@ export const useDessertWithPrice = ({
     // Asegurándote de que las referencias se actualicen si LineItems cambia
     inputRefs.current = LineItems.Lines.map((_, i) => inputRefs.current[i] || createRef())
   }, [LineItems])
+
   const handleCleanLines = useCallback(() => {
-    setLine(initialLineItems)
+    setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [initialLineItems])
 
-  const [updateMultipleExtProductFoods, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { } })
+  const [updateMultipleExtProductFoods, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { return } })
   /**
    * Handles the addition of two new lines to the Lines array in LineItems state.
    */
@@ -132,11 +144,16 @@ export const useDessertWithPrice = ({
 
     setLine({ ...LineItems, Lines: newLines })
   }
-  const [deleteExtraProductFoods] = useMutation(DELETE_EXTRA_PRODUCTS)
+  const { deleteExtraProductFoods } = useDeleteExtraProductFoods()
 
+  /**
+ * Filter out a specific line from the LineItems array.
+ * @param {number} index - Index of the line to be filtered out.
+ */
   const filterOneLine = (index) => {
-    console.log(index)
+  // Use optional chaining to safely access nested properties.
     const Lines = LineItems?.Lines?.filter((_, i) => { return i !== index })
+    // Use spread operator to create a new object with the filtered Lines array.
     return setLine({ ...LineItems, Lines })
   }
   const handleRemove = async (i, exPid) => {
@@ -148,13 +165,24 @@ export const useDessertWithPrice = ({
             variables: {
               state: 1,
               id: exPid
+            },
+            update: (cache) => {
+              cache.modify({
+                fields: {
+                  ExtProductFoodsAll: (dataOld = []) => {
+                    const { success } = data?.data?.deleteextraproductfoods || {}
+                    if (success && Array.isArray(dataOld)) {
+                      const transformedData = transformData(dataOld)
+                      const Lines = transformedData.filter((_, index) => { return index !== i })
+                      const newCache = dataOld.filter((_, index) => { return index !== i })
+                      setLine({ ...LineItems, Lines })
+                      return newCache
+                    }
+                  }
+                }
+              })
             }
           })
-          const { success } = data?.data?.deleteextraproductfoods || {}
-          if (success) {
-            console.log(i, exPid)
-            return filterOneLine(i)
-          }
         }
       }
       if (!exPid) {
@@ -168,8 +196,10 @@ export const useDessertWithPrice = ({
       })
     }
   }
+  useEffect(() => {
+    setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
+  }, [dataExtra.length])
 
-  // Prepares and validates data for submission.
   const prepareAndValidateData = useCallback((pId) => {
     const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }) => ({
       extraPrice: parseFloat(extraPrice),
@@ -179,8 +209,8 @@ export const useDessertWithPrice = ({
     }))
 
     const message = 'Complete los campos vacíos'
-    const findInputEmpty = dataArr.find(({ extraName }) => extraName === '')
-    const findInputEmptyPrice = dataArr.find(({ extraPrice }) => isNaN(extraPrice) || extraPrice === '')
+    const findInputEmpty = dataArr?.find(({ extraName }) => extraName === '')
+    const findInputEmptyPrice = dataArr?.find(({ extraPrice }) => isNaN(extraPrice) || extraPrice === '')
 
     if (findInputEmpty || findInputEmptyPrice) {
       setAlertBox({ message })
@@ -270,6 +300,12 @@ export const useDessertWithPrice = ({
 
   const handleSubmit = ({ pId }) => {
     try {
+      const checkNumberRange = findNumbersExceedingRange(LineItems?.Lines)
+      updateErrorFieldByIndex({ checkNumberRange, setLine })
+      if (checkNumberRange?.length > 0) {
+        return setAlertBox({ message: 'El precio no puede ser tan alto', duration: 10000 })
+      }
+
       if (!prepareAndValidateData(pId)) return
       const dataArr = LineItems?.Lines?.map(x => {
         const extraPrice = stringToInt(x.extraPrice)
