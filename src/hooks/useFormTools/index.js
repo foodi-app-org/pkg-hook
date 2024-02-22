@@ -9,7 +9,14 @@ import { validationSubmitHooks } from '../../utils'
  * @description Hook con herramientas de validación y eventos de cambio
  * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
-export const useFormTools = ({ sendNotification = () => { } } = {}) => {
+export const useFormTools = ({
+  sendNotification = ({
+    title = '',
+    description = '',
+    backgroundColor = ''
+  }) => { }
+}
+= {}) => {
   const [dataForm, setDataForm] = useState({})
   const [errorForm, setErrorForm] = useState({})
   const [errorSubmit, setErrorSubmit] = useState(false)
@@ -40,7 +47,7 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
     event,
     msgError = '',
     msgSuccess,
-    action = () => { },
+    action = () => { return Promise.resolve() },
     actionAfterSuccess = () => { }
   }) => {
     event.preventDefault()
@@ -78,7 +85,7 @@ export const useFormTools = ({ sendNotification = () => { } } = {}) => {
       action().then(res => {
         if (res) {
           sendNotification({
-            message: msgSuccess || 'Operación exitosa',
+            message: msgSuccess ?? 'Operación exitosa',
             description: 'Operación exitosa',
             backgroundColor: 'success'
           })

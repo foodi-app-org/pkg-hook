@@ -13,20 +13,6 @@ import {
 } from './queriesStore'
 export * from './useEditProduct'
 
-/**
- * Description
- * @param {any} categories
- * @param {any} desc
- * @param {any} fetchPolicy='network-only'
- * @param {any} fromDate
- * @param {any} gender
- * @param {any} max=50
- * @param {any} min
- * @param {any} pState
- * @param {any} search=null
- * @param {any} toDate
- * @returns {any}
- */
 export const useProductsFood = ({
   categories,
   desc,
@@ -40,7 +26,7 @@ export const useProductsFood = ({
   toDate
 }) => {
   // const [productsFood, setProductsFood] = useState([])
-  const [showMore, setShowMore] = useState(50)
+  const [showMore, setShowMore] = useState(500)
   const { data, loading, fetchMore, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     fetchPolicy: fetchPolicy ?? 'cache-and-network',
     notifyOnNetworkStatusChange: true,

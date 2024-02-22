@@ -101,6 +101,8 @@ export const GET_ALL_PRODUCT_STORE = gql`
       pId
       sizeId #Talla
       colorId #Color
+      carProId #Categoria a la cual pertenece el producto
+      caId
       cId #Country
       dId #Department
       ctId #Cuidad

@@ -27,7 +27,6 @@ import {
 import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
 import { useCatWithProduct } from './../useCatWithProduct/index'
-import { useCheckboxState } from '../useCheckbox'
 import { useLogout } from '../useLogout'
 export * from './useGetAllSales'
 export { GET_ALL_COUNT_SALES } from './queries'
@@ -48,6 +47,7 @@ const initialState = {
 const initializer = (initialValue = initialState) => {
   return (
     JSON.parse(
+      // @ts-ignore
       Cookies.get(process.env.LOCAL_SALES_STORE) || JSON.stringify(initialState)
     ) || initialValue
   )
@@ -57,7 +57,7 @@ export const useSales = ({
   disabled = false,
   router,
   sendNotification = (arsg) => { return arsg },
-  setAlertBox = () => { return }
+  setAlertBox = (arsg) => { return arsg }
 }) => {
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
@@ -67,16 +67,14 @@ export const useSales = ({
   const [modalItem, setModalItem] = useState(false)
   const [openCommentModal, setOpenCommentModal] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
+  // @ts-ignore
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
   const [search, setSearch] = useState('')
   const [datCat] = useCatWithProduct({})
-  const {
-    checkedItems,
-    disabledItems,
-    setCheckedItems,
-    handleChangeCheck
-  } = useCheckboxState(datCat, [], [])
-  const arr = checkedItems ? Array.from(checkedItems) : []
+  const [categories, setCategories] = useState([])
+  useEffect(() => {
+    setCategories(datCat)
+  }, [datCat])
   const [totalProductPrice, setTotalProductPrice] = useState(0)
   const [showMore, setShowMore] = useState(100)
   const [inputValue, setInputValue] = useState('')
@@ -119,6 +117,7 @@ export const useSales = ({
         })
         setAlertBox({ message, type: 'success' })
         if (message === 'Token expired') {
+          // @ts-ignore
           onClickLogout()
         }
         setOpenCurrentSale(data?.registerSalesStore?.Response.success)
@@ -152,15 +151,29 @@ export const useSales = ({
     }
   })
   const [productsFood, { loading, fetchMore }] = useProductsFood({
+    // @ts-ignore
     search: search?.length >= 4 ? search : '',
     gender: [],
     desc: [],
-    categories: arr || [],
+    categories: [],
     toDate: valuesDates?.toDate,
     fromDate: valuesDates?.fromDate,
     max: showMore,
     min: 0
   })
+  const handleChangeCheck = (caId) => {
+    // @ts-ignore
+    setCategories((prev) => {
+      return prev.map((item) => {
+        // @ts-ignore
+        return item.carProId === caId
+          // @ts-ignore
+          ? { ...item, checked: !item?.checked }
+          : item
+      })
+    })
+  }
+
   const max = productsFood?.reduce(function (a, b) {
     return Math.max(a, b?.ProPrice || 0)
   }, 0)
@@ -178,6 +191,7 @@ export const useSales = ({
   }
   // HANDLESS
   // FILTER PRODUCT DATA_DB
+  // @ts-ignore
   const handlePrint = ({ callback }) => {
     if (disabled) {
       return sendNotification({
@@ -231,6 +245,7 @@ export const useSales = ({
         return items.pId === id
       })
       if (value <= 0) {
+        // @ts-ignore
         dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: OneProduct })
       }
       const finalQuantity = (state.PRODUCT.ProQuantity = value || 0)
@@ -285,6 +300,7 @@ export const useSales = ({
         return handleChangeNumber(state, action)
       }
       case 'REMOVE_ALL_PRODUCTS':
+        // @ts-ignore
         setValues({
           comment: '',
           change: '',
@@ -355,6 +371,7 @@ export const useSales = ({
       title: 'Comentario eliminado',
       description: 'Has eliminado el comentario!'
     })
+    // @ts-ignore
     return dispatch({
       type: 'PUT_COMMENT',
       payload: pId,
@@ -362,31 +379,41 @@ export const useSales = ({
     })
   }, [])
   useEffect(() => {
+    // @ts-ignore
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
   }, [data, domain])
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
+    // @ts-ignore
     const item = dataOptional.find((item) => item.code === codeCategory)
     if (!item) return
+    // @ts-ignore
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
       (el) => el.opSubExPid === exOptional
     )
     if (item && idx !== -1) {
       const updatedItem = {
+        // @ts-ignore
         ...item,
         ExtProductFoodsSubOptionalAll: [
+          // @ts-ignore
           ...item.ExtProductFoodsSubOptionalAll.slice(0, idx),
           {
+            // @ts-ignore
             ...item.ExtProductFoodsSubOptionalAll[idx],
+            // @ts-ignore
             check: !item.ExtProductFoodsSubOptionalAll[idx].check
           },
+          // @ts-ignore
           ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1)
         ]
       }
       const newData = dataOptional.map((el) =>
+        // @ts-ignore
         el.code === codeCategory ? updatedItem : el
       )
+      // @ts-ignore
       setDataOptional(() => [...newData])
     }
   }
@@ -414,6 +441,7 @@ export const useSales = ({
     const arr =
       dataExtra?.length > 0
         ? dataExtra?.filter((p) => {
+          // @ts-ignore
           return p.quantity !== 0
         })
         : []
@@ -448,6 +476,7 @@ export const useSales = ({
       }
       const filteredDataOptional = dataOptional
         .map((obj) => {
+          // @ts-ignore
           const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
             (subObj) => subObj?.check === true
           )
@@ -455,11 +484,14 @@ export const useSales = ({
           if (filteredSubOptions?.length === 0) {
             return null
           }
+          // @ts-ignore
           return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
         .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
+      // @ts-ignore
       const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0)
       if (product?.PRODUCT?.pId) {
+        // @ts-ignore
         dispatch({
           type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
           payload: product.PRODUCT.pId,
@@ -476,18 +508,23 @@ export const useSales = ({
     }
   }
 
+  // @ts-ignore
   function handleIncrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
     const exPid = Adicionales?.exPid || null
 
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
+        // @ts-ignore
         if (exPid === producto.exPid) {
+          // @ts-ignore
           const initialQuantity = producto?.quantity ? producto?.quantity : 0
           const newQuantity = initialQuantity + 1
+          // @ts-ignore
           const newExtraPrice = producto.extraPrice * newQuantity
 
           return {
+            // @ts-ignore
             ...producto,
             quantity: newQuantity,
             newExtraPrice
@@ -496,22 +533,27 @@ export const useSales = ({
         return producto
       })
 
+      // @ts-ignore
       setDataExtra(newExtra)
     }
   }
 
+  // @ts-ignore
   function handleDecrementExtra ({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
     const exPid = Adicionales?.exPid || null
 
     // Comprobar que el objeto Adicionales existe en dataExtra
+    // @ts-ignore
     const extraIndex = dataExtra.findIndex((extra) => extra.exPid === exPid)
     if (extraIndex === -1) {
       return
     }
 
     if (pId && exPid && extraIndex !== -1) {
+      // @ts-ignore
       const newExtra = dataExtra.map((producto, i) => {
+        // @ts-ignore
         if (exPid === producto.exPid) {
           // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
           const { quantity = 0, extraPrice = 0 } = producto
@@ -523,6 +565,7 @@ export const useSales = ({
           const newExtraPrice = newQuantity === 0 ? extraPrice : extraPrice * newQuantity
 
           return {
+            // @ts-ignore
             ...producto,
             quantity: newQuantity,
             newExtraPrice
@@ -532,21 +575,11 @@ export const useSales = ({
       })
 
       // Actualiza el estado de dataExtra con el nuevo array
+      // @ts-ignore
       setDataExtra(newExtra)
     }
   }
-  /**
- * Agrega un producto al carrito de compras.
- * @param {Object} state - Estado actual del carrito.
- * @param {Object} action - Acción que contiene los datos del producto a agregar.
- * @param {string} action.payload.pId - ID del producto.
- * @param {string} action.payload.pName - Nombre del producto.
- * @param {string[]} action.payload.getOneTags - Etiquetas del producto.
- * @param {string} action.payload.ProDescription - Descripción del producto.
- * @param {string} action.payload.ProImage - URL de la imagen del producto.
- * @param {number} action.payload.ProPrice - Precio del producto.
- * @returns {Object} Nuevo estado del carrito con el producto agregado.
- */
+
   function addToCartFunc (state, action) {
     const {
       pId,
@@ -809,6 +842,7 @@ export const useSales = ({
       })
     }
     const decimal = parseFloat(percentage) / 100
+    // @ts-ignore
     const result = decimal * parseFloat(totalProductPrice)
     setDiscount({ price: result, discount: percentage })
 
@@ -819,6 +853,7 @@ export const useSales = ({
   const { getOnePedidoStore } = useGetSale()
 
   const handleSubmit = () => {
+    // @ts-ignore
     if (errors?.change || errors?.valueDelivery) {
       return sendNotification({
         title: 'error',
@@ -828,6 +863,7 @@ export const useSales = ({
     }
     setLoadingSale(true)
     const code = RandomCode(10)
+    // @ts-ignore
     setCode(code)
     function convertInteger (cadena) {
       if (typeof cadena === 'string') {
@@ -859,6 +895,7 @@ export const useSales = ({
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only',
+              // @ts-ignore
               onCompleted: (data) => {
                 client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
               }
@@ -1027,10 +1064,48 @@ export const useSales = ({
     }
   }
   const handleCleanFilter = () => {
+    // @ts-ignore
     setValues({})
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
   }
   const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0
+  /**
+ * Filter products by carProId.
+ * @param {Array} products - Array of products to filter.
+ * @param {Array} carProIds - Array of carProId to filter by.
+ * @returns {Array} - Filtered array of products or all products if no matches found.
+ */
+  function filterProductsByCarProId (products, carProIds) {
+    if (!Array.isArray(products)) {
+      return []
+    }
+
+    if (!Array.isArray(carProIds) || carProIds.length === 0) {
+      return products
+    }
+
+    return products.filter(product => carProIds.includes(product.carProId))
+  }
+
+  /**
+* Filter objects with checked property equal to true.
+* @param {Array} products - Array of objects.
+* @returns {Array} - Array of objects with checked property equal to true.
+*/
+  function filterChecked (products) {
+    if (!Array.isArray(products)) {
+      return []
+    }
+
+    return products.filter(product => product?.checked === true).map(product => product.carProId)
+  }
+
+  // Obtener los carProIds de productos con checked en true
+  const carProIds = filterChecked(categories)
+
+  // Filtrar los productos de productsFood por los carProIds obtenidos
+  const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
+
   return {
     loading: loading || loadingSale,
     loadingExtraProduct,
@@ -1055,7 +1130,7 @@ export const useSales = ({
     search,
     values,
     initialStateSales,
-    productsFood,
+    productsFood: filteredProducts,
     modalItem,
     sumExtraProducts,
     oneProductToComment: oneProductToComment ?? null,
@@ -1064,10 +1139,8 @@ export const useSales = ({
     dataExtra: dataExtra || [],
     fetchMore,
     discount,
-    checkedItems,
-    datCat,
-    disabledItems,
-    setCheckedItems,
+    datCat: categories,
+    loadingProduct: loading,
     handleChangeCheck,
     errors,
     handleUpdateAllExtra,
