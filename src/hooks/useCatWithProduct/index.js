@@ -12,16 +12,17 @@ export const useCatWithProduct = ({
     gender,
     desc,
     speciality
-  } = searchFilter ?? {}
+  } = searchFilter ?? {
+    gender: [],
+    desc: null,
+    speciality: []
+  }
   const {
     data,
     loading,
     error,
     fetchMore
   } = useQuery(GET_ALL_CATEGORIES_WITH_PRODUCT, {
-    onCompleted: (data) => {
-      console.log('data', data)
-    },
     fetchPolicy: 'network-only',
     variables:
     {

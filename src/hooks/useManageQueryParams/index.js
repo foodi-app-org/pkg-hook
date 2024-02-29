@@ -1,4 +1,3 @@
-// Hola mundo
 export const useManageQueryParams = ({
   location = {
     query: {},

@@ -137,7 +137,7 @@ export const useSales = ({
   const [productFoodsOne, { data: dataProduct }] = useLazyQuery(
     GET_ONE_PRODUCTS_FOOD
   )
-  const [ExtProductFoodsSubOptionalAll] = useLazyQuery(
+  const [ExtProductFoodsSubOptionalAll, { loading: loadingExtProductFoodsSubOptionalAll }] = useLazyQuery(
     GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
     {
       onError: () => {
@@ -302,6 +302,7 @@ export const useSales = ({
       case 'REMOVE_ALL_PRODUCTS':
         // @ts-ignore
         setValues({
+          ...values,
           comment: '',
           change: '',
           valueDelivery: ''
@@ -498,6 +499,16 @@ export const useSales = ({
           dataOptional: filteredDataOptional,
           dataExtra: filteredDataExtra
         })
+        const updatesOccurred = (
+          (dataExtra && dataExtra.length > 0)
+        )
+        if (updatesOccurred) {
+          return sendNotification({
+            title: 'Success',
+            backgroundColor: 'success',
+            description: 'Items subidos al producto'
+          })
+        }
       }
     } catch (_error) {
       return sendNotification({
@@ -1068,13 +1079,14 @@ export const useSales = ({
     setValues({})
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
   }
-  const disabledModalItems = dataOptional?.length > 0 || dataExtra?.length > 0
+
+  const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
   /**
- * Filter products by carProId.
- * @param {Array} products - Array of products to filter.
- * @param {Array} carProIds - Array of carProId to filter by.
- * @returns {Array} - Filtered array of products or all products if no matches found.
- */
+   * Filter products by carProId.
+   * @param {Array} products - Array of products to filter.
+   * @param {Array} carProIds - Array of carProId to filter by.
+   * @returns {Array} - Filtered array of products or all products if no matches found.
+   */
   function filterProductsByCarProId (products, carProIds) {
     if (!Array.isArray(products)) {
       return []

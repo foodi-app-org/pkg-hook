@@ -10,7 +10,8 @@ export const generateStoreURL = ({
   city,
   department,
   storeName,
-  idStore
+  idStore,
+  rootMainPath = 'delivery'
 }) => {
   try {
     // Validate all necessary fields
@@ -30,7 +31,7 @@ export const generateStoreURL = ({
     // Replace spaces in storeName with hyphens
     const formattedStoreName = storeName.replace(/\s+/g, '-')
 
-    return `${process.env.MAIN_URL_BASE}/delivery/${cityName}-${departmentName}/${formattedStoreName}/${idStore}`
+    return `${process.env.MAIN_URL_BASE}/${rootMainPath}/${cityName}-${departmentName}/${formattedStoreName}/${idStore}`
   } catch (_) {
     return '/'
   }
