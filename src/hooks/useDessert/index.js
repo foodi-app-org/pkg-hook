@@ -15,7 +15,7 @@ export * from './helpers'
 export const useDessert = ({
   pId = null,
   initialData = null,
-  sendNotification = () => { }
+  sendNotification = (args) => { return args }
 }) => {
   const [selectedExtra, setSelectedExtra] = useState({})
   const [openModalEditExtra, setOpenModalEditExtra] = useState(false)

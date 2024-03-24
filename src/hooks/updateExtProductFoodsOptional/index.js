@@ -21,7 +21,7 @@ export const useUpdateExtProductFoodsOptional = () => {
           opExPid,
           OptionalProName,
           required,
-          numbersOptionalOnly
+          numbersOptionalOnly: Number(numbersOptionalOnly)
         }
       },
       update: (cache, { data: { ExtProductFoodsOptionalAll } }) => {

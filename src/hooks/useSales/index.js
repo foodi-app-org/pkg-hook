@@ -634,7 +634,7 @@ export const useSales = ({
         if (item.pId === pId) {
           return {
             ...item,
-            getOneTags: OurProduct.genderTags,
+            getOneTags: OurProduct?.genderTags,
             unitPrice: OurProduct?.ProPrice,
             ProPrice: isFree ? 0 : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
             ProQuantity: productExist.ProQuantity + +1,
