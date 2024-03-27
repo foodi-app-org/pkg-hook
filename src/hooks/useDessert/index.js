@@ -413,6 +413,7 @@ export const useDessert = ({
         title: 'Error',
         backgroundColor: 'warning'
       })
+      return // Termina la función si el título está vacío
     }
 
     // Generate a new list ID using the RandomCode function (must be implemented elsewhere)
@@ -421,11 +422,11 @@ export const useDessert = ({
     // Determine if the list is required based on the setCheck.exState state
     const required = setCheck.exState ? 1 : 0
 
-    // Add the new list to the data state
-    setData({
-      listIds: [...data.listIds, newListId],
+    // Add the new list to the beginning of the data state
+    setData(prevData => ({
+      listIds: [newListId, ...prevData.listIds], // Agrega el nuevo ID al principio del array
       lists: {
-        ...data.lists,
+        ...prevData.lists,
         [newListId]: {
           id: newListId,
           title,
@@ -435,7 +436,7 @@ export const useDessert = ({
           cards: []
         }
       }
-    })
+    }))
 
     // Update the external product with the information of the new list
     handleUpdateExtProduct({

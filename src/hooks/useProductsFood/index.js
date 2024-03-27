@@ -16,10 +16,10 @@ export * from './useEditProduct'
 export const useProductsFood = ({
   categories,
   desc,
-  fetchPolicy = 'network-only',
+  fetchPolicy = 'cache-and-network',
   fromDate,
   gender,
-  max = 50,
+  max = 100,
   min,
   pState,
   search = null,
@@ -28,7 +28,7 @@ export const useProductsFood = ({
   // const [productsFood, setProductsFood] = useState([])
   const [showMore, setShowMore] = useState(500)
   const { data, loading, fetchMore, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
-    fetchPolicy: fetchPolicy ?? 'cache-and-network',
+    fetchPolicy,
     notifyOnNetworkStatusChange: true,
     nextFetchPolicy: 'cache-first',
     refetchWritePolicy: 'merge',
@@ -40,7 +40,7 @@ export const useProductsFood = ({
       gender: gender || [],
       max: max || null,
       min: min || null,
-      pState: pState || 0,
+      pState,
       search: search ?? search,
       toDate: toDate || null
     }
@@ -59,11 +59,11 @@ export const useProductsFood = ({
 }
 
 export const useDeleteProductsFood = ({
-  sendNotification = (asrg) => { return asrg },
-  onSuccess = (asrg) => { return asrg }
+  sendNotification = (arg) => { return arg },
+  onSuccess = (arg) => { return arg }
 } = {
-  sendNotification: (asrg) => { return asrg },
-  onSuccess: (asrg) => { return asrg }
+  sendNotification: (arg) => { return arg },
+  onSuccess: (arg) => { return arg }
 }) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
@@ -124,8 +124,8 @@ export const useDeleteProductsFood = ({
     }).then(() => {
       onSuccess()
       return sendNotification({
-        title: 'Exito',
-        description: 'El producto se ha eliminado correctamente',
+        title: 'Éxito',
+        description: pState === 1 ? 'El producto se ha eliminado correctamente' : 'El producto se ha restaurando correctamente',
         backgroundColor: 'success'
       })
     }).catch((e) => {

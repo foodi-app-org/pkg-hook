@@ -13,6 +13,20 @@ const validTypes = {
   textarea: true
 }
 
+export const statusOrder = {
+  0: '',
+  1: 'ENTRANTE',
+  2: 'PROCESO',
+  3: 'LISTOS',
+  4: 'CONCLUIDOS',
+  5: 'RECHAZADOS'
+}
+
+export const statusProduct = {
+  deleted: 0,
+  active: 1
+}
+
 export const validationSubmitHooks = elements => {
   let errorForm = {}
 

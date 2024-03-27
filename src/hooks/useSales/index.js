@@ -28,7 +28,10 @@ import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
 import { useCatWithProduct } from './../useCatWithProduct/index'
 import { useLogout } from '../useLogout'
+import { filterProductsByCarProId } from './helpers'
 export * from './useGetAllSales'
+export * from './helpers'
+
 export { GET_ALL_COUNT_SALES } from './queries'
 
 const initialState = {
@@ -1081,23 +1084,6 @@ export const useSales = ({
   }
 
   const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
-  /**
-   * Filter products by carProId.
-   * @param {Array} products - Array of products to filter.
-   * @param {Array} carProIds - Array of carProId to filter by.
-   * @returns {Array} - Filtered array of products or all products if no matches found.
-   */
-  function filterProductsByCarProId (products, carProIds) {
-    if (!Array.isArray(products)) {
-      return []
-    }
-
-    if (!Array.isArray(carProIds) || carProIds.length === 0) {
-      return products
-    }
-
-    return products.filter(product => carProIds.includes(product.carProId))
-  }
 
   /**
 * Filter objects with checked property equal to true.
