@@ -51,12 +51,18 @@ export const useSetScheduleOpenAll = () => {
   return [handleSetStoreSchedule, { loading, error }]
 }
 
-export const useSchedules = ({ schDay = 1, idStore = '' }) => {
+export const useSchedules = ({ schDay = 1, idStore = '', onCompleted = (data) => { return data } }) => {
   const {
     data,
     loading,
     error
-  } = useQuery(GET_SCHEDULE_STORE, { variables: { schDay, idStore } })
+  } = useQuery(GET_SCHEDULE_STORE, {
+    variables: { schDay, idStore },
+    onCompleted: (data) => {
+      onCompleted(data)
+    }
+  }
+  )
 
   return [data?.getStoreSchedules, { loading, error }]
 }
