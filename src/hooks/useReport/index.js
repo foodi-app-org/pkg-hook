@@ -32,8 +32,7 @@ export const useReport = ({
       toDate
     }
   })
-  console.log(fromDate,
-    toDate)
+
   const totalSales = totalSalesData?.getAllSalesStoreTotal ?? {}
 
   return {

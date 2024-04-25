@@ -13,7 +13,7 @@ const VALIDATE_SUBSCRIPTION_QUERY = gql`
   }
 `
 
-export const useFreeSubscriptionValidation = (idStore) => {
+export const useSubscriptionValidation = (idStore) => {
   const { loading, error, data } = useQuery(VALIDATE_SUBSCRIPTION_QUERY, {
     variables: { idStore }
   })
@@ -21,6 +21,7 @@ export const useFreeSubscriptionValidation = (idStore) => {
   const [daysElapsed, setDaysElapsed] = useState(null)
 
   useEffect(() => {
+    console.log(data)
     if (data && data.validateFreeSubscription) {
       const { currentPeriodEnd, currentPeriodStart } = data.validateFreeSubscription
       const currentDate = new Date()
