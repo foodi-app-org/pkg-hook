@@ -28,13 +28,13 @@ import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
 import { useCatWithProduct } from './../useCatWithProduct/index'
 import { useLogout } from '../useLogout'
-import { filterProductsByCarProId } from './helpers'
+import { filterProductsByCarProId, removeFunc } from './helpers'
 export * from './useGetAllSales'
 export * from './helpers'
 
 export { GET_ALL_COUNT_SALES } from './queries'
 
-const initialState = {
+export const initialState = {
   PRODUCT: [],
   totalPrice: 0,
   sortBy: null,
@@ -47,7 +47,7 @@ const initialState = {
   payMethodPState: 0
 }
 
-const initializer = (initialValue = initialState) => {
+export const initializer = (initialValue = initialState) => {
   return (
     JSON.parse(
       // @ts-ignore
@@ -128,7 +128,7 @@ export const useSales = ({
       onError: (error) => {
         sendNotification({
           backgroundColor: 'error',
-          title: error || 'Lo sentimo',
+          title: error || 'Lo sentimos',
           description: 'ha ocurrido un error'
         })
       }
@@ -282,7 +282,7 @@ export const useSales = ({
 
     switch (action.type) {
       case 'ADD_TO_CART':
-        return addToCartFunc(state, action)
+        return addToCartFunc(state, action) // https://www.npmjs.com/package/@sourcetoad/vision-camera-plugin-barcode-scanner
       case 'ADD_PRODUCT':
         return {
           ...state,
@@ -290,7 +290,7 @@ export const useSales = ({
           PRODUCT: [...state?.PRODUCT, action?.payload],
         }
       case 'REMOVE_PRODUCT':
-        return removeFunc(state, action)
+        return removeFunc(state, action, productsFood)
       case 'REMOVE_PRODUCT_TO_CART':
         return {
           ...state,
@@ -646,35 +646,6 @@ export const useSales = ({
         }
         return item
       })
-    }
-  }
-
-  function removeFunc (state, action) {
-    const productExist = state?.PRODUCT.find((items) => {
-      return items.pId === action.payload.pId
-    })
-    const OurProduct = productsFood.find((items) => {
-      return items.pId === action.payload.pId
-    })
-    return {
-      ...state,
-      counter: state.counter - 1,
-      totalAmount: state.totalAmount - action.payload.ProPrice,
-      PRODUCT:
-        action.payload.ProQuantity > 1
-          ? state.PRODUCT.map((items) => {
-            return items.pId === action.payload.pId
-              ? {
-                  ...items,
-                  pId: action.payload.pId,
-                  ProQuantity: items.ProQuantity - 1,
-                  ProPrice: productExist.ProPrice - OurProduct?.ProPrice
-                }
-              : items
-          })
-          : state.PRODUCT.filter((items) => {
-            return items.pId !== action.payload.pId
-          })
     }
   }
 

@@ -22,6 +22,7 @@ export const statusOpenStores = ({
       open
     }
   }
+
   function getNextDaySchedule (dataSchedules, currentDayOfWeek) {
     const today = new Date()
     const tomorrow = new Date(today)
@@ -93,7 +94,7 @@ export const statusOpenStores = ({
           const nameOfDayTomorrow = weekDays[dayOfWeekTomorrow]
           return handleState(
                 `Cerrado abre - Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
-                  findDataNextDay?.schHoSta ? findDataNextDay?.schHoSta : ''
+                  findDataNextDay?.schHoSta ?? ''
                 }`,
                 false
           )

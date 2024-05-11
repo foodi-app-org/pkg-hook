@@ -11,6 +11,7 @@ import {
   getTimeObject
 } from './helpers'
 import { useFormatDate } from '../useFormatDate'
+import { convertToMilitaryTime } from '../convertToMilitaryTime'
 
 export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
   const [open, setOpen] = useState('')
@@ -86,7 +87,11 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
           )
         }
 
-        const { findNextDay, findDataNextDay, dayOfWeekTomorrow } = getNextDaySchedule(
+        const {
+          findNextDay,
+          findDataNextDay,
+          dayOfWeekTomorrow
+        } = getNextDaySchedule(
           dataSchedules,
           currentDayOfWeek
         )
@@ -95,14 +100,14 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
           const nameOfDayTomorrow = weekDays[dayOfWeekTomorrow]
           return handleMessageHour(
                 `Cerrado abre Mañana ${nameOfDayTomorrow} ${!!findDataNextDay?.schHoSta && 'a las'} ${
-                  findDataNextDay?.schHoSta ? findDataNextDay?.schHoSta : ''
+                  handleHourPmAM(findDataNextDay?.schHoSta) ?? ''
                 }`,
                 false
           )
         }
 
         const nextDayName = weekDayLookup[(dayOfWeek + 1) % 7]
-        const nextOpening = openings && openings['opening' + nextDayName.substring(0, 3)]
+        const nextOpening = openings?.['opening' + nextDayName.substring(0, 3)]
         const nextHours = nextOpening?.split(';')?.map((item) => item?.trim())
 
         if (nextHours[0] !== ceroHours) {

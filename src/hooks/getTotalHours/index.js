@@ -1,5 +1,5 @@
-export const getTotalHours = (days) => {
-  const totalMinutesArray = days.map((day) => {
+export const getTotalHours = (days = []) => {
+  const totalMinutesArray = days?.map((day) => {
     const { schHoSta, schHoEnd } = day
 
     // Handle potential invalid time strings

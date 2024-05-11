@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { dateEnum, initialDays, timeSuggestions } from './helpers'
+import {
+  dateEnum,
+  initialDays,
+  timeSuggestions
+} from './helpers'
 import { useCreateSchedules, useSchedules } from '../useSchedule'
 import { days as NameDays } from '../../utils'
 import { convertToMilitaryTime } from '../convertToMilitaryTime'
@@ -11,13 +15,13 @@ export const useSetupSchedule = ({
     return args
   }
 } = {}) => {
-  const [days, setDays] = useState(initialDays)
+  const [days, setDays] = useState(initialDays === null ? [] : initialDays)
   const [alertModal, setAlertModal] = useState(false)
   const [selectedDay, setSelectedDay] = useState({})
   const [setStoreSchedule, { loading }] = useCreateSchedules()
 
   const onCompleted = (data) => {
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data) && data?.length > 0) {
       // Mapeamos los datos recibidos y los convertimos en un objeto con la estructura deseada
       const newSchedules = data.map((day) => ({
         day: day.schDay,
@@ -29,7 +33,7 @@ export const useSetupSchedule = ({
       // Actualizamos el estado days
       setDays(prevDays => {
         // Creamos un nuevo array combinando los elementos existentes en days con los nuevos datos
-        const updatedDays = prevDays.map(existingDay => {
+        const updatedDays = prevDays?.map(existingDay => {
           // Buscamos si hay un elemento con el mismo día en los nuevos datos
           const newData = newSchedules.find(newDay => newDay.day === existingDay.day)
           // Si encontramos el día en los nuevos datos, lo fusionamos con el día existente
@@ -81,7 +85,7 @@ export const useSetupSchedule = ({
       setSelectedDay(isSaved)
       return setAlertModal(true)
     }
-    const updatedDays = days.map((d) => {
+    const updatedDays = days?.map((d) => {
       if (d.day === day) {
         return { ...d, selected: !d.selected }
       } else {
@@ -93,10 +97,38 @@ export const useSetupSchedule = ({
   const selectedDays = days?.filter((day) => Boolean(day.selected)).map((day) => {
     return day.day
   })
+  function sumHours (hora1, hora2) {
+    const [hora1Horas, hora1Minutos] = hora1.split(':').map(Number)
+    const [hora2Horas, hora2Minutos] = hora2.split(':').map(Number)
 
+    let sumaHour = hora1Horas + hora2Horas
+    let sumMinutes = hora1Minutos + hora2Minutos
+
+    if (sumMinutes >= 60) {
+      sumMinutes -= 60
+      sumaHour++
+    }
+
+    if (sumaHour >= 24) {
+      sumaHour -= 24
+    }
+
+    const horaSumada = `${String(sumaHour).padStart(2, '0')}:${String(sumMinutes).padStart(2, '0')}`
+    return horaSumada
+  }
+  function isLessThanOneHour (hora1, hora2) {
+    const suma = sumHours(hora1, hora2)
+    const [sumaHour, sumMinutes] = suma.split(':').map(Number)
+    const totalMinutos = (sumaHour * 60) + sumMinutes
+
+    if (totalMinutos < 60) {
+      return true // La suma de las horas es menor a una hora
+    }
+    return false // La suma de las horas es igual o mayor a una hora
+  }
   const onChangeSaveHour = async ({ time, name, day }) => {
     setDays(prevDays => {
-      const updatedDays = prevDays.map((d) => {
+      const updatedDays = prevDays?.map((d) => {
         if (d.day === day) {
           return { ...d, [name]: time, loading: Boolean(name === dateEnum.schHoEnd) }
         } else {
@@ -112,6 +144,14 @@ export const useSetupSchedule = ({
         const schHoEnd = findHour?.schHoEnd
         const startHour = convertToMilitaryTime(schHoSta)
         const endHour = convertToMilitaryTime(schHoEnd)
+        if (isLessThanOneHour(startHour, endHour)) {
+          // eslint-disable-next-line consistent-return
+          sendNotification({
+            description: 'Error, el horario debe ser mayor a una hora',
+            title: 'Error',
+            backgroundColor: 'error'
+          })
+        }
         // Comparar solo las horas y minutos
         if (startHour === endHour) {
           // eslint-disable-next-line consistent-return
@@ -129,7 +169,8 @@ export const useSetupSchedule = ({
             backgroundColor: 'error'
           })
         }
-        if (startHour !== endHour && startHour < endHour) {
+
+        if (startHour !== endHour && startHour < endHour && !isLessThanOneHour(startHour, endHour)) {
           setStoreSchedule({
             variables: {
               input: {
@@ -193,12 +234,13 @@ export const useSetupSchedule = ({
       }
     })
     setDays(prevDays => {
-      const updatedDays = prevDays.map((d) => {
+      if (!prevDays) return []
+      const updatedDays = prevDays?.map((d) => {
         if (d.day === day) {
           return {
             ...d,
-            [dateEnum.schHoEnd]: dateEnum.schHoEnd,
-            [dateEnum.schHoSta]: dateEnum.schHoSta,
+            [dateEnum.schHoEnd]: dateEnum?.schHoEnd,
+            [dateEnum.schHoSta]: dateEnum?.schHoSta,
             selected: false
           }
         } else {
@@ -215,7 +257,6 @@ export const useSetupSchedule = ({
 
   return {
     duplicateDay,
-    alertModal,
     toggleCheck,
     handleSelectedDay,
     onChangeSaveHour,
@@ -224,6 +265,7 @@ export const useSetupSchedule = ({
     days,
     selectedDays,
     selectedDay,
+    alertModal,
     loading: lsc || loading,
     times: timeSuggestions
   }

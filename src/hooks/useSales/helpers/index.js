@@ -24,3 +24,32 @@ export function filterProductsByCarProId (products, carProIds) {
 
   return products.filter(product => carProIds.includes(product.carProId))
 }
+
+export function removeFunc (state, action, productsFood) {
+  const productExist = state?.PRODUCT.find((items) => {
+    return items.pId === action.payload.pId
+  })
+  const OurProduct = productsFood.find((items) => {
+    return items.pId === action.payload.pId
+  })
+  return {
+    ...state,
+    counter: state.counter - 1,
+    totalAmount: state.totalAmount - action.payload.ProPrice,
+    PRODUCT:
+      action.payload.ProQuantity > 1
+        ? state.PRODUCT.map((items) => {
+          return items.pId === action.payload.pId
+            ? {
+                ...items,
+                pId: action.payload.pId,
+                ProQuantity: items.ProQuantity - 1,
+                ProPrice: productExist.ProPrice - OurProduct?.ProPrice
+              }
+            : items
+        })
+        : state.PRODUCT.filter((items) => {
+          return items.pId !== action.payload.pId
+        })
+  }
+}
