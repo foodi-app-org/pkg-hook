@@ -1,47 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useMediaQuery } from 'react-responsive'
 
-export const useMobile = (props) => {
-  const { callBack = () => {} } = props || {}
-  const [isMobile, setIsMobile] = useState(false)
-  const [isTablet, setIsTablet] = useState(false)
-  const [innerHeight, setInnerHeight] = useState(0)
-  const [innerWidth, setInnerWidth] = useState(0)
+export const MEDIA_QUERY = {
+  MOBILE: '768px',
+  TABLED: '960px'
+}
 
-  useEffect(() => {
-    const handleResize = () => {
-      // Verificar si window está disponible (es decir, estamos en el lado del cliente)
-      if (typeof window !== 'undefined') {
-        const width = window.innerWidth
-        const height = window.innerHeight
-        setInnerWidth(width)
-        setInnerHeight(height)
-        callBack()
-
-        // Determinar el tipo de dispositivo
-        if (width <= 768) {
-          setIsTablet(true)
-        } else if (width <= 960) {
-          setIsMobile(true)
-        } else {
-          setIsMobile(false)
-        }
-      }
-    }
-
-    // Ejecutar handleResize al cargar y al cambiar el tamaño de la pantalla
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    // Eliminar el event listener al desmontar el componente
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [callBack])
+export const useMobile = () => {
+  const isMobile = useMediaQuery({ query: `(max-width: ${MEDIA_QUERY.MOBILE})` })
+  const isTablet = useMediaQuery({ query: `(max-width: ${MEDIA_QUERY.TABLED}})` })
 
   return {
     isMobile,
-    isTablet,
-    innerHeight,
-    innerWidth
+    isTablet
   }
 }
