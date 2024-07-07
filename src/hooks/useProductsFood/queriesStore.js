@@ -324,8 +324,22 @@ export const UPDATE_IMAGE_PRODUCT_FOOD = gql`
   }
 `
 export const UPDATE_PRODUCT_FOOD = gql`
-  mutation updateProductFoods($input: InputProductFood) {
+   mutation updateProductFoods($input: InputProductFood) {
     updateProductFoods(input: $input) {
+   	success
+    message
+    errors {
+      path
+      message
+      type
+      context {
+        limit
+        value
+        label
+        key
+      }
+    }
+    data {
       pId
       sizeId #Talla
       colorId #Color
@@ -354,6 +368,7 @@ export const UPDATE_PRODUCT_FOOD = gql`
       ProOutstanding
       ProDelivery
       ProVoltaje
+    }
     }
   }
 `

@@ -15,14 +15,28 @@ import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 export * from './helpers'
 
 export const useCreateProduct = ({
-  setAlertBox = () => { },
   router,
-  sendNotification = () => { }
+  setAlertBox = (args) => { return args },
+  sendNotification = (args) => { return args }
 }) => {
   const [errors, setErrors] = useState({
-    names: ''
+    names: false,
+    ProPrice: false,
+    ProDescuento: false,
+    ProDescription: false,
+    ProWeight: false,
+    ProHeight: false,
+    ValueDelivery: false
   })
-  const [values, setValues] = useState({})
+  const [values, setValues] = useState({
+    ProPrice: 0,
+    ProDescuento: 0,
+    ProDescription: '',
+    ProWeight: '',
+    ProHeight: '',
+    ValueDelivery: 0,
+    carProId: ''
+  })
   const [names, setName] = useLocalStorage('namefood', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
@@ -49,7 +63,9 @@ export const useCreateProduct = ({
   // HANDLESS
   const [check, setCheck] = useState({
     availability: true,
-    noAvailability: false
+    noAvailability: false,
+    desc: false,
+    freeShipping: false
   })
 
   const handleCheck = (e) => {
@@ -79,7 +95,11 @@ export const useCreateProduct = ({
     setSearchFilter({ ...filter })
   }
   const onClickClear = () => {
-    setSearchFilter({})
+    setSearchFilter({
+      gender: [],
+      desc: [],
+      speciality: []
+    })
   }
   const handleChangeClick = e => {
     const {
@@ -96,7 +116,7 @@ export const useCreateProduct = ({
     handleCheck(e)
     setValues({
       ...values,
-      ValueDelivery: ''
+      ValueDelivery: 0
     })
   }
 
@@ -112,7 +132,6 @@ export const useCreateProduct = ({
     const file = event.target.files[0]
     setImage(file)
     const base64 = await convertBase64(file)
-    // eslint-disable-next-line
     // const [size, { unit }] = await getFileSizeByUnit(file, "B");
     setImageBase64(base64)
     setPreviewImg(
@@ -125,7 +144,9 @@ export const useCreateProduct = ({
     )
   }
   const onTargetClick = () => {
-    fileInputRef.current.click()
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
   }
   // eslint-disable-next-line no-unused-vars
   const { img } = useEditImageProduct({ sendNotification, initialState })
@@ -139,23 +160,27 @@ export const useCreateProduct = ({
       ProHeight,
       ValueDelivery,
       carProId
-    } = values
-    const formatPrice = ProPrice ? parseFloat(ProPrice?.replace(/\./g, '')) : 0
-    if (!carProId && !names) return setErrors({ ...errors, carProId: true })
-
-    if (!ProPrice?.length > 0) {
-      return setErrors({ ...errors, ProPrice: true })
+    } = values ?? {
+      ProPrice: 0,
+      ProDescuento: 0,
+      ProDescription: '',
+      ProWeight: '',
+      ProHeight: 0,
+      ValueDelivery: 0,
+      carProId: ''
     }
-    const ProImage = `https:${process.env.URL_ADMIN_SERVER}static/platos/${image?.name}`
+    const formatPrice = ProPrice ?? 0
+    if (!carProId && !names) return setErrors({ ...errors, carProId: true })
+    const ProImage = `https:${process.env.URL_ADMIN_SERVER}/static/platos/${image?.name}`
     const pCode = RandomCode(9)
     try {
-      updateProductFoods({
+      const res = await updateProductFoods({
         variables: {
           input: {
             idStore: dataStore?.getStore?.idStore || '',
             ProPrice: check?.desc ? 0 : formatPrice,
-            ProDescuento: check?.desc ? 0 : parseInt(ProDescuento),
-            ValueDelivery: check?.desc ? 0 : parseFloat(ValueDelivery),
+            ProDescuento: check?.desc ? 0 : ProDescuento,
+            ValueDelivery: check?.desc ? 0 : ValueDelivery,
             ProDescription,
             pName: names,
             pCode,
@@ -176,63 +201,44 @@ export const useCreateProduct = ({
               productFoodsAll (dataOld = []) {
                 return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
               },
-              getCatProductsWithProduct (dataOld = {}) {
+              getCatProductsWithProduct () {
                 const updatedData = getCatProductsWithProduct(data, carProId)
                 return updatedData
               }
             }
           })
         }
-      }).then((res) => {
-        const { updateProductFoods } = res?.data || {}
-        const { pId } = updateProductFoods || {}
-        setPid(pId ?? null)
-        router.push(
-          {
-            query: {
-              ...router.query,
-              food: pId
-            }
-          },
-          undefined,
-          { shallow: true }
-        )
-        sendNotification({
-          backgroundColor: 'success',
-          title: 'Success',
-          description: `El producto ${names} subido con éxito`
-        })
-        const objTag = {
-          aName: tags.tag,
-          nameTag: tags.tag,
-          pId
-        }
-        if (tags?.tag) handleRegisterTags(objTag)
-        setValues({})
-      }).catch(err => {
-        return sendNotification({
-          backgroundColor: 'error',
-          title: `${err}`,
-          description: 'Error inesperado'
+      }).finally(() => {
+        setValues({
+          ProPrice: 0,
+          ProDescuento: 0,
+          ProDescription: '',
+          ProWeight: '',
+          ProHeight: '',
+          ValueDelivery: 0,
+          carProId: ''
         })
       })
       if (image !== null) {
-        setImageProducts({
-          variables: {
-            input: {
-              file: image,
-              pCode
+        try {
+          await setImageProducts({
+            variables: {
+              input: {
+                file: image,
+                pCode
+              }
             }
-          }
-        }).then(() => {
-        }).catch(() => {
+          })
+        } catch {
           sendNotification({
             backgroundColor: 'error',
             title: `Ocurrió un error en la imagen en el producto ${names}`,
             description: 'error'
           })
-        })
+        }
       }
+      setPid(res?.data?.updateProductFoods?.data?.pId ?? null)
+      return res
     } catch (error) {
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }

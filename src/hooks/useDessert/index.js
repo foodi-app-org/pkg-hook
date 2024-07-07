@@ -48,7 +48,7 @@ export const useDessert = ({
       // If list or list.cards is missing, assume the list is not complete
       const verifiEmpyRequireCard = list?.cards?.length
       if (list && list?.cards) {
-        return verifiEmpyRequireCard === list.numberLimit
+        return Number(verifiEmpyRequireCard) === Number(list.numberLimit)
       }
 
       // If list or list.cards is missing, assume the list is not complete
