@@ -3,6 +3,7 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@typescript-eslint/parser": "^5.37.0",
+    "file-saver": "2.0.5",
     "js-cookie": "3.0.1",
     "lodash": "^4.17.21",
     "md5": "2.3.0",
@@ -10,7 +11,8 @@
     "react": "18.1.0",
     "react-dom": "18.1.0",
     "react-query": "^3.39.2",
-    "react-responsive": "^10.0.0"
+    "react-responsive": "^10.0.0",
+    "xlsx": "0.18.5"
   },
   "description": "description-pkg-hook",
   "devDependencies": {
@@ -45,5 +47,5 @@
     "rm": "rm -rf node_modules package-lock.json && npm i",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "1.8.6"
+  "version": "1.8.7"
 }

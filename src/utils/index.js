@@ -208,3 +208,5 @@ export const paymentMethodCards = [
     icon: 'IconMasterCard'
   }
 ]
+
+export const CATEGORY_EMPTY = 'NINGUNO'
