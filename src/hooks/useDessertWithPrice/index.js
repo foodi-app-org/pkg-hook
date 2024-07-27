@@ -202,12 +202,12 @@ export const useDessertWithPrice = ({
 
   const prepareAndValidateData = useCallback((pId) => {
     const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }) => ({
-      extraPrice: parseFloat(extraPrice),
+      extraPrice,
       exState: exState === true ? 1 : 0,
       extraName,
       pId
     }))
-
+    console.log(dataArr)
     const message = 'Complete los campos vacíos'
     const findInputEmpty = dataArr?.find(({ extraName }) => extraName === '')
     const findInputEmptyPrice = dataArr?.find(({ extraPrice }) => isNaN(extraPrice) || extraPrice === '')
@@ -291,7 +291,7 @@ export const useDessertWithPrice = ({
     // Luego, transformar los elementos filtrados
     return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => ({
       exPid,
-      extraPrice: stringToInt(extraPrice), // Asumiendo que tienes una función stringToInt definida
+      extraPrice,
       exState: exState === true ? 1 : 0,
       extraName,
       pId

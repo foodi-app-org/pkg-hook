@@ -3,6 +3,20 @@ import { gql } from '@apollo/client'
 export const CREATE_CLIENTS = gql`
 mutation createClients ($input: IClients) {
   createClients(input: $input) {
+   success
+    message
+    errors {
+      path
+      message
+      type
+      context {
+        limit
+        value
+        label
+        key
+      }
+    }
+    data {
     cliId
     idStore
     idUser
@@ -15,6 +29,7 @@ mutation createClients ($input: IClients) {
     clientName
     createAt
     updateAt
+    }
   }
 }
 `
@@ -27,23 +42,44 @@ mutation deleteClient($cliId: ID, $clState: Int!) {
 }
 `
 export const GET_ALL_CLIENTS = gql`
-query getAllClients($idStore: ID, $cId: ID, $dId: ID, $ctId: ID, $search: String,  $min: Int, $max: Int, $fromDate: DateTime, $toDate: DateTime ) {
-  getAllClients(idStore: $idStore, cId: $cId, dId: $dId, ctId: $ctId, search: $search, min: $min, max: $max, fromDate: $fromDate, toDate: $toDate) {
-    cliId
-    idStore
-    gender
-    # idUser
-    clState
-    clientNumber
-    ccClient
-    clientLastName
-    clientName
-    ClientAddress
-    createAt
-    updateAt
-
+query getAllClients($idStore: ID, $search: String, $min: Int, $max: Int, $fromDate: DateTime, $toDate: DateTime, $page: Int) {
+  getAllClients(idStore: $idStore, search: $search, min: $min, max: $max, fromDate: $fromDate, toDate: $toDate, page: $page) {
+    success
+    message
+    data {
+      
+      cliId
+      idStore
+      gender
+      clState
+      clientNumber
+      ccClient
+      clientLastName
+      
+      clientName
+      createAt
+      updateAt
+    }
+    pagination {
+      totalRecords
+      totalPages
+      currentPage
+    }
+    errors {
+      path
+      message
+      type
+      context {
+        limit
+        value
+        label
+        key
+      }
+    }
   }
 }
+
+
 `
 export const GET_ONE_CLIENT = gql`
 query getOneClients($cliId: ID) {

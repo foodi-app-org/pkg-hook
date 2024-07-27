@@ -13,15 +13,36 @@ import {
 
 export const useGetClients = ({
   max,
+  order = 'DESC',
   search,
   sendNotification = () => { }
 } = {}) => {
-  const { loading, error, called, data } = useQuery(GET_ALL_CLIENTS, {
+  const {
+    loading,
+    error,
+    called,
+    data,
+    refetch
+  } = useQuery(GET_ALL_CLIENTS, {
+    onError: () => {
+      sendNotification({
+        title: 'Error',
+        description: 'Algo salió mal',
+        backgroundColor: 'error'
+      })
+    },
     variables: {
-      search
+      search,
+      max: max || 100,
+      order
     }
   })
-  return [data?.getAllClients || [], { loading: called ? false : loading, error }]
+  return [data?.getAllClients || [], {
+    loading: called ? false : loading,
+    buttonLoading: loading,
+    error,
+    refetch
+  }]
 }
 
 export const useDeleteClients = ({ sendNotification = () => { } } = {}) => {
@@ -48,7 +69,7 @@ export const useEditClient = ({ sendNotification = () => { } } = {}) => {
     onCompleted: (data) => {
       if (data?.editOneClient?.success) {
         return sendNotification({
-          title: 'Exito',
+          title: 'Éxito',
           description: data?.editOneClient?.message,
           backgroundColor: 'success'
         })
