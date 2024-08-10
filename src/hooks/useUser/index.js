@@ -1,8 +1,14 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { GET_USER, GET_USER_PROFILE, SET_USER_PROFILE } from './queries'
 
-export const useUser = () => {
-  const { data, loading, error } = useQuery(GET_USER)
+export const useUser = (email) => {
+  const { data, loading, error } = useQuery(GET_USER, email !== ''
+    ? {
+        variables: {
+          email
+        }
+      }
+    : {})
   return [data?.getUser, { loading, error }]
 }
 

@@ -102,7 +102,6 @@ export const useAmountInput = props => {
           decimalsLimit
         )
       }
-      console.log(inputValue)
       setInputValue(inputValue)
 
       const callbackValue = isNaN(amountFloatValue) ? 0 : amountFloatValue

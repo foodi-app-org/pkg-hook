@@ -11,7 +11,6 @@ export const useGetCookies = () => {
 
       for (const cookieName of cookieNames) {
         const cookieValue = Cookies.get(cookieName)
-        console.log({ cookieValue })
         if (cookieValue) {
           cookiesData.push({ name: cookieName, value: cookieValue })
         }
@@ -23,5 +22,22 @@ export const useGetCookies = () => {
     }
   }
 
-  return { getCookies }
+  const getCookie = (cookieName) => {
+    try {
+      if (typeof cookieName !== 'string') {
+        throw new Error('Input cookie name should be a string.')
+      }
+
+      const cookieValue = Cookies.get(cookieName)
+      if (cookieValue) {
+        return { name: cookieName, value: cookieValue }
+      }
+      return null
+    } catch (error) {
+      console.error('Error al traer la cookie:', error)
+      return null
+    }
+  }
+
+  return { getCookies, getCookie }
 }

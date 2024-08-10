@@ -1,4 +1,5 @@
 export async function handleLogin (body) {
+  console.log("🚀 ~ handleLogin ~ body:", body)
   const response = await fetch(`${process.env.URL_BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

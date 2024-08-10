@@ -48,8 +48,8 @@ query getOneUserProfile($id: ID) {
 `
 
 export const GET_USER = gql`
-query getUser($id: ID){
-getUser(id: $id ){
+query getUser($id: ID, $email: String){
+getUser(id: $id email: $email){
 id
 name
 username
@@ -65,9 +65,9 @@ upLon
 upIdeDoc
 siteWeb
 description
+associateStore
 createAt
   role {
-    id
     name
   }
 }
