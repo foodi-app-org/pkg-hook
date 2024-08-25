@@ -33,3 +33,25 @@ query employees {
   }
 }
 `
+/**
+ * GraphQL mutation for creating an employee, store, and user.
+ */
+export const CREATE_ONE_EMPLOYEE_STORE_AND_USER = gql`
+  mutation createOneEmployeeStoreAndUser($input: IEmployeeStore!) {
+    createOneEmployeeStoreAndUser(input: $input) {
+      success
+      message
+      errors {
+        path
+        message
+        type
+        context {
+          limit
+          value
+          label
+          key
+        }
+      }
+    }
+  }
+`
