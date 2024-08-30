@@ -23,7 +23,7 @@ export const useGetRoles = ({
     },
     variables: {
       search,
-      max: max || 100,
+      max: max || 25,
       order
     }
   })
