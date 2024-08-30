@@ -60,7 +60,7 @@ export const useCart = ({
     if (!pId) return {}
     setOpenModalProduct(true)
     const product = await handleGetOneProduct({ variables: { pId } })
-    const productFoodsOne = product.data.productFoodsOne || {}
+    const productFoodsOne = product?.data?.productFoodsOne || {}
     setDataOneProduct(productFoodsOne)
 
     const matchingItemInShoppingCart = dataShoppingCard?.find((item) => {

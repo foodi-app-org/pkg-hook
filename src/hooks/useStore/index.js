@@ -4,7 +4,7 @@ import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con 
 import { errorHandler } from '../../config/client'
 import { useLogout } from '../useLogout'
 
-export const useStore = ({ isClient = false, idStore = '' } = {}) => {
+export const useStore = ({ isClient = false, idStore = null } = {}) => {
   const client = useApolloClient()
   const [onClickLogout, { loading: load }] = useLogout()
 
@@ -27,7 +27,12 @@ export const useStore = ({ isClient = false, idStore = '' } = {}) => {
   }, [cachedData, store])
 
   if (isClient && !!idStore) {
-    const { data, refetch, loading: loadingClient, error: errorStoreClient } = useQuery(GET_ONE_STORE_BY_ID, {
+    const {
+      data,
+      refetch,
+      loading: loadingClient,
+      error: errorStoreClient
+    } = useQuery(GET_ONE_STORE_BY_ID, {
       skip: !isClient,
       variables: {
         idStore

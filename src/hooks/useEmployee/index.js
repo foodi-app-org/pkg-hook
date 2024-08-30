@@ -12,6 +12,6 @@ export const useEmployee = () => {
     loading,
     error,
     fetchMore,
-    pagination: data?.employees?.pagination
+    pagination: data?.employees?.pagination ?? {}
   }]
 }
