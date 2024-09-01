@@ -81,17 +81,25 @@ export const useFormTools = ({
     if (errSub) return setErrorSubmit(errSub)
 
     // Ejecuta la accion si es válido
-    if (!errSub && action) {
-      action().then(res => {
-        if (res) {
+    if (!errSub && typeof action === 'function') {
+      const result = action()
+      if (result && typeof result.then === 'function') {
+        result.then((res) => {
+          if (res) {
+            sendNotification({
+              message: msgSuccess ?? 'Operación exitosa',
+              description: 'Operación exitosa',
+              backgroundColor: 'success'
+            })
+            if (actionAfterSuccess) actionAfterSuccess()
+          }
+        }).catch((e) => {
           sendNotification({
-            message: msgSuccess ?? 'Operación exitosa',
-            description: 'Operación exitosa',
-            backgroundColor: 'success'
+            title: msgError || e?.message || 'Ha ocurrido un error',
+            backgroundColor: 'error'
           })
-          !!actionAfterSuccess && actionAfterSuccess()
-        }
-      }).catch(e => { return sendNotification({ title: msgError || e?.message || 'Ha ocurrido un error', backgroundColor: 'error' }) })
+        })
+      }
     }
 
     setErrorSubmit(errSub)

@@ -12,8 +12,34 @@ import { CREATE_ONE_EMPLOYEE_STORE_AND_USER } from './queries'
  *   data: Object | null
  * }} An object containing the mutation function, loading status, error, and data.
  */
-export const useCreateEmployeeStoreAndUser = () => {
-  const [createEmployeeStoreAndUserMutation, { loading, error, data }] = useMutation(CREATE_ONE_EMPLOYEE_STORE_AND_USER)
+export const useCreateEmployeeStoreAndUser = ({
+  sendNotification = () => {
+    return {
+      description: '',
+      title: '',
+      backgroundColor: ''
+    }
+  },
+  onCompleted = () => {
+    return {
+    }
+  }
+} = {}) => {
+  const [createEmployeeStoreAndUserMutation, { loading, error, data }] = useMutation(CREATE_ONE_EMPLOYEE_STORE_AND_USER, {
+    onCompleted: (response) => {
+      console.log(response)
+      const { createOneEmployeeStoreAndUser } = response ?? {}
+      const { message, success } = createOneEmployeeStoreAndUser ?? {}
+      if (success) {
+        onCompleted()
+      }
+      sendNotification({
+        description: message,
+        title: success ? 'Exito' : 'Error',
+        backgroundColor: success ? 'success' : 'error'
+      })
+    }
+  })
   const [errors, setErrors] = useState([])
 
   /**

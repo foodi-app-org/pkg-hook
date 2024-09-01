@@ -10,6 +10,34 @@ query employees {
         eEmail
         eState
         status
+      user {
+        id
+        name
+        username
+        lastName
+        email
+        avatar
+        uToken
+        uPhoNum
+        ULocation
+        upLat
+        uState
+        upLon
+        upIdeDoc
+        siteWeb
+        description
+        createAt
+        associateStore
+      }
+      roles {
+        idRole
+name
+priority
+description
+permissions
+createdAt
+updatedAt
+      }
     }
     success
     message
