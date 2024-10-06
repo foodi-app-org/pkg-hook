@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client'
 
 export const GET_ALL_DEVICES = gql`
-query getDeviceUsers{
-  getDeviceUsers{
+query getDeviceUsers {
+  getDeviceUsers {
       dId
       locationFormat
       deviceId
