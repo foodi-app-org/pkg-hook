@@ -54,7 +54,7 @@ export class GenerateReport {
    */
   GenExcelReportFileName (type) {
     const fileNames = {
-      1: 'report.xlsx'
+      1: `report_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`
     }
 
     return fileNames[type] ? fileNames[type] : null

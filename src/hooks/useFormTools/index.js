@@ -60,8 +60,8 @@ export const useFormTools = ({
     }
     if (errSub) {
       sendNotification({
-        title: 'Completa los campos requeridos',
-        description: 'Error',
+        description: 'Completa los campos requeridos',
+        title: 'Error',
         backgroundColor: 'error'
       })
     }

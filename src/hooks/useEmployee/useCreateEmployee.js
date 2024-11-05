@@ -5,6 +5,8 @@ import { CREATE_ONE_EMPLOYEE_STORE_AND_USER } from './queries'
 /**
  * Custom hook to handle the createOneEmployeeStoreAndUser mutation.
  *
+ * @param
+ * @param {Object}
  * @returns {{
  *   createEmployeeStoreAndUser: (input: IEmployeeStore) => Promise<void>,
  *   loading: boolean,
@@ -23,15 +25,29 @@ export const useCreateEmployeeStoreAndUser = ({
   onCompleted = () => {
     return {
     }
+  },
+  onError = () => {
+    return {
+    }
   }
 } = {}) => {
   const [createEmployeeStoreAndUserMutation, { loading, error, data }] = useMutation(CREATE_ONE_EMPLOYEE_STORE_AND_USER, {
+    onError: () => {
+      sendNotification({
+        description: 'Error creando empleado',
+        title: 'Error',
+        backgroundColor: 'error'
+      })
+    },
     onCompleted: (response) => {
       console.log(response)
       const { createOneEmployeeStoreAndUser } = response ?? {}
       const { message, success } = createOneEmployeeStoreAndUser ?? {}
+      if (success === false) {
+        onError(response)
+      }
       if (success) {
-        onCompleted()
+        onCompleted(response)
       }
       sendNotification({
         description: message,
