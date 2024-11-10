@@ -59,8 +59,8 @@ export const initializer = (initialValue = initialState) => {
 export const useSales = ({
   disabled = false,
   router,
-  sendNotification = (arsg) => { return arsg },
-  setAlertBox = (arsg) => { return arsg }
+  sendNotification = (args) => { return args },
+  setAlertBox = (args) => { return args }
 }) => {
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
@@ -195,11 +195,11 @@ export const useSales = ({
   // HANDLESS
   // FILTER PRODUCT DATA_DB
   // @ts-ignore
-  const handlePrint = ({ callback }) => {
+  const handlePrint = () => {
     if (disabled) {
       return sendNotification({
         title: 'Error',
-        description: 'Esta es la descr',
+        description: 'Esta es la descripción',
         backgroundColor: 'error'
       })
     }
@@ -219,6 +219,25 @@ export const useSales = ({
   const onChangeInput = (e) => {
     return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value })
   }
+  const handleToggleEditingStatus = (state, action) => {
+    const { PRODUCT } = state ?? {
+      PRODUCT: []
+    }
+    return {
+      ...state,
+      PRODUCT: PRODUCT.map((item) => {
+        if (item.pId === action.payload.pId) {
+          return {
+            ...item,
+            editing: !item.editing,
+            oldQuantity: item.ProQuantity
+          }
+        }
+        return item
+      })
+    }
+  }
+
   const handleChangeFilterProduct = (e) => {
     const text = searchedInput(e.target.value)
     if (text === undefined || text === '') {
@@ -232,11 +251,94 @@ export const useSales = ({
       setOneProductToComment(product)
       setValues({
         ...values,
-        comment: product?.comment || ''
+        comment: product?.comment ?? ''
       })
     }
     setOpenCommentModal(!openCommentModal)
   }
+  const handleSuccessUpdateQuantity = (state, payload) => {
+    const { pId } = payload.payload || {
+      pId: null
+    }
+    return {
+      ...state,
+      PRODUCT: state?.PRODUCT?.map((items) => {
+        return items.pId === pId
+          ? {
+              ...items,
+              editing: false,
+              oldQuantity: items.ProQuantity
+            }
+          : items
+      })
+    }
+  }
+
+  /**
+ * Cancels the update of a product's quantity, resetting it to the previous value.
+ * @param {Object} state - The current state.
+ * @param {Object} payload - The payload containing the product ID.
+ * @returns {Object} - The new state with the updated product quantity and editing status.
+ */
+  const handleCancelUpdateQuantity = (state, payload) => {
+  // Validación de `state`
+    if (!state || typeof state !== 'object') {
+      sendNotification({
+        title: 'Error',
+        backgroundColor: 'error',
+        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
+      })
+      return state // Retorna el estado sin cambios si es inválido.
+    }
+
+    // Validación de `PRODUCT`
+    if (!Array.isArray(state.PRODUCT)) {
+      sendNotification({
+        title: 'Error',
+        backgroundColor: 'error',
+        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
+      })
+      return state // Retorna el estado sin cambios si `PRODUCT` no es un array.
+    }
+
+    // Validación de `payload`
+    const { pId } = payload.payload || {}
+    if (!pId) {
+      sendNotification({
+        title: 'Error',
+        backgroundColor: 'error',
+        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
+      })
+      return state // Retorna el estado sin cambios si falta `pId`.
+    }
+
+    return {
+      ...state,
+      PRODUCT: state.PRODUCT.map((item) => {
+      // Validación de propiedades en cada item
+        if (item.pId === pId) {
+          if (typeof item.oldQuantity !== 'number' || typeof item.unitPrice !== 'number') {
+            sendNotification({
+              title: 'Error',
+              backgroundColor: 'error',
+              description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
+            })
+            return item // Retorna el item sin cambios si las propiedades son inválidas.
+          }
+
+          return {
+            ...item,
+            editing: false,
+            ProQuantity: item.oldQuantity,
+            ProPrice: item.oldQuantity * item.unitPrice
+          }
+        }
+
+        return item
+      })
+    }
+  }
+
   const handleChangeNumber = useCallback(
     (state, action) => {
       const event = action.payload
@@ -302,6 +404,12 @@ export const useSales = ({
       case 'ON_CHANGE': {
         return handleChangeNumber(state, action)
       }
+      case 'UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT': {
+        return handleSuccessUpdateQuantity(state, action)
+      }
+      case 'CANCEL_UPDATE_QUANTITY_EDITING_PRODUCT': {
+        return handleCancelUpdateQuantity(state, action)
+      }
       case 'REMOVE_ALL_PRODUCTS':
         // @ts-ignore
         setValues({
@@ -319,6 +427,9 @@ export const useSales = ({
 
       case 'TOGGLE_FREE_PRODUCT':
         return toggleFreeProducts(state, action)
+      case 'TOGGLE_EDITING_PRODUCT': {
+        return handleToggleEditingStatus(state, action)
+      }
       case 'INCREMENT':
         return {
           ...state,
@@ -365,6 +476,8 @@ export const useSales = ({
     }
   }
   const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
+  console.log({ data })
+
   const handleRemoveValue = useCallback(({ name, value, pId }) => {
     setValues({
       ...values,
@@ -611,6 +724,7 @@ export const useSales = ({
     const updatedProduct = {
       pId,
       pName,
+      editing: false,
       getOneTags,
       unitPrice: OurProduct?.ProPrice,
       ProDescription,
@@ -639,6 +753,8 @@ export const useSales = ({
             ...item,
             getOneTags: OurProduct?.genderTags,
             unitPrice: OurProduct?.ProPrice,
+            editing: false,
+            oldQuantity: productExist.ProQuantity + +1,
             ProPrice: isFree ? 0 : (productExist.ProQuantity + 1) * OurProduct?.ProPrice,
             ProQuantity: productExist.ProQuantity + +1,
             free: !!isFree
@@ -741,41 +857,40 @@ export const useSales = ({
     }
     return ''
   }
-  const arrayProduct =
-    data?.PRODUCT?.length > 0
-      ? data?.PRODUCT?.map((product) => {
-        const filteredDataExtra =
+  const arrayProduct = data?.PRODUCT?.length > 0
+    ? data?.PRODUCT?.map((product) => {
+      const filteredDataExtra =
             product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? []
-        const dataOptional = product?.dataOptional?.map(
-          ({ __typename, ...product }) => {
-            const { ExtProductFoodsSubOptionalAll, ...rest } = product
-            const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(
-              (subOption) => {
-                const { __typename, ...subOptionRest } = subOption
-                return subOptionRest
-              }
-            )
-            return {
-              ...rest,
-              ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll
+      const dataOptional = product?.dataOptional?.map(
+        ({ __typename, ...product }) => {
+          const { ExtProductFoodsSubOptionalAll, ...rest } = product
+          const adjustedSubOptionalAll = ExtProductFoodsSubOptionalAll?.map(
+            (subOption) => {
+              const { __typename, ...subOptionRest } = subOption
+              return subOptionRest
             }
+          )
+          return {
+            ...rest,
+            ExtProductFoodsSubOptionalAll: adjustedSubOptionalAll
           }
-        )
-        const refCodePid = RandomCode(20)
-        return {
-          pId: product?.pId,
-          refCodePid,
-          id: values?.cliId,
-          cantProducts: parseInt(
-            product?.ProQuantity ? product?.ProQuantity : 0
-          ),
-          comments: product?.comment ?? '',
-          dataOptional: dataOptional ?? [],
-          dataExtra: filteredDataExtra || [],
-          ProPrice: product.ProPrice
         }
-      })
-      : []
+      )
+      const refCodePid = RandomCode(20)
+      return {
+        pId: product?.pId,
+        refCodePid,
+        id: values?.cliId,
+        cantProducts: parseInt(
+          product?.ProQuantity ? product?.ProQuantity : 0
+        ),
+        comments: product?.comment ?? '',
+        dataOptional: dataOptional ?? [],
+        dataExtra: filteredDataExtra || [],
+        ProPrice: product.ProPrice
+      }
+    })
+    : []
   const finalArrayProduct = arrayProduct.map((item) => {
     const totalExtra = item.dataExtra.reduce(
       (accumulator, extra) => accumulator + extra.newExtraPrice,

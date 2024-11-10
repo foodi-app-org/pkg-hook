@@ -239,7 +239,6 @@ export const useUploadProducts = ({
 
       // Crear una nueva copia de los datos actualizando solo el producto específico
       return prevData.map((product, index) => {
-        console.log(index === productIndex)
         return index === productIndex
           ? {
               ...product,
