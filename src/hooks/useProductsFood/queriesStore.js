@@ -585,6 +585,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       fId
       pName
       ProPrice
+      ProBarCode
       ProDescuento
       ValueDelivery
       ProUniDisponibles

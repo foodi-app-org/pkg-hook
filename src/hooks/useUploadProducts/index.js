@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { RandomCode } from '../../utils'
+import { validateProductDataExcel } from './helpers/validateProductDataExcel'
 
 const STEPS = {
   UPLOAD_FILE: 0,
@@ -41,19 +42,37 @@ export const useUploadProducts = ({
       const filePromises = Array.from(files).map(file => readExcelFile(file))
       const newData = await Promise.all(filePromises)
 
-      const newProducts = newData.flat().map((product) => {
+      const newProducts = newData.flat().map((product, index) => {
         const PRECIO_AL_PUBLICO = isNaN(product.PRECIO_AL_PUBLICO) ? 0.00 : product.PRECIO_AL_PUBLICO
         const VALOR_DE_COMPRA = isNaN(product.VALOR_DE_COMPRA) ? 0.00 : product.VALOR_DE_COMPRA
+        const validationErrors = validateProductDataExcel(product, index)
+
         const code = RandomCode(9)
         return {
           ...product,
           CANTIDAD: isNaN(product.CANTIDAD) ? 1 : product.CANTIDAD,
           ORIGINAL_CANTIDAD: isNaN(product.CANTIDAD) ? 1 : product.CANTIDAD,
           free: false,
+          product: product?.DESCRIPCION,
           pCode: code,
           editing: false,
           PRECIO_AL_PUBLICO,
-          VALOR_DE_COMPRA
+          VALOR_DE_COMPRA,
+          errors: validationErrors.length > 0 ? validationErrors : null
+        }
+      })
+
+      // Notificación de errores
+      newProducts.forEach(product => {
+        if (product.errors) {
+          // Enviar una notificación por cada error encontrado
+          product.errors.forEach(error => {
+            sendNotification({
+              description: error,
+              title: 'Error',
+              backgroundColor: 'error'
+            })
+          })
         }
       })
 
@@ -80,7 +99,7 @@ export const useUploadProducts = ({
       })
     } catch (error) {
       sendNotification({
-        description: 'Un errro a ocurrido mientras se cargaba el archivo de productos.',
+        description: 'Un error ha ocurrido mientras se cargaba el archivo de productos.',
         title: 'Error',
         backgroundColor: 'error'
       })
@@ -188,21 +207,33 @@ export const useUploadProducts = ({
     setData((prevData) => {
     // Validar que el índice es un número válido
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
-        console.warn('Invalid product index:', productIndex)
+        sendNotification({
+          description: `Invalid product index: ${productIndex}`,
+          title: 'Error',
+          backgroundColor: 'error'
+        })
         return prevData // Retorna el estado anterior si el índice es inválido
       }
 
       // Validar que el producto existe y tiene la propiedad 'editing'
       const product = prevData[productIndex]
       if (!product || typeof product.editing === 'undefined') {
-        console.warn('Product or "editing" property not found for index:', productIndex)
+        sendNotification({
+          description: `Product or "editing" property not found for index: ${productIndex}`,
+          title: 'Error',
+          backgroundColor: 'error'
+        })
         return prevData // Retorna el estado anterior si no se encuentra el producto
       }
 
       // Evitar cambios innecesarios si el estado de 'editing' no cambia
       const updatedEditingStatus = !product.editing
       if (product.editing === updatedEditingStatus) {
-        console.info('Product "editing" status is already:', updatedEditingStatus)
+        sendNotification({
+          description: `Product "editing" status is already: ${updatedEditingStatus}`,
+          title: 'Info',
+          backgroundColor: 'info'
+        })
         return prevData // No actualiza si el estado es el mismo
       }
 
@@ -227,12 +258,13 @@ export const useUploadProducts = ({
    * @param {number} productIndex - The index of the product to update.
    */
   const handleSuccessUpdateQuantity = (productIndex) => {
+    const product = data[productIndex]
     setData((prevData) => {
       // Validar que `CANTIDAD` sea un número entero
       const product = prevData[productIndex]
       if (!Number.isInteger(product?.CANTIDAD)) {
         sendNotification({
-          description: 'Quantity must be an integer value.',
+          description: 'La cantidad debe ser un valor entero.',
           title: 'Error',
           backgroundColor: 'error'
         })
@@ -256,12 +288,13 @@ export const useUploadProducts = ({
 
       return filteredData
     })
-
-    sendNotification({
-      description: `Quantity updated successfully for product index ${productIndex}`,
-      title: 'Success',
-      backgroundColor: 'success'
-    })
+    if (product.CANTIDAD !== data[productIndex].ORIGINAL_CANTIDAD) {
+      sendNotification({
+        description: `Cantidad actualizada con éxito para el producto ${product.NOMBRE} #${productIndex}.`,
+        title: 'Éxito',
+        backgroundColor: 'success'
+      })
+    }
   }
 
   const handleChangeQuantity = (event, productIndex) => {

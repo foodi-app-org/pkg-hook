@@ -14,6 +14,7 @@ export const useUpdateMultipleProducts = ({
   const [dataCategoriesProducts] = useCategoriesProduct()
   const findEmptyCategory = dataCategoriesProducts?.find(category => category.pName === CATEGORY_EMPTY)
   const updateProducts = async (products) => {
+    console.log("🚀 ~ updateProducts ~ products:", products)
     const newProducts = products.map(product => {
       return {
         idStore: '',
@@ -28,6 +29,8 @@ export const useUpdateMultipleProducts = ({
         sTateLogistic: 1,
         ProStar: 0,
         ProImage: null,
+        vat: product['IMPUESTO (%)'],
+        ProBarCode: product.CODIGO_DE_BARRAS,
         ProHeight: null,
         ProWeight: '',
         ProOutstanding: 0,
