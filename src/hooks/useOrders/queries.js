@@ -274,7 +274,7 @@ query getAllOrdersFromStore(
         }
       }
     }
-    RECHAZADOS {
+    REJECTED {
       pdpId
       idStore
       pCodeRef

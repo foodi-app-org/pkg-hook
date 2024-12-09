@@ -373,6 +373,12 @@ export const useSales = ({
     },
     [productsFood]
   )
+  const paymentMethod = (state, action) => {
+    return {
+      ...state,
+      payMethodPState: action.payload
+    }
+  }
   const PRODUCT = (state, action) => {
     const productExist = state.PRODUCT.find((items) => {
       return items.pId === action.id
@@ -461,22 +467,13 @@ export const useSales = ({
         return {
           ...state
         }
-      case 'PAYMENT_METHOD_TRANSACTION':
-        return {
-          ...state,
-          payMethodPState: 1
-        }
-      case 'PAYMENT_METHOD_MONEY':
-        return {
-          ...state,
-          payMethodPState: 0
-        }
+      case 'PAYMENT_METHOD': return paymentMethod(state, action)
+
       default:
         return state
     }
   }
   const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
-  console.log({ data })
 
   const handleRemoveValue = useCallback(({ name, value, pId }) => {
     setValues({
@@ -972,13 +969,24 @@ export const useSales = ({
       }
       return cadena || 0
     }
+    const {
+      change,
+      valueDelivery,
+      tableId
+    } = values || {
+      change: 0,
+      valueDelivery: 0,
+      tableId: null,
+      cliId: null
+    }
     return registerSalesStore({
       variables: {
         input: finalArrayProduct || [],
         id: values?.cliId,
         pCodeRef: code,
-        change: convertInteger(values.change),
-        valueDelivery: convertInteger(values.valueDelivery),
+        tableId,
+        change: convertInteger(change),
+        valueDelivery: convertInteger(valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         discount: discount.discount || 0,
@@ -1000,6 +1008,8 @@ export const useSales = ({
                 client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
               }
             })
+            setValues({})
+            handleChange({ target: { name: 'tableId', value: '' } })
             getOnePedidoStore({
               variables: {
                 pCodeRef: code || ''

@@ -21,7 +21,6 @@ export const useSubscriptionValidation = (idStore) => {
   const [daysElapsed, setDaysElapsed] = useState(null)
 
   useEffect(() => {
-    console.log(data)
     if (data && data.validateFreeSubscription) {
       const { currentPeriodEnd, currentPeriodStart } = data.validateFreeSubscription
       const currentDate = new Date()

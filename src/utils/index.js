@@ -19,7 +19,7 @@ export const statusOrder = {
   2: 'PROCESO',
   3: 'LISTOS',
   4: 'CONCLUIDOS',
-  5: 'RECHAZADOS'
+  5: 'REJECTED'
 }
 
 export const statusProduct = {
@@ -28,6 +28,9 @@ export const statusProduct = {
 }
 
 export const validationSubmitHooks = elements => {
+  if (!elements || elements.length === 0) {
+    return {}
+  }
   let errorForm = {}
 
   for (const element of elements) {

@@ -33,7 +33,7 @@ export const updateExistingOrders = (
     2: 'PROCESSING',
     3: 'READY',
     4: 'CONCLUDES',
-    5: 'RECHAZADOS'
+    5: 'REJECTED'
   }
   const targetArray = statusKeys[pSState]
 

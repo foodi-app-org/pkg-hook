@@ -56,6 +56,7 @@ username
 lastName
 email
 avatar
+idRole
 uToken
 uPhoNum
 ULocation
@@ -69,6 +70,12 @@ associateStore
 createAt
   role {
     name
+    idRole,
+    permissions
+    description
+    createdAt
+    updatedAt
+    
   }
 }
 }

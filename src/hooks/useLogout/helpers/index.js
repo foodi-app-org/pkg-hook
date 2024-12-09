@@ -23,7 +23,6 @@ export const __NEXTAUTH = {
 
 export async function signOutAuth (options) {
   const { callbackUrl = window.location.href, reload = true } = options ?? {}
-  console.log('🚀 ~ signOutAuth ~ options:', options)
   const baseUrl = apiBaseUrl(__NEXTAUTH)
   const fetchOptions = {
     method: 'post',

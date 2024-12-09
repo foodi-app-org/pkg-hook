@@ -12,6 +12,7 @@ import { useStore } from '../useStore'
 import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
+import { assignWith } from 'lodash'
 export * from './helpers'
 
 export const useCreateProduct = ({
@@ -219,6 +220,19 @@ export const useCreateProduct = ({
           carProId: ''
         })
       })
+      const { errors } = res ?? {
+        errors: []
+      }
+      if (errors?.length > 0) {
+        errors.forEach(error => {
+          sendNotification({
+            backgroundColor: 'error',
+            title: 'Error',
+            description: error.message
+          })
+        })
+        return
+      }
       if (image !== null) {
         try {
           await setImageProducts({
@@ -240,6 +254,7 @@ export const useCreateProduct = ({
       setPid(res?.data?.updateProductFoods?.data?.pId ?? null)
       return res
     } catch (error) {
+      console.log("🚀 ~ handleRegister ~ error:", error)
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }
