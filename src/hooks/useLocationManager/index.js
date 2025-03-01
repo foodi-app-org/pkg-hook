@@ -26,7 +26,7 @@ export function useLocationManager (getDepartments, getCities) {
   }
 
   const handleDepartmentSearch = (value) => {
-    getCities({ variables: { dId: value } })
+    getCities({ variables: { dId: 'ddd5a096-efc6-4541-a568-c91895bc219e' } })
   }
 
   const handleChangeLocation = (e, error) => {
@@ -41,7 +41,7 @@ export function useLocationManager (getDepartments, getCities) {
       case 'countryId':
         handleCountrySearch(value)
         break
-      case 'dId':
+      case 'code_dId':
         handleDepartmentSearch(value)
         break
       default:

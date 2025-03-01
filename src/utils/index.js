@@ -84,9 +84,6 @@ export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id 
     }
   })
 }
-const initialState = {}
-export const initializer = (initialValue = initialState) => { return JSON.parse(localStorage.getItem(process.env.LOCAL_SALES_STORE)) || initialValue }
-
 /**
  * Formatea un valor como un número siguiendo el formato de Colombia.
  * Si el valor no es un número válido, lo devuelve tal como está.
@@ -107,9 +104,9 @@ export const numberFormat = value => {
   const numberValue = parseFloat(stringValue)
   if (!isNaN(numberValue)) {
     return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       style: 'decimal',
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2
     }).format(numberValue)
   }
 

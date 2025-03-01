@@ -9,7 +9,7 @@ export const useChartDataAllOrders = ({
 
   // Objeto para mapear los códigos de estado a sus nombres
   const statusMap = {
-    1: 'ACEPTA',
+    1: 'ACCEPT',
     2: 'PROCESSING',
     3: 'READY',
     4: 'CONCLUDES',

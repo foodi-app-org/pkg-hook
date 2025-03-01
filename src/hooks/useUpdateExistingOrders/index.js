@@ -29,7 +29,7 @@ export const updateExistingOrders = (
   const updatedExistingOrders = { ...existingOrders } // Copiar el objeto existente
 
   const statusKeys = {
-    1: 'ACEPTA',
+    1: 'ACCEPT',
     2: 'PROCESSING',
     3: 'READY',
     4: 'CONCLUDES',

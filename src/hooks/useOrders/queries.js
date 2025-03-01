@@ -86,7 +86,7 @@ query getAllOrdersFromStore(
     max: $max
     statusOrder: $statusOrder
   ) {
-    ACEPTA {
+    ACCEPT {
       pdpId
       idStore
       pCodeRef

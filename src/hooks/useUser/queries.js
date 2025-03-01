@@ -56,12 +56,12 @@ username
 lastName
 email
 avatar
-idRole
 uToken
 uPhoNum
 ULocation
 upLat
 uState
+idRole
 upLon
 upIdeDoc
 siteWeb
@@ -70,7 +70,6 @@ associateStore
 createAt
   role {
     name
-    idRole,
     permissions
     description
     createdAt
