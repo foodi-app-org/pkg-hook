@@ -34,6 +34,7 @@ export const useModules = (dataUser = {}) => {
   } = useQuery(GET_MODULES)
 
   const permissions = role?.permissions ?? {}
+  console.log("🚀 ~ useModules ~ permissions:", permissions)
 
   const filteredModules = validateModules(data ? data.modules : [], permissions)
 

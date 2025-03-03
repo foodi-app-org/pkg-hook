@@ -119,7 +119,7 @@ query ExtProductFoodsAll($search: String, $min: Int, $max: Int, $pId: ID) {
 export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
 query getCatProductsWithProduct($search: String, $productName: String, $min: Int, $max: Int, $gender: [String], $desc: [String], $categories: [ID], ) {
   getCatProductsWithProduct(search: $search, min: $min, productName:$productName, max: $max, gender: $gender, desc: $desc, categories: $categories,) {
-        totalCount,
+    totalCount,
     catProductsWithProduct {
     carProId
     pState
@@ -135,8 +135,8 @@ query getCatProductsWithProduct($search: String, $productName: String, $min: Int
     pDatMod
     productFoodsAll {
          pId
+         stock
         sizeId
-      
         colorId
         carProId
         cId

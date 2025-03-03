@@ -281,7 +281,7 @@ export const useSales = ({
  * @returns {Object} - The new state with the updated product quantity and editing status.
  */
   const handleCancelUpdateQuantity = (state, payload) => {
-  // Validación de `state`
+    // Validación de `state`
     if (!state || typeof state !== 'object') {
       sendNotification({
         title: 'Error',
@@ -315,7 +315,7 @@ export const useSales = ({
     return {
       ...state,
       PRODUCT: state.PRODUCT.map((item) => {
-      // Validación de propiedades en cada item
+        // Validación de propiedades en cada item
         if (item.pId === pId) {
           if (typeof item.oldQuantity !== 'number' || typeof item.unitPrice !== 'number') {
             sendNotification({
@@ -343,28 +343,48 @@ export const useSales = ({
     (state, action) => {
       const event = action.payload
       const { value, index, id } = event || {}
-      const productExist = productsFood?.find((items) => {
-        return items.pId === id
-      })
-      const OneProduct = state?.PRODUCT.find((items) => {
-        return items.pId === id
-      })
-      if (value <= 0) {
-        // @ts-ignore
-        dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: OneProduct })
+
+      const productExist = productsFood?.find((items) => items.pId === id)
+      const OneProduct = state?.PRODUCT.find((items) => items.pId === id)
+
+      if (!productExist) return state // Validar si el producto existe
+
+      // Validar si el stock es 0
+      if (productExist.stock === 0) {
+        sendNotification({
+          title: 'Sin stock',
+          backgroundColor: 'warning',
+          description: `El producto ${OneProduct?.pName} está agotado y no puede ser modificado.`
+        })
+        return state
       }
-      const finalQuantity = (state.PRODUCT.ProQuantity = value || 0)
-      const ARR_PRODUCT = state?.PRODUCT?.map((items, i) => {
-        return i === index
+
+      // Si el valor ingresado es menor o igual a 0, eliminar el producto del carrito
+      if (value <= 0) {
+        dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: OneProduct })
+        return state
+      }
+
+      // Validar si se intenta superar el stock disponible
+      const finalQuantity = Math.min(value, productExist.stock)
+      if (value > productExist.stock) {
+        sendNotification({
+          title: 'Stock insuficiente',
+          backgroundColor: 'warning',
+          description: `No puedes agregar más unidades de ${OneProduct?.pName}, stock disponible: ${productExist.stock}`
+        })
+      }
+
+      const ARR_PRODUCT = state?.PRODUCT?.map((items, i) =>
+        i === index
           ? {
               ...items,
               ProQuantity: finalQuantity,
-              ProPrice: value
-                ? value * productExist?.ProPrice
-                : productExist?.ProPrice
+              ProPrice: finalQuantity * productExist?.ProPrice
             }
           : items
-      })
+      )
+
       return {
         ...state,
         PRODUCT: ARR_PRODUCT,
@@ -373,6 +393,7 @@ export const useSales = ({
     },
     [productsFood]
   )
+
   const paymentMethod = (state, action) => {
     return {
       ...state,
@@ -380,14 +401,6 @@ export const useSales = ({
     }
   }
   const PRODUCT = (state, action) => {
-    const productExist = state.PRODUCT.find((items) => {
-      return items.pId === action.id
-    })
-    const OurProduct = productsFood?.find((items) => {
-      return items.pId === action.id
-    })
-    const isFree = productExist?.free
-
     switch (action.type) {
       case 'ADD_TO_CART':
         return addToCartFunc(state, action) // https://www.npmjs.com/package/@sourcetoad/vision-camera-plugin-barcode-scanner
@@ -436,22 +449,46 @@ export const useSales = ({
       case 'TOGGLE_EDITING_PRODUCT': {
         return handleToggleEditingStatus(state, action)
       }
-      case 'INCREMENT':
+      case 'INCREMENT': {
         return {
           ...state,
           counter: state.counter + 1,
           PRODUCT: state?.PRODUCT?.map((items) => {
-            return items.pId === action.id
-              ? {
-                  ...items,
-                  ProQuantity: items.ProQuantity + 1,
-                  ProPrice: isFree
-                    ? 0
-                    : (productExist.ProQuantity + 1) * OurProduct?.ProPrice
-                }
-              : items
+            if (items.pId === action.id) {
+              const OurProduct = productsFood?.find((item) => item.pId === action.id)
+              const isFree = items.free
+              const newQuantity = items.ProQuantity + 1
+              // Validar si el stock es 0
+              if (OurProduct?.stock === 0) {
+                sendNotification({
+                  title: 'Sin stock',
+                  backgroundColor: 'warning',
+                  description: `El producto ${items.pName} está agotado y no puede ser añadido al carrito.`
+                })
+                return items // Retornar sin modificar
+              }
+
+              // Validar si se supera el stock
+              if (newQuantity > OurProduct?.stock) {
+                sendNotification({
+                  title: 'Stock insuficiente',
+                  backgroundColor: 'warning',
+                  description: `No puedes agregar más unidades de ${items.pName}, stock disponible: ${OurProduct?.stock}`
+                })
+                return items // Retornar el producto sin modificar
+              }
+
+              return {
+                ...items,
+                ProQuantity: newQuantity,
+                ProPrice: isFree ? 0 : newQuantity * OurProduct?.ProPrice
+              }
+            }
+            return items
           })
         }
+      }
+
       case 'PUT_COMMENT':
         return commentProducts(state, action)
       case 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT':
@@ -704,19 +741,46 @@ export const useSales = ({
     }
   }
 
+  function isStockInsufficient (currentQuantity, stock) {
+    return currentQuantity >= stock
+  }
+
+  function sendAlertStock (stock) {
+    return sendNotification({
+      title: 'Stock insuficiente',
+      backgroundColor: 'warning',
+      description: `Solo hay ${stock} unidades disponibles en el inventario`
+    })
+  }
+
   function addToCartFunc (state, action) {
     const {
       pId,
       pName,
       getOneTags,
+      stock,
       ProDescription,
       ProImage,
       ProPrice
-    } = action.payload
+    } = action.payload ?? {}
+    if (stock === 0) {
+      sendNotification({
+        title: 'Sin stock',
+        backgroundColor: 'warning',
+        description: 'Producto sin stock disponible  en tu inventario'
+      })
+      return state
+    }
 
     const productExist = state?.PRODUCT.find((item) => item.pId === pId)
     const OurProduct = productsFood?.find((item) => item.pId === pId)
     const isFree = productExist?.free
+    const currentQuantity = productExist?.ProQuantity || 0
+
+    if (isStockInsufficient(currentQuantity, stock)) {
+      sendAlertStock(stock)
+      return state
+    }
 
     const updatedProduct = {
       pId,
@@ -727,6 +791,7 @@ export const useSales = ({
       ProDescription,
       ProImage,
       ProPrice,
+      stock,
       ProQuantity: 1
     }
 
@@ -857,7 +922,7 @@ export const useSales = ({
   const arrayProduct = data?.PRODUCT?.length > 0
     ? data?.PRODUCT?.map((product) => {
       const filteredDataExtra =
-            product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? []
+        product?.dataExtra?.map(({ __typename, ...rest }) => rest) ?? []
       const dataOptional = product?.dataOptional?.map(
         ({ __typename, ...product }) => {
           const { ExtProductFoodsSubOptionalAll, ...rest } = product
@@ -1082,9 +1147,9 @@ export const useSales = ({
         ? existOptionalCookies
           ?.map((obj) => {
             const filteredSubOptions =
-                obj.ExtProductFoodsSubOptionalAll.filter(
-                  (subObj) => subObj.check === true
-                )
+              obj.ExtProductFoodsSubOptionalAll.filter(
+                (subObj) => subObj.check === true
+              )
             // Excluya todo el objeto padre si filteredSubOptions está vacío
             if (filteredSubOptions.length === 0) {
               return null

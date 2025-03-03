@@ -10,8 +10,11 @@ const STEPS = {
 
 export const useUploadProducts = ({
   sendNotification = () => { return null }
-} = {}) => {
+} = {
+  sendNotification: () => { return null }
+}) => {
   const [data, setData] = useState([])
+  console.log("🚀 ~ data:", data)
   const [isLoading, setIsLoading] = useState(false)
   const [active, setActive] = useState(STEPS.UPLOAD_FILE)
   const [overActive, setOverActive] = useState(STEPS.UPLOAD_FILE)
@@ -19,7 +22,6 @@ export const useUploadProducts = ({
   const handleOverActive = (index) => {
     setOverActive(index)
   }
-
   const readExcelFile = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -117,8 +119,9 @@ export const useUploadProducts = ({
       })
       return
     }
-    if (active === STEPS.UPLOAD_FILE && Boolean(!data.length)) return setActive(0)
-    if (active === STEPS.UPLOAD_FILE && Boolean(data.length)) return setActive(STEPS.UPLOAD_PRODUCTS)
+    if (active === STEPS.UPLOAD_FILE) {
+      setActive(data.length ? STEPS.UPLOAD_PRODUCTS : 0)
+    }
   }
 
   const updateProductQuantity = (index, quantityChange) => {

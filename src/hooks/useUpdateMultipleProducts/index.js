@@ -11,25 +11,36 @@ export const useUpdateMultipleProducts = ({
     loading,
     error
   }] = useMutation(UPDATE_MULTIPLE_PRODUCTS)
+
   const [dataCategoriesProducts] = useCategoriesProduct()
-  const findEmptyCategory = dataCategoriesProducts?.find(category => category.pName === CATEGORY_EMPTY)
+  const findEmptyCategory = dataCategoriesProducts?.find(({ pName }) => pName === CATEGORY_EMPTY)
   const updateProducts = async (products) => {
     const newProducts = products.map(product => {
+      const {
+        PRECIO_AL_PUBLICO: ProPrice,
+        DESCRIPCION: ProDescription,
+        NOMBRE: pName,
+        pCode,
+        CANTIDAD: stock = 0,
+        'IMPUESTO (%)': vat,
+        CODIGO_DE_BARRAS: ProBarCode
+      } = product
       return {
         idStore: '',
-        ProPrice: product.PRECIO_AL_PUBLICO,
+        ProPrice,
         ProDescuento: 0,
         ValueDelivery: 0,
-        ProDescription: product.DESCRIPCION,
-        pName: product.NOMBRE,
-        pCode: product.pCode,
+        ProDescription,
+        pName,
+        pCode,
         carProId: findEmptyCategory?.carProId ?? null,
         pState: 1,
         sTateLogistic: 1,
         ProStar: 0,
+        stock,
         ProImage: null,
-        vat: product['IMPUESTO (%)'],
-        ProBarCode: product.CODIGO_DE_BARRAS,
+        vat,
+        ProBarCode: String(ProBarCode) || '',
         ProHeight: null,
         ProWeight: '',
         ProOutstanding: 0,
@@ -39,6 +50,16 @@ export const useUpdateMultipleProducts = ({
     )
     try {
       const response = await updateMultipleProducts({ variables: { input: newProducts } })
+      // sendNotification
+      for (const { errors } of response.data.updateMultipleProducts) {
+        if (errors) {
+          sendNotification({
+            backgroundColor: 'error',
+            description: errors[0].message,
+            title: 'Error'
+          })
+        }
+      }
       return response.data.updateMultipleProducts
     } catch (e) {
       sendNotification({

@@ -48,4 +48,4 @@ export const UPDATE_MULTIPLE_PRODUCTS = gql`
       }
     }
   }
-`;
+`

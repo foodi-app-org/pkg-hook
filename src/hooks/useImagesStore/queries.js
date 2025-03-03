@@ -126,6 +126,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       pDatMod
       ProDelivery
       ProVoltaje
+      stock
       pState
       feat {
         fId

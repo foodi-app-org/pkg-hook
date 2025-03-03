@@ -52,7 +52,25 @@ export const useCreateProduct = ({
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRef = useRef(null)
   const [arrTags, setTags] = useState([])
+  const [stock, setStock] = useState(1)
+  // Manage stock optional value boolean
+  const [checkStock, setCheckStock] = useState(false)
 
+  const handleIncreaseStock = () => {
+    setStock(prevStock => prevStock + 1)
+  }
+
+  const handleDecreaseStock = () => {
+    setStock(prevStock => (prevStock > 1 ? prevStock - 1 : 1))
+  }
+
+  const handleCheckStock = () => {
+    setCheckStock(prev => {
+      const newCheckStock = !prev
+      setStock(newCheckStock ? 1 : stock)
+      return newCheckStock
+    })
+  }
   const [dataStore] = useStore()
   const {
     data,
@@ -186,6 +204,7 @@ export const useCreateProduct = ({
             pName: names,
             pCode,
             carProId,
+            stock,
             pState: 1,
             sTateLogistic: 1,
             ProStar: 0,
@@ -254,7 +273,7 @@ export const useCreateProduct = ({
       setPid(res?.data?.updateProductFoods?.data?.pId ?? null)
       return res
     } catch (error) {
-      console.log("🚀 ~ handleRegister ~ error:", error)
+      console.log('🚀 ~ handleRegister ~ error:', error)
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }
@@ -283,9 +302,11 @@ export const useCreateProduct = ({
     fileInputRef,
     values,
     search,
+    stock,
     pId,
     dataTags: data,
     tags,
+    checkStock,
     loading,
     active,
     idStore: dataStore?.getStore?.idStore || '',
@@ -297,6 +318,8 @@ export const useCreateProduct = ({
     handleChangeFilter,
     handleUpdateBanner,
     onClickSearch,
+    handleDecreaseStock,
+    handleIncreaseStock,
     changeHandler,
     setErrors,
     setCheck,
@@ -305,6 +328,7 @@ export const useCreateProduct = ({
     onFileInputChange,
     handleRegisterTags,
     setShowMore,
+    handleCheckStock,
     onTargetClick,
     handleAddTag,
     handleCheck,

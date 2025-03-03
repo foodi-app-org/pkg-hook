@@ -17,6 +17,7 @@ query getCatProductsWithProductClient($search: String, $min: Int, $max: Int, $ge
     productFoodsAll {
          pId
         sizeId
+        stock
         colorId
         carProId
         cId

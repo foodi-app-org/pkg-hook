@@ -27,7 +27,13 @@ export const useProductsFood = ({
 }) => {
   // const [productsFood, setProductsFood] = useState([])
   const [showMore, setShowMore] = useState(500)
-  const { data, loading, fetchMore, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
+  const {
+    data,
+    loading,
+    fetchMore,
+    error,
+    called
+  } = useQuery(GET_ALL_PRODUCT_STORE, {
     fetchPolicy,
     notifyOnNetworkStatusChange: true,
     nextFetchPolicy: 'cache-first',
