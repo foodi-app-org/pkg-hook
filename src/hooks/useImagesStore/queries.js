@@ -108,6 +108,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       ProPrice
       ProDescuento
       free
+      manageStock
       ProUniDisponibles
       ProDescription
       ProProtegido

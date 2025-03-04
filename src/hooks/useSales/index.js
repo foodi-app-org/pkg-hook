@@ -776,8 +776,8 @@ export const useSales = ({
     const OurProduct = productsFood?.find((item) => item.pId === pId)
     const isFree = productExist?.free
     const currentQuantity = productExist?.ProQuantity || 0
-
-    if (isStockInsufficient(currentQuantity, stock)) {
+    console.log('currentQuantity', productExist)
+    if (productExist?.manageStock && isStockInsufficient(currentQuantity, stock)) {
       sendAlertStock(stock)
       return state
     }
@@ -788,6 +788,7 @@ export const useSales = ({
       editing: false,
       getOneTags,
       unitPrice: OurProduct?.ProPrice,
+      manageStock: OurProduct?.manageStock ?? false,
       ProDescription,
       ProImage,
       ProPrice,

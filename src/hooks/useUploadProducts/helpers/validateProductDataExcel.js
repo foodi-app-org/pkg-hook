@@ -3,60 +3,68 @@ export const validateProductDataExcel = (product, productIndex) => {
     {
       name: 'NOMBRE',
       required: true,
-      type: 'string'
+      types: ['string']
     },
     {
       name: 'PRECIO_AL_PUBLICO',
       required: false,
-      type: 'number'
+      types: ['number', 'string']
     },
     {
       name: 'VALOR_DE_COMPRA',
       required: false,
-      type: 'number'
+      types: ['number', 'string']
     },
     {
       name: 'CANTIDAD',
       required: true,
-      type: 'number'
+      types: ['number']
     },
     {
       name: 'DESCRIPCION',
       required: true,
-      type: 'string'
+      types: ['string']
     },
     {
       name: 'DESCUENTO',
       required: false,
-      type: 'number'
+      types: ['number', 'string']
     },
     {
       name: 'CATEGORIA',
       required: false,
-      type: 'string'
+      types: ['string']
     },
     {
       name: 'CODIGO_DE_BARRAS',
       required: false,
-      type: 'string'
+      types: ['string', 'number']
     },
     {
       name: 'IMPUESTO (%)',
       required: false,
-      type: 'number'
+      types: ['number', 'string']
     }
   ]
 
   const errors = []
 
-  // Validar encabezados requeridos
-  expectedHeaders.forEach(({ name, required, type }) => {
-    if (required && !(name in product)) {
-      errors.push(`Producto ${productIndex + 1}: Faltan la columna requerida: ${name}.`)
-    } else if (product[name] !== undefined) {
-      const isValidType = typeof product[name] === type || (type === 'number' && typeof product[name] === 'number' && !isNaN(product[name]))
+  // Validar encabezados requeridos y tipos
+  expectedHeaders.forEach(({ name, required, types }) => {
+    const value = product[name]
+
+    if (required && (value === undefined || value === null)) {
+      errors.push(`Producto ${productIndex + 1}: Falta la columna requerida: ${name}.`)
+    } else if (value !== undefined && value !== null) {
+      const isValidType = types.some(type => {
+        if (type === 'number') {
+          return typeof value === 'number' && !isNaN(value)
+        }
+        return typeof value === type
+      })
+
       if (!isValidType) {
-        errors.push(`Producto ${productIndex + 1}: El campo ${name} debe ser de tipo ${type}.`)
+        errors.push(`Producto ${productIndex + 1}: El campo ${name} debe ser de tipo ${types.join(' o ')}.`)
       }
     }
   })

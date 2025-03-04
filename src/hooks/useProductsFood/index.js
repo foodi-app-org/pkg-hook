@@ -208,6 +208,7 @@ export const useGetOneProductsFood = ({ fetchOnlyProduct = false } = {}) => {
       loading,
       error
     }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
+
   const [handleGetExtProductFood, { data: dataOptional }] = useExtProductFoodsOptionalAll()
   const [handleExtProductFoodsAll, { data: dataExtra }] = useExtProductFoodsAll()
   const handleGetOneProduct = async (food) => {

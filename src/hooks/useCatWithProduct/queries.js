@@ -136,6 +136,7 @@ query getCatProductsWithProduct($search: String, $productName: String, $min: Int
     productFoodsAll {
          pId
          stock
+         manageStock
         sizeId
         colorId
         carProId

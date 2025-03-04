@@ -102,6 +102,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       sizeId #Talla
       colorId #Color
       stock
+      manageStock
       carProId #Categoria a la cual pertenece el producto
       caId
       cId #Country
@@ -581,6 +582,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       cId
       caId
       stock
+      manageStock
       dId
       ctId
       tpId
@@ -852,7 +854,9 @@ export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
         pId
         sizeId
         colorId
+        stock
         carProId
+        manageStock
         cId
         dId
         ctId

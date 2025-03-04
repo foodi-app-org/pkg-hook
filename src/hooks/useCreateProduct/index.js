@@ -202,6 +202,7 @@ export const useCreateProduct = ({
             ValueDelivery: check?.desc ? 0 : ValueDelivery,
             ProDescription,
             pName: names,
+            manageStock: checkStock,
             pCode,
             carProId,
             stock,
