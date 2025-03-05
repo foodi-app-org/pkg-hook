@@ -5,7 +5,6 @@ import { convertBase64, RandomCode } from '../../utils'
 import { useLocalStorage } from '../useLocalSorage'
 import {
   GET_ALL_FOOD_PRODUCTS,
-  UPDATE_IMAGE_PRODUCT_FOOD,
   UPDATE_PRODUCT_FOOD
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
@@ -13,6 +12,8 @@ import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { assignWith } from 'lodash'
+import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
+import useSetImageProducts from '../useSetImageProducts'
 export * from './helpers'
 
 export const useCreateProduct = ({
@@ -38,6 +39,7 @@ export const useCreateProduct = ({
     ValueDelivery: 0,
     carProId: ''
   })
+  const [updateImageProducts] = useSetImageProducts()
   const [names, setName] = useLocalStorage('namefood', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
@@ -141,9 +143,7 @@ export const useCreateProduct = ({
 
   const [updateProductFoods, { loading }] = useMutation(UPDATE_PRODUCT_FOOD, {
   })
-  const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD, {
-    context: { clientName: 'admin-server' }
-  })
+  const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD)
 
   const onFileInputChange = async event => {
     const { files } = event.target
@@ -190,7 +190,7 @@ export const useCreateProduct = ({
     }
     const formatPrice = ProPrice ?? 0
     if (!carProId && !names) return setErrors({ ...errors, carProId: true })
-    const ProImage = `https:${process.env.URL_ADMIN_SERVER}/static/platos/${image?.name}`
+    const ProImage = '/images/placeholder-image.webp'
     const pCode = RandomCode(9)
     try {
       const res = await updateProductFoods({
@@ -254,14 +254,11 @@ export const useCreateProduct = ({
         return
       }
       if (image !== null) {
+        console.log(image)
         try {
-          await setImageProducts({
-            variables: {
-              input: {
-                file: image,
-                pCode
-              }
-            }
+          await updateImageProducts({
+            pId: res?.data?.updateProductFoods?.data?.pId,
+            image
           })
         } catch {
           sendNotification({

@@ -1057,6 +1057,16 @@ export const useSales = ({
         pickUp: 1,
         discount: discount.discount || 0,
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
+      },
+      update (cache) {
+        cache.modify({
+          fields: {
+            productFoodsAll (existingProductFoodsAll = []) {
+              console.log('existingProductFoodsAll', existingProductFoodsAll)
+              return existingProductFoodsAll
+            }
+          }
+        })
       }
     })
       .then((responseRegisterR) => {

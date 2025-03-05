@@ -317,14 +317,7 @@ export const UPDATE = gql`
     }
   }
 `
-export const UPDATE_IMAGE_PRODUCT_FOOD = gql`
-  mutation setImageProducts($input: IFileImageProductFood) {
-    setImageProducts(input: $input) {
-      success
-      message
-    }
-  }
-`
+
 export const UPDATE_PRODUCT_FOOD = gql`
    mutation updateProductFoods($input: InputProductFood) {
     updateProductFoods(input: $input) {
