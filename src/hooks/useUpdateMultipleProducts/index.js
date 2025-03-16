@@ -38,7 +38,7 @@ export const useUpdateMultipleProducts = ({
         sTateLogistic: 1,
         ProStar: 0,
         stock,
-        ProImage: null,
+        ProImage: '/images/placeholder-image.webp',
         vat,
         ProBarCode: String(ProBarCode) || '',
         ProHeight: null,

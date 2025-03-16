@@ -34,7 +34,7 @@ export const useReport = ({
   })
 
   const totalSales = totalSalesData?.getAllSalesStoreTotal ?? {}
-
+  console.log(totalSales)
   return {
     getAllSalesStore: lazyQuery ? getAllSalesStore : () => { }, // Return function only if in lazy mode
     data: lazyQuery ? lazyDataSales : data, // Use data from lazy query if available

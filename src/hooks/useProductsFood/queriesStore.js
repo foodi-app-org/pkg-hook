@@ -76,7 +76,7 @@ export const GET_ALL_EMPLOYEE_STORE = gql`
 `
 
 export const GET_ALL_PRODUCT_STORE = gql`
-  query productFoodsAll(
+ query productFoodsAll(
     $search: String
     $min: Int
     $max: Int
@@ -86,6 +86,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
     $categories: [ID]
     $fromDate: DateTime
     $toDate: DateTime
+    $page: Int
   ) {
     productFoodsAll(
       search: $search
@@ -97,7 +98,17 @@ export const GET_ALL_PRODUCT_STORE = gql`
       categories: $categories
       toDate: $toDate
       fromDate: $fromDate
+      page: $page
     ) {
+      success
+      message
+		pagination {
+      totalRecords
+      totalPages
+      currentPage
+      __typename
+    }
+     data {
       pId
       sizeId #Talla
       colorId #Color
@@ -148,6 +159,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
         aId
         aName
       }
+    }
     }
   }
 `

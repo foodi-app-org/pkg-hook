@@ -59,7 +59,9 @@ export const useUploadProducts = ({
           pCode: code,
           editing: false,
           PRECIO_AL_PUBLICO,
+          ProImage: '/images/placeholder-image.webp',
           VALOR_DE_COMPRA,
+          manageStock: true,
           errors: validationErrors.length > 0 ? validationErrors : null
         }
       })

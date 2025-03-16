@@ -74,73 +74,7 @@ export const GET_ALL_EMPLOYEE_STORE = gql`
     }
   }
 `
-export const GET_ALL_PRODUCT_STORE = gql`
-  query productFoodsAll(
-    $search: String
-    $min: Int
-    $max: Int
-    $gender: [String]
-    $pState: Int
-    $desc: [String]
-    $categories: [ID]
-    $fromDate: DateTime
-    $toDate: DateTime
-  ) {
-    productFoodsAll(
-      search: $search
-      min: $min
-      max: $max
-      gender: $gender
-      desc: $desc
-      pState: $pState
-      categories: $categories
-      toDate: $toDate
-      fromDate: $fromDate
-    ) {
-      pId
-      sizeId #Talla
-      colorId #Color
-      cId #Country
-      dId #Department
-      ctId #Cuidad
-      fId #Características
-      pName
-      ProPrice
-      ProDescuento
-      free
-      manageStock
-      ProUniDisponibles
-      ProDescription
-      ProProtegido
-      ProAssurance
-      ValueDelivery
-      ProStar
-      sTateLogistic
-      ProImage
-      ProWidth
-      ProHeight
-      ProLength
-      ProWeight
-      ProQuantity
-      ProOutstanding
-      pDatCre
-      pDatMod
-      ProDelivery
-      ProVoltaje
-      stock
-      pState
-      feat {
-        fId
-        thpId
-        hpqrQuestion
-      }
-      area {
-        aId
-        aName
-      }
-    }
-  }
-`
+
 export const GET_ALL_RATING_START_STORE = gql`
   query getAllRatingStar($idStore: ID) {
     getAllRatingStar(idStore: $idStore) {

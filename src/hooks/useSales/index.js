@@ -153,7 +153,13 @@ export const useSales = ({
       setDataExtra([])
     }
   })
-  const [productsFood, { loading, fetchMore }] = useProductsFood({
+
+  const [productsFood, {
+    loading,
+    fetchMore,
+    pagination,
+    refetch
+  }] = useProductsFood({
     // @ts-ignore
     search: search?.length >= 4 ? search : '',
     gender: [],
@@ -164,6 +170,13 @@ export const useSales = ({
     max: showMore,
     min: 0
   })
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber)
+    refetch({ page: pageNumber })
+  }
+
   const handleChangeCheck = (caId) => {
     // @ts-ignore
     setCategories((prev) => {
@@ -176,7 +189,6 @@ export const useSales = ({
       })
     })
   }
-
   const max = productsFood?.reduce(function (a, b) {
     return Math.max(a, b?.ProPrice || 0)
   }, 0)
@@ -776,7 +788,6 @@ export const useSales = ({
     const OurProduct = productsFood?.find((item) => item.pId === pId)
     const isFree = productExist?.free
     const currentQuantity = productExist?.ProQuantity || 0
-    console.log('currentQuantity', productExist)
     if (productExist?.manageStock && isStockInsufficient(currentQuantity, stock)) {
       sendAlertStock(stock)
       return state
@@ -1062,7 +1073,6 @@ export const useSales = ({
         cache.modify({
           fields: {
             productFoodsAll (existingProductFoodsAll = []) {
-              console.log('existingProductFoodsAll', existingProductFoodsAll)
               return existingProductFoodsAll
             }
           }
@@ -1308,13 +1318,16 @@ export const useSales = ({
     dataOptional: dataOptional || [],
     dataExtra: dataExtra || [],
     fetchMore,
+    pagination,
     discount,
     datCat: categories,
+    currentPage,
     loadingProduct: loading,
     handleChangeCheck,
     errors,
     handleUpdateAllExtra,
     dispatch,
+    handlePageChange,
     handleComment,
     setModalItem,
     handleChangeFilter,

@@ -25,12 +25,12 @@ export const useProductsFood = ({
   search = null,
   toDate
 }) => {
-  // const [productsFood, setProductsFood] = useState([])
   const [showMore, setShowMore] = useState(500)
   const {
     data,
     loading,
     fetchMore,
+    refetch,
     error,
     called
   } = useQuery(GET_ALL_PRODUCT_STORE, {
@@ -51,14 +51,15 @@ export const useProductsFood = ({
       toDate: toDate || null
     }
   })
-
-  const productsFood = data?.productFoodsAll
+  const productsFood = data?.productFoodsAll.data ?? []
   return [
     productsFood, {
-      error,
+      pagination: data?.productFoodsAll.pagination || {},
       loading: called ? false : loading,
+      error,
       showMore,
       fetchMore,
+      refetch,
       setShowMore
     }
   ]
