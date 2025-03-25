@@ -6,10 +6,10 @@ export const fillMissingDates = (data, days = 7) => {
     const date = new Date()
     date.setDate(today.getDate() - i)
 
-    const formattedDate = date.toLocaleDateString('es-ES') // "dd/mm/yyyy"
+    const formattedDate = date.toISOString().split('T')[0] // "YYYY-MM-DD"
     const existingData = data.find(item => item.date === formattedDate)
 
-    filledData.push(existingData || { date: formattedDate, TotalIn: 0, TotalOut: 0 })
+    filledData.push(existingData || { date: formattedDate, TotalIn: 0, TotalOut: 0, TotalAdjustment: 0 })
   }
 
   return filledData

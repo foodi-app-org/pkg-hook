@@ -210,3 +210,5 @@ export const paymentMethodCards = [
 ]
 
 export const CATEGORY_EMPTY = 'NINGUNO'
+
+export * from './UtilDateRange'

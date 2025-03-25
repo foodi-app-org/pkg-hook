@@ -14,47 +14,63 @@ import {
 export * from './useEditProduct'
 
 export const useProductsFood = ({
-  categories,
-  desc,
+  categories = [],
+  desc = [],
   fetchPolicy = 'cache-and-network',
-  fromDate,
-  gender,
+  fromDate = null,
+  gender = [],
   max = 100,
-  min,
+  min = null,
   pState,
   search = null,
-  toDate
+  toDate = null,
+  dataSale = [],
+  isShopppingCard = false
 }) => {
   const [showMore, setShowMore] = useState(500)
-  const {
-    data,
-    loading,
-    fetchMore,
-    refetch,
-    error,
-    called
-  } = useQuery(GET_ALL_PRODUCT_STORE, {
+
+  const { data, loading, fetchMore, refetch, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     fetchPolicy,
     notifyOnNetworkStatusChange: true,
     nextFetchPolicy: 'cache-first',
     refetchWritePolicy: 'merge',
-    variables:
-    {
-      categories: categories || [],
-      desc: desc || [],
-      fromDate: fromDate || null,
-      gender: gender || [],
-      max: max || null,
-      min: min || null,
+    variables: {
+      categories,
+      desc,
+      fromDate,
+      gender,
+      max,
+      min,
       pState,
-      search: search ?? search,
-      toDate: toDate || null
+      search,
+      toDate
     }
   })
-  const productsFood = data?.productFoodsAll.data ?? []
+
+  const productsFood = data?.productFoodsAll?.data ?? []
+
+  if (!isShopppingCard) {
+    return [
+      productsFood, {
+        pagination: data?.productFoodsAll?.pagination || {},
+        loading: called ? false : loading,
+        error,
+        showMore,
+        fetchMore,
+        refetch,
+        setShowMore
+      }
+    ]
+  }
+
+  const updatedProductsFood = productsFood.map(product => ({
+    ...product,
+    existsInSale: dataSale.some(item => item.pId === product.pId)
+  }));
+  
   return [
-    productsFood, {
-      pagination: data?.productFoodsAll.pagination || {},
+    updatedProductsFood, {
+      pagination: data?.productFoodsAll?.pagination || {},
       loading: called ? false : loading,
       error,
       showMore,

@@ -6,7 +6,8 @@ const GET_STOCK_MOVEMENTS = gql`
   query {
     getStockMovementsByDay {
       date
-      total_in
+      total_in,
+      total_adjustment
       total_out
     }
   }
@@ -24,9 +25,10 @@ export const useStockMovements = () => {
     if (data && data.getStockMovementsByDay) {
       // Transform data to be compatible with Recharts
       const formattedData = data.getStockMovementsByDay.map(entry => ({
-        date: new Date(entry.date).toLocaleDateString(),
-        TotalIn: entry.total_in,
-        TotalOut: entry.total_out
+        date: entry.date,
+        TotalIn: entry.total_in ?? 0,
+        TotalOut: entry.total_out ?? 0,
+        TotalAdjustment: entry.total_adjustment ?? 0
       }))
       setChartData(formattedData)
     }

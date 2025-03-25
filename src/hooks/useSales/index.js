@@ -75,6 +75,7 @@ export const useSales = ({
   const [search, setSearch] = useState('')
   const [datCat] = useCatWithProduct({})
   const [categories, setCategories] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
   useEffect(() => {
     setCategories(datCat)
   }, [datCat])
@@ -101,6 +102,9 @@ export const useSales = ({
   const { yearMonthDay } = useFormatDate({ date: createdAt })
   const [valuesDates, setValuesDates] = useState(() => {
     return { fromDate: yearMonthDay, toDate: '' }
+  })
+  const [product, setProduct] = useState({
+    PRODUCT: {}
   })
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState([])
@@ -134,12 +138,9 @@ export const useSales = ({
       }
     }
   )
-  const [product, setProduct] = useState({
-    PRODUCT: {}
-  })
-  const [productFoodsOne, { data: dataProduct }] = useLazyQuery(
-    GET_ONE_PRODUCTS_FOOD
-  )
+
+  const [productFoodsOne, { data: dataProduct }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
+
   const [ExtProductFoodsSubOptionalAll, { loading: loadingExtProductFoodsSubOptionalAll }] = useLazyQuery(
     GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
     {
@@ -168,9 +169,11 @@ export const useSales = ({
     toDate: valuesDates?.toDate,
     fromDate: valuesDates?.fromDate,
     max: showMore,
-    min: 0
+    min: 0,
+    isShopppingCard: true,
+    dataSale: (Array.isArray(saveDataState?.PRODUCT) && saveDataState?.PRODUCT) ?? [],
+    callback: () => { return null }
   })
-  const [currentPage, setCurrentPage] = useState(1)
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber)
@@ -379,7 +382,7 @@ export const useSales = ({
 
       // Validar si se intenta superar el stock disponible
       const finalQuantity = Math.min(value, productExist.stock)
-      if (value > productExist.stock) {
+      if ((value > productExist.stock) && productExist.manageStock) {
         sendNotification({
           title: 'Stock insuficiente',
           backgroundColor: 'warning',
@@ -481,7 +484,8 @@ export const useSales = ({
               }
 
               // Validar si se supera el stock
-              if (newQuantity > OurProduct?.stock) {
+              console.log(OurProduct)
+              if (newQuantity >= OurProduct?.stock && OurProduct?.manageStock) {
                 sendNotification({
                   title: 'Stock insuficiente',
                   backgroundColor: 'warning',
@@ -489,7 +493,6 @@ export const useSales = ({
                 })
                 return items // Retornar el producto sin modificar
               }
-
               return {
                 ...items,
                 ProQuantity: newQuantity,
@@ -788,7 +791,8 @@ export const useSales = ({
     const OurProduct = productsFood?.find((item) => item.pId === pId)
     const isFree = productExist?.free
     const currentQuantity = productExist?.ProQuantity || 0
-    if (productExist?.manageStock && isStockInsufficient(currentQuantity, stock)) {
+
+    if (OurProduct?.manageStock && isStockInsufficient(currentQuantity, OurProduct?.stock)) {
       sendAlertStock(stock)
       return state
     }
@@ -1286,6 +1290,16 @@ export const useSales = ({
   // Filtrar los productos de productsFood por los carProIds obtenidos
   const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
 
+  const allProducts = useMemo(() => {
+    const productMap = new Map(data.PRODUCT.map(item => [String(item.pId), item.ProQuantity || 0]))
+
+    return filteredProducts.map(product => ({
+      ...product,
+      existsInSale: productMap.has(String(product.pId)),
+      ProQuantity: productMap.get(String(product.pId)) || 0
+    }))
+  }, [data.PRODUCT, filteredProducts])
+
   return {
     loading: loading || loadingSale,
     loadingExtraProduct,
@@ -1310,7 +1324,7 @@ export const useSales = ({
     search,
     values,
     initialStateSales,
-    productsFood: filteredProducts,
+    productsFood: allProducts,
     modalItem,
     sumExtraProducts,
     oneProductToComment: oneProductToComment ?? null,
