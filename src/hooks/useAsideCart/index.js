@@ -9,7 +9,6 @@ import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
 import { calculateTotalPrice } from './helpers'
 import { statusOpenStores } from '../statusOpenStores'
-export * from './helpers'
 
 export const useAsideCart = ({
   openModalProduct = false,

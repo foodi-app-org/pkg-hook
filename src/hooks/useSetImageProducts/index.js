@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { UPDATE_IMAGE_PRODUCT_FOOD } from './queries'
 
-const useSetImageProducts = () => {
+export const useSetImageProducts = () => {
   const [setImageProducts, { data, loading, error }] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD)
 
   const updateImageProducts = async (variables) => {
@@ -26,5 +26,3 @@ const useSetImageProducts = () => {
     error
   }]
 }
-
-export default useSetImageProducts

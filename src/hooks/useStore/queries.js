@@ -40,7 +40,7 @@ upLat
 upLon
 uState
 siteWeb
-  
+  dailyGoal
 description
 createdAt
 secVia

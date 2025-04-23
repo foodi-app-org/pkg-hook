@@ -30,7 +30,6 @@ import { useCatWithProduct } from './../useCatWithProduct/index'
 import { useLogout } from '../useLogout'
 import { filterProductsByCarProId, removeFunc } from './helpers'
 export * from './useGetAllSales'
-export * from './helpers'
 
 export { GET_ALL_COUNT_SALES } from './queries'
 

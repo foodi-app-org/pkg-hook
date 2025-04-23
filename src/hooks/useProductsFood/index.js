@@ -65,9 +65,9 @@ export const useProductsFood = ({
 
   const updatedProductsFood = productsFood.map(product => ({
     ...product,
-    existsInSale: dataSale.some(item => item.pId === product.pId)
-  }));
-  
+    existsInSale: Array.isArray(dataSale) && dataSale.some(item => item.pId === product.pId)
+  }))
+
   return [
     updatedProductsFood, {
       pagination: data?.productFoodsAll?.pagination || {},

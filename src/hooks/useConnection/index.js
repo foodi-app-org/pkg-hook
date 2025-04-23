@@ -10,13 +10,15 @@ export const useConnection = ({ setConnectionStatus }) => {
   // Attaching event handler for the load event
   //   window.addEventListener('load', updateConnectionStatus);
 
-  // Attaching event handler for the online event
-  window.addEventListener('online', function (e) {
-    updateConnectionStatus()
-  })
+  if (typeof window !== 'undefined') {
+    // Attaching event handler for the online event
+    window.addEventListener('online', function () {
+      updateConnectionStatus()
+    })
 
-  // Attaching event handler for the offline event
-  window.addEventListener('offline', function (e) {
-    updateConnectionStatus()
-  })
+    // Attaching event handler for the offline event
+    window.addEventListener('offline', function () {
+      updateConnectionStatus()
+    })
+  }
 }

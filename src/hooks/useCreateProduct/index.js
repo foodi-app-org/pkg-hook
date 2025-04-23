@@ -13,8 +13,7 @@ import { useEditImageProduct } from './helpers/useEditImageProduct'
 import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { assignWith } from 'lodash'
 import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
-import useSetImageProducts from '../useSetImageProducts'
-export * from './helpers'
+import { useSetImageProducts } from '../useSetImageProducts'
 
 export const useCreateProduct = ({
   router,
@@ -216,19 +215,19 @@ export const useCreateProduct = ({
             ProDelivery: check?.desc ? 1 : 0
           }
         },
-        update (cache) {
-          cache.modify({
-            fields: {
-              productFoodsAll (dataOld = []) {
-                return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
-              },
-              getCatProductsWithProduct () {
-                const updatedData = getCatProductsWithProduct(data, carProId)
-                return updatedData
-              }
-            }
-          })
-        }
+        // update (cache) {
+        //   cache.modify({
+        //     fields: {
+        //       productFoodsAll (dataOld = []) {
+        //         return cache.writeQuery({ query: GET_ALL_FOOD_PRODUCTS, data: dataOld })
+        //       }
+        //       // getCatProductsWithProduct () {
+        //       //   const updatedData = getCatProductsWithProduct(data, carProId)
+        //       //   return updatedData
+        //       // }
+        //     }
+        //   })
+        // }
       }).finally(() => {
         setValues({
           ProPrice: 0,
