@@ -45,10 +45,10 @@ export const useUpsertGoal = ({
       cache.modify({
         fields: {
           getStore (dataOld = []) {
-            return cache.writeQuery({
-              query: GET_ONE_STORE,
-              data: dataOld
-            })
+            return {
+              ...dataOld,
+              dailyGoal: upsertGoal.data.dailyGoal
+            }
           }
         }
       })

@@ -21,7 +21,10 @@ const GET_MODULES = gql`
   }
 `
 
-export const useModules = (dataUser = {}) => {
+export const useModules = ({
+  dataUser = {},
+  callback = () => {}
+}) => {
   const { role } = dataUser ?? {
     role: {
       permissions: {}
@@ -31,7 +34,17 @@ export const useModules = (dataUser = {}) => {
     loading,
     error,
     data
-  } = useQuery(GET_MODULES)
+  } = useQuery(GET_MODULES, {
+    fetchPolicy: 'cache-and-network',
+    onCompleted: (data) => {
+      if (Array.isArray(data?.modules)) {
+        callback(data.modules)
+      }
+    },
+    onError: (error) => {
+      console.error('Error fetching modules:', error)
+    }
+  })
 
   const permissions = role?.permissions ?? {}
 
