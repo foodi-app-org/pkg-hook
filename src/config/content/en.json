@@ -1,0 +1,5 @@
+{
+    "SESSION_EXPIRED": "Token expired",
+    "BANNER_UPDATED": "Banner updated",
+    "BANNER_UPDATE_FAILED": "Banner update failed"
+}

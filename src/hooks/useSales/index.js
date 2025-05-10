@@ -1155,112 +1155,112 @@ export const useSales = ({
   const handleProduct = async (PRODUCT) => {
     setLoadingExtraProduct(true)
     const { pId } = PRODUCT || {}
-    try {
-      const originalArray = data.PRODUCT.find((item) => {
-        return item.pId === pId
-      })
-      // OPTIONAL
-      productFoodsOne({ variables: { pId } })
-      const optionalAll = await ExtProductFoodsSubOptionalAll({
-        variables: { pId }
-      })
-      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll
-      setDataOptional(optionalFetch || [])
-      const existOptionalCookies = originalArray?.dataOptional
-      const filteredDataOptional = existOptionalCookies?.length
-        ? existOptionalCookies
-          ?.map((obj) => {
-            const filteredSubOptions =
-              obj.ExtProductFoodsSubOptionalAll.filter(
-                (subObj) => subObj.check === true
-              )
-            // Excluya todo el objeto padre si filteredSubOptions está vacío
-            if (filteredSubOptions.length === 0) {
-              return null
-            }
-            return {
-              ...obj,
-              ExtProductFoodsSubOptionalAll: filteredSubOptions
-            }
-          })
-          .filter((obj) => obj !== null)
-        : []
+    // try {
+    //   const originalArray = data.PRODUCT.find((item) => {
+    //     return item.pId === pId
+    //   })
+    //   // OPTIONAL
+    //   // productFoodsOne({ variables: { pId } })
+    //   const optionalAll = await ExtProductFoodsSubOptionalAll({
+    //     variables: { pId }
+    //   })
+    //   const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll
+    //   setDataOptional(optionalFetch || [])
+    //   const existOptionalCookies = originalArray?.dataOptional
+    //   const filteredDataOptional = existOptionalCookies?.length
+    //     ? existOptionalCookies
+    //       ?.map((obj) => {
+    //         const filteredSubOptions =
+    //           obj.ExtProductFoodsSubOptionalAll.filter(
+    //             (subObj) => subObj.check === true
+    //           )
+    //         // Excluya todo el objeto padre si filteredSubOptions está vacío
+    //         if (filteredSubOptions.length === 0) {
+    //           return null
+    //         }
+    //         return {
+    //           ...obj,
+    //           ExtProductFoodsSubOptionalAll: filteredSubOptions
+    //         }
+    //       })
+    //       .filter((obj) => obj !== null)
+    //     : []
 
-      // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
-      if (optionalFetch && filteredDataOptional) {
-        const updateOption = optionalFetch
-          .map((obj) => {
-            const matchingArray = filteredDataOptional.find(
-              (o) => o && o.opExPid === obj.opExPid
-            )
-            if (!matchingArray) {
-              return obj
-            }
-            const extProductFoodsSubOptionalAll =
-              obj.ExtProductFoodsSubOptionalAll || []
-            const updateExtProductFoodsSubOptionalAll =
-              extProductFoodsSubOptionalAll.map((subObj) => {
-                const newItem =
-                  matchingArray.ExtProductFoodsSubOptionalAll.find(
-                    (newItem) =>
-                      newItem && newItem.opSubExPid === subObj.opSubExPid
-                  )
-                if (newItem) {
-                  return {
-                    ...subObj,
-                    check: true
-                  }
-                }
-                return subObj
-              })
-            return {
-              ...obj,
-              ExtProductFoodsSubOptionalAll:
-                updateExtProductFoodsSubOptionalAll
-            }
-          })
-          .filter((obj) => obj)
-        if (existOptionalCookies) {
-          setDataOptional(updateOption || [])
-        } else {
-          setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || [])
-        }
-      }
-      // NO OPTIONAL
-      const extProduct = await ExtProductFoodsAll({ variables: { pId } })
-      let finalData
-      if (!originalArray?.dataExtra) {
-        finalData = extProduct?.data?.ExtProductFoodsAll
-      } else {
-        const filteredData = originalArray.dataExtra.filter((item) =>
-          extProduct?.data?.ExtProductFoodsAll.some(
-            (newItem) => newItem.exPid === item.exPid
-          )
-        )
-        finalData = originalArray?.dataExtra?.concat(
-          extProduct?.data?.ExtProductFoodsAll?.filter(
-            (item) =>
-              !filteredData?.some(
-                (filteredItem) => filteredItem.exPid === item.exPid
-              )
-          )
-        )
-      }
-      setDataExtra(finalData)
-      setProduct(() => {
-        return {
-          PRODUCT
-        }
-      })
-      setLoadingExtraProduct(false)
-    } catch (error) {
-      setLoadingExtraProduct(false)
-      sendNotification({
-        title: 'error',
-        backgroundColor: 'error',
-        description: error || 'Lo sentimos, ocurrió un error'
-      })
-    }
+    //   // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
+    //   if (optionalFetch && filteredDataOptional) {
+    //     const updateOption = optionalFetch
+    //       .map((obj) => {
+    //         const matchingArray = filteredDataOptional.find(
+    //           (o) => o && o.opExPid === obj.opExPid
+    //         )
+    //         if (!matchingArray) {
+    //           return obj
+    //         }
+    //         const extProductFoodsSubOptionalAll =
+    //           obj.ExtProductFoodsSubOptionalAll || []
+    //         const updateExtProductFoodsSubOptionalAll =
+    //           extProductFoodsSubOptionalAll.map((subObj) => {
+    //             const newItem =
+    //               matchingArray.ExtProductFoodsSubOptionalAll.find(
+    //                 (newItem) =>
+    //                   newItem && newItem.opSubExPid === subObj.opSubExPid
+    //               )
+    //             if (newItem) {
+    //               return {
+    //                 ...subObj,
+    //                 check: true
+    //               }
+    //             }
+    //             return subObj
+    //           })
+    //         return {
+    //           ...obj,
+    //           ExtProductFoodsSubOptionalAll:
+    //             updateExtProductFoodsSubOptionalAll
+    //         }
+    //       })
+    //       .filter((obj) => obj)
+    //     if (existOptionalCookies) {
+    //       setDataOptional(updateOption || [])
+    //     } else {
+    //       setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || [])
+    //     }
+    //   }
+    //   // NO OPTIONAL
+    //   const extProduct = await ExtProductFoodsAll({ variables: { pId } })
+    //   let finalData
+    //   if (!originalArray?.dataExtra) {
+    //     finalData = extProduct?.data?.ExtProductFoodsAll
+    //   } else {
+    //     const filteredData = originalArray.dataExtra.filter((item) =>
+    //       extProduct?.data?.ExtProductFoodsAll.some(
+    //         (newItem) => newItem.exPid === item.exPid
+    //       )
+    //     )
+    //     finalData = originalArray?.dataExtra?.concat(
+    //       extProduct?.data?.ExtProductFoodsAll?.filter(
+    //         (item) =>
+    //           !filteredData?.some(
+    //             (filteredItem) => filteredItem.exPid === item.exPid
+    //           )
+    //       )
+    //     )
+    //   }
+    //   setDataExtra(finalData)
+    //   setProduct(() => {
+    //     return {
+    //       PRODUCT
+    //     }
+    //   })
+    //   setLoadingExtraProduct(false)
+    // } catch (error) {
+    //   setLoadingExtraProduct(false)
+    //   sendNotification({
+    //     title: 'error',
+    //     backgroundColor: 'error',
+    //     description: error || 'Lo sentimos, ocurrió un error'
+    //   })
+    // }
   }
   const handleCleanFilter = () => {
     // @ts-ignore

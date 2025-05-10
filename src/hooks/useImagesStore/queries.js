@@ -172,14 +172,14 @@ export const GET_ONE_BANNER_STORE = gql`
   }
 `
 export const DELETE_ONE_BANNER_STORE = gql`
-  mutation DeleteOneBanner(
+  mutation deleteOneBanner(
     $bnState: Int
     $idStore: ID
     $bnId: ID
     $bnImage: String
     $bnImageFileName: String
   ) {
-    DeleteOneBanner(
+    deleteOneBanner(
       bnState: $bnState
       idStore: $idStore
       bnId: $bnId

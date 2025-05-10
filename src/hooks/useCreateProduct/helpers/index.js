@@ -7,7 +7,10 @@ const MAX_PRICE = 2147483647
  * @param {Function} sendNotification - Función para enviar notificaciones.
  * @returns {boolean} - Retorna `true` si todos los valores están en rango, `false` si alguno excede el máximo.
  */
-export const verifyPriceInRange = ({ values = [], sendNotification }) => {
+export const verifyPriceInRange = ({ values = [], sendNotification } = {
+  values: [],
+  sendNotification: () => {}
+}) => {
   const isAnyValueOutOfRange = values.some(value => value > MAX_PRICE)
 
   if (isAnyValueOutOfRange) {

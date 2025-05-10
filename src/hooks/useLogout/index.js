@@ -50,14 +50,14 @@ export const useLogout = ({
       setLoading(true)
       await deleteCookie()
       // Logout from the server
-      const logoutResponse = await fetch(`${process.env.URL_BASE}/api/auth/logout/`, {
+      const logoutResponse = await fetch(`${process.env.NEXT_PUBLIC_URL_BASE}/api/logout/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include'
       })
-
+      console.log('Logout response:', logoutResponse)
       if (!logoutResponse.ok) {
         setLoading(false)
         return
@@ -78,11 +78,13 @@ export const useLogout = ({
 
       setLoading(false)
       console.log('Cookies eliminadas y sesión cerrada con éxito')
-      signOutAuth({ redirect: true, callbackUrl: '/' })
+      signOutAuth({ redirect: true, callbackUrl: '/', reload: false })
         .catch(() => {
+          console.error('Error al cerrar sesión en el cliente')
           setError(true)
           setAlertBox({ message: 'Ocurrió un error al cerrar sesión' })
         })
+      window.location.href = '/'
     } catch (error) {
       setLoading(false)
       setError(true)
