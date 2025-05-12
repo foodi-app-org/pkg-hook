@@ -32,7 +32,7 @@ export const useOrders = ({
   })
 
   return [
-    data?.getAllPedidoStoreFinal,
+    data?.getStoreOrdersFinal,
     { loading, error, data, fetchMore }
   ]
 }

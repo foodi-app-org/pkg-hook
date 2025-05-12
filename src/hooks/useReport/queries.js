@@ -33,7 +33,7 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
     pDatCre
     locationUser
     pDatMod
-    getAllPedidoStore{
+    getStoreOrders{
         pdpId
         pId
         idStore
@@ -84,7 +84,7 @@ query getOneSalesStore($pCodeRef: String) {
     pDatCre
     locationUser
     pDatMod
-    getAllPedidoStore{
+    getStoreOrders{
         pdpId
         pId
         idStore

@@ -10,8 +10,8 @@ mutation changePPStatePPedido($pPStateP: Int, $pCodeRef: String, $pDatMod: Strin
 
 `
 export const GET_ALL_PEDIDOS = gql`
-query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
-  getAllPedidoStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
+query getStoreOrdersFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
+  getStoreOrdersFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
     pdpId
     idStore
     pCodeRef
@@ -23,7 +23,7 @@ query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int
     channel
     locationUser
     pDatMod
-    getAllPedidoStore{
+    getStoreOrders{
         pdpId
         pId
         idStore
@@ -98,7 +98,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -145,7 +145,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -192,7 +192,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -239,7 +239,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -286,7 +286,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore

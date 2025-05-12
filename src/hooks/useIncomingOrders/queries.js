@@ -16,7 +16,7 @@ export const GET_ALL_INCOMING_ORDERS = gql`
       pdpId
       totalProductsPrice
       locationUser
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         idStore
         pCodeRef

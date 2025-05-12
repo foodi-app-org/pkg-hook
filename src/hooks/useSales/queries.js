@@ -55,7 +55,7 @@ export const GET_ALL_SALES_STATISTICS = gql`
       pDatCre
       locationUser
       pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -94,8 +94,8 @@ export const GET_ALL_SALES_STATISTICS = gql`
 `
 
 export const GET_ONE_SALES = gql`
-  query getOnePedidoStore($pCodeRef: String) {
-    getOnePedidoStore(pCodeRef: $pCodeRef) {
+  query getStoreOrderById($pCodeRef: String) {
+    getStoreOrderById(pCodeRef: $pCodeRef) {
       pdpId
       pCodeRef
       idStore
@@ -109,7 +109,7 @@ export const GET_ONE_SALES = gql`
       pdpId
       totalProductsPrice
       locationUser
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         idStore
         pCodeRef
@@ -252,8 +252,8 @@ export const CREATE_SHOPPING_CARD = gql`
   }
 `
 export const GET_ONE_SALE = gql`
-  query getOnePedidoStore($pCodeRef: String) {
-    getOnePedidoStore(pCodeRef: $pCodeRef) {
+  query getStoreOrderById($pCodeRef: String) {
+    getStoreOrderById(pCodeRef: $pCodeRef) {
       pdpId
       pCodeRef
       idStore
@@ -267,7 +267,7 @@ export const GET_ONE_SALE = gql`
       pdpId
       totalProductsPrice
       locationUser
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         idStore
         pCodeRef
@@ -393,8 +393,8 @@ export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
 `
 
 export const GET_ALL_PEDIDOS = gql`
-query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int) {
-  getAllPedidoStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder) {
+query getStoreOrdersFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int) {
+  getStoreOrdersFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder) {
     pdpId
     idStore
     pCodeRef
@@ -406,7 +406,7 @@ query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int
     channel
     locationUser
     pDatMod
-    getAllPedidoStore{
+    getStoreOrders{
         pdpId
         pId
         idStore
