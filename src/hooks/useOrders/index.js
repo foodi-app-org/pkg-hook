@@ -53,7 +53,8 @@ export const useOrdersFromStore = ({
     data,
     loading,
     error,
-    called
+    called,
+    refetch
   } = useQuery(GET_ALL_PEDIDOS_FROM_STORE, {
     variables: {
       idStore,
@@ -66,10 +67,16 @@ export const useOrdersFromStore = ({
       toDate,
       max,
       statusOrder
-    }
+    },
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true
   })
 
-  return [data?.getAllOrdersFromStore || [], { loading: called ? false : loading, error }]
+  return [data?.getAllOrdersFromStore || [], {
+    refetch,
+    loading: called ? false : loading,
+    error
+  }]
 }
 
 export * from './queries'
