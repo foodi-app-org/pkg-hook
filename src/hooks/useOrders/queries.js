@@ -66,6 +66,7 @@ query getAllOrdersFromStore(
   $idStore: ID
   $cId: ID
   $dId: ID
+  $inCludeRange: Boolean
   $ctId: ID
   $search: String
   $min: Int
@@ -78,6 +79,7 @@ query getAllOrdersFromStore(
     idStore: $idStore
     cId: $cId
     dId: $dId
+    inCludeRange: $inCludeRange
     ctId: $ctId
     search: $search
     min: $min

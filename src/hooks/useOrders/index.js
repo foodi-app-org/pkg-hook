@@ -47,7 +47,9 @@ export const useOrdersFromStore = ({
   fromDate,
   toDate,
   max,
-  statusOrder
+  statusOrder,
+  refetchWritePolicy = 'merge',
+  inCludeRange = true
 }) => {
   const {
     data,
@@ -59,6 +61,7 @@ export const useOrdersFromStore = ({
     variables: {
       idStore,
       cId,
+      inCludeRange,
       dId,
       ctId,
       search,
@@ -69,7 +72,10 @@ export const useOrdersFromStore = ({
       statusOrder
     },
     fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true
+    notifyOnNetworkStatusChange: true,
+    refetchWritePolicy,
+    nextFetchPolicy: 'cache-first',
+    pollInterval: 60000 // 1 minute
   })
 
   return [data?.getAllOrdersFromStore || [], {
