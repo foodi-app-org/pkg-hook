@@ -10,8 +10,8 @@ mutation changePPStatePPedido($pPStateP: Int, $pCodeRef: String, $pDatMod: Strin
 
 `
 export const GET_ALL_PEDIDOS = gql`
-query getStoreOrdersFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
-  getStoreOrdersFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
+query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
+  getAllPedidoStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
     pdpId
     idStore
     pCodeRef
@@ -23,7 +23,7 @@ query getStoreOrdersFinal($idStore: ID, $search: String, $min: Int, $max: Int, $
     channel
     locationUser
     pDatMod
-    getStoreOrders{
+    getAllPedidoStore{
         pdpId
         pId
         idStore
@@ -66,7 +66,6 @@ query getAllOrdersFromStore(
   $idStore: ID
   $cId: ID
   $dId: ID
-  $inCludeRange: Boolean
   $ctId: ID
   $search: String
   $min: Int
@@ -79,7 +78,6 @@ query getAllOrdersFromStore(
     idStore: $idStore
     cId: $cId
     dId: $dId
-    inCludeRange: $inCludeRange
     ctId: $ctId
     search: $search
     min: $min
@@ -100,7 +98,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore
@@ -147,7 +145,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore
@@ -194,7 +192,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore
@@ -241,7 +239,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore
@@ -288,7 +286,7 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore

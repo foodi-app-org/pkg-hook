@@ -5,22 +5,11 @@ import {
 } from 'react'
 import { validationSubmitHooks } from '../../utils'
 /**
- * @typedef {Object} FormTools
- * @property {function} handleChange - Función para manejar el cambio de los inputs
- * @property {function} handleSubmit - Función para manejar el envío del formulario
- * @property {function} handleForcedData - Función para forzar el cambio de los inputs
- * @property {function} setForcedError - Función para forzar el error de los inputs
- * @property {Object} dataForm - Objeto con los datos del formulario
- * @property {Object} errorForm - Objeto con los errores del formulario
- * @property {boolean} errorSubmit - Estado de error del formulario
- * @property {boolean} calledSubmit - Estado de envío del formulario
- * @property {function} setErrorForm - Función para establecer el error del formulario
  * @version 0.0.1
  * @description Hook con herramientas de validación y eventos de cambio
  * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
 export const useFormTools = ({
-  callback = () => { },
   sendNotification = ({
     title = '',
     description = '',
@@ -118,9 +107,6 @@ export const useFormTools = ({
 
   useEffect(() => { return setCalledSubmit(false) }, [calledSubmit])
   useEffect(() => {
-    if (typeof callback === 'function' && !errorSubmit) {
-      callback(dataForm)
-    }
     return setCalledSubmit(false)
   },
   [])

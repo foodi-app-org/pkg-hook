@@ -41,7 +41,7 @@ export const GET_ALL_PEDIDOS_STATUS = gql`
       pDatCre
       locationUser
       pDatMod
-      getStoreOrders {
+      getAllPedidoStore {
         pdpId
         pId
         idStore

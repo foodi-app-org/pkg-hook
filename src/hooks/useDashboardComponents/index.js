@@ -10,7 +10,6 @@ const GET_DASHBOARD_COMPONENTS = gql`
       idStore
       idUser
       coordinates
-      title
     }
   }
 `

@@ -37,7 +37,7 @@ export const useLogout = ({
     }
   }
   const deleteCookie = async () => {
-    await eliminarCookie(process.env.SESSION_NAME)
+    await eliminarCookie(process.env.NEXT_PUBLIC_SESSION_NAME)
     await eliminarCookie(process.env.LOCAL_SALES_STORE)
     await eliminarCookie('restaurant')
     await eliminarCookie('usuario')
@@ -50,14 +50,16 @@ export const useLogout = ({
       setLoading(true)
       await deleteCookie()
       // Logout from the server
-      const logoutResponse = await fetch(`${process.env.NEXT_PUBLIC_URL_BASE}/api/logout/`, {
+      const port = window.location.port ? `:${window.location.port}` : ''
+      const baseUrl = `${window.location.protocol}//${window.location.hostname}${port}`
+      const logoutResponse = await fetch(`${baseUrl}/api/auth/signout/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include'
       })
-      console.log('Logout response:', logoutResponse)
+
       if (!logoutResponse.ok) {
         setLoading(false)
         return
@@ -66,8 +68,8 @@ export const useLogout = ({
       await logoutResponse.json()
       console.log('Intentando borrar cookies...')
 
-      // Eliminar la cookie process.env.SESSION_NAME
-      await eliminarCookie(process.env.SESSION_NAME)
+      // Eliminar la cookie process.env.NEXT_PUBLIC_SESSION_NAME
+      await eliminarCookie(process.env.NEXT_PUBLIC_SESSION_NAME)
       Cookies.remove(process.env.LOCAL_SALES_STORE)
       Cookies.remove('restaurant')
       Cookies.remove('usuario')
@@ -78,13 +80,11 @@ export const useLogout = ({
 
       setLoading(false)
       console.log('Cookies eliminadas y sesión cerrada con éxito')
-      signOutAuth({ redirect: true, callbackUrl: '/', reload: false })
+      signOutAuth({ redirect: true, callbackUrl: '/' })
         .catch(() => {
-          console.error('Error al cerrar sesión en el cliente')
           setError(true)
           setAlertBox({ message: 'Ocurrió un error al cerrar sesión' })
         })
-      window.location.href = '/'
     } catch (error) {
       setLoading(false)
       setError(true)

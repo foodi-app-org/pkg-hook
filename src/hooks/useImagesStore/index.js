@@ -11,8 +11,6 @@ import {
   GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE } from '../useStore/queries'
-import { useLogout } from '../useLogout/index'
-import { t } from '../../config/content'
 export { GET_MIN_PEDIDO } from './queries'
 export * from './queries'
 
@@ -23,30 +21,18 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   const initialState = { alt: '/images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRefLogo = useRef(null)
-  const [onClickLogout] = useLogout({})
-
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
-    onCompleted: (data) => {
-      const { message } = data?.registerBanner || {
-        message: ''
-      }
-      if (message === t('SESSION_EXPIRED')) {
-        console.log(message)
-        onClickLogout()
-      }
-      sendNotification({ message })
-    }
-  })
-  const [setALogoStore] = useMutation(CREATE_LOGO, {
-    onCompleted: (data) => { return sendNotification({ description: data?.setALogoStore?.message }) },
+    onCompleted: (data) => { return sendNotification({ message: data?.registerBanner?.message }) },
     context: { clientName: 'admin-server' }
   })
-  const [deleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
-    onCompleted: (data) => {
-      console.log('🚀 ~ useImageStore ~ data:', data)
-      return sendNotification({ description: data?.deleteOneBanner?.message })
-    }
+  const [setALogoStore] = useMutation(CREATE_LOGO, {
+    onCompleted: (data) => { return sendNotification({ message: data?.setALogoStore?.message }) },
+    context: { clientName: 'admin-server' }
+  })
+  const [DeleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
+    onCompleted: (data) => { return sendNotification({ message: data?.DeleteOneBanner?.message }) },
+    context: { clientName: 'admin-server' }
   })
   const [deleteALogoStore] = useMutation(DELETE_ONE_LOGO_STORE, {
     onCompleted: (data) => {
@@ -153,23 +139,16 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     })
   }
   const HandleDeleteBanner = async () => {
-    console.log('delete')
     setPreviewImg(initialState)
-    deleteOneBanner({
+    DeleteOneBanner({
       variables: {
         idStore
       },
       update (cache) {
         cache.modify({
           fields: {
-            getStore (_, { readField }) {
-              const store = readField('getStore')
-              const updatedCart = {
-                ...store,
-                bnImage: initialState.src,
-                banner: initialState.src
-              }
-              return updatedCart
+            getOneBanners (dataOld = []) {
+              return cache.writeQuery({ query: GET_ONE_BANNER_STORE, data: dataOld })
             }
           }
         })

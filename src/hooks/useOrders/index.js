@@ -32,7 +32,7 @@ export const useOrders = ({
   })
 
   return [
-    data?.getStoreOrdersFinal,
+    data?.getAllPedidoStoreFinal,
     { loading, error, data, fetchMore }
   ]
 }
@@ -47,21 +47,17 @@ export const useOrdersFromStore = ({
   fromDate,
   toDate,
   max,
-  statusOrder,
-  refetchWritePolicy = 'merge',
-  inCludeRange = true
+  statusOrder
 }) => {
   const {
     data,
     loading,
     error,
-    called,
-    refetch
+    called
   } = useQuery(GET_ALL_PEDIDOS_FROM_STORE, {
     variables: {
       idStore,
       cId,
-      inCludeRange,
       dId,
       ctId,
       search,
@@ -70,19 +66,10 @@ export const useOrdersFromStore = ({
       toDate,
       max,
       statusOrder
-    },
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
-    refetchWritePolicy,
-    nextFetchPolicy: 'cache-first',
-    pollInterval: 60000 // 1 minute
+    }
   })
 
-  return [data?.getAllOrdersFromStore || [], {
-    refetch,
-    loading: called ? false : loading,
-    error
-  }]
+  return [data?.getAllOrdersFromStore || [], { loading: called ? false : loading, error }]
 }
 
 export * from './queries'
