@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useQuery } from '@apollo/client'
 import { GET_ALL_DEVICES } from './queries'
 import { useFormatDate } from '../useFormatDate'
@@ -9,27 +8,19 @@ export const useDevices = () => {
       console.error(error)
     }
   })
-  const [deviceId, setDeviceId] = useState(false)
-  const [date, setDate] = useState('')
-
-  useEffect(() => {
-    if (window) {
-      setDeviceId(window.localStorage.getItem('deviceid'))
-    }
-  }, [])
 
   // Función para formatear la fecha
-  const formatDate = useFormatDate({ date })
+  const { formatDateInTimeZone } = useFormatDate({})
 
-  const updateDate = (newDate) => {
-    setDate(newDate)
-  }
+  const listDevices = Array.isArray(data?.getDeviceUsers) ? data?.getDeviceUsers.map((device) => {
+    const formattedDate = formatDateInTimeZone(device.DatCre)
+    return {
+      ...device,
+      DatCre: formattedDate
+    }
+  }) : []
   return {
-    data: data?.getDeviceUsers || [],
-    date,
-    deviceId,
-    formatDate,
-    loading,
-    updateDate
+    data: listDevices,
+    loading
   }
 }

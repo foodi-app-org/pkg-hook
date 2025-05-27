@@ -7,7 +7,7 @@ export const useFormatDate = ({
   const day = fullDate.split('/')[0]
   const month = fullDate.split('/')[1]
   const year = fullDate.split('/')[2]
-  const yearMonthDay = dateToFormat.toLocaleDateString('en-CA')
+  const yearMonthDay = dateToFormat.toLocaleDateString('ES-CO')
   const numberDay = dateToFormat.getDay()
   const shortDayName = dateToFormat.toLocaleDateString(local, { weekday: 'short' })
   const longDayName = dateToFormat.toLocaleDateString(local, { weekday: 'long' })
@@ -17,6 +17,34 @@ export const useFormatDate = ({
     const hourPmAm = new Date(`1/1/1999 ${hour}`).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
     return hour ? hourPmAm : ''
   }
+  /**
+   * Formats a date into Colombian time zone and Spanish locale for POS display.
+   * Example output: "15 de mayo de 2025 a las 14:23"
+   *
+   * @param {string | number | Date} dateInput - Date to format (ISO string, timestamp or Date object)
+   * @returns {string} - Formatted date string in Colombian time
+   */
+  function formatDateInTimeZone(dateInput) {
+    const timeZone = 'America/Bogota'
+    const locale = 'es-CO'
+    const options = {
+      timeZone,
+      year: 'numeric',
+      month: 'long',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }
+
+    const date = new Date(dateInput)
+    const formatted = new Intl.DateTimeFormat(locale, options).format(date)
+
+    // Cambiar coma por "a las" para mejor legibilidad
+    return formatted.replace(',', ' a las')
+  }
+
+
   return {
     day,
     fullDate,
@@ -28,6 +56,7 @@ export const useFormatDate = ({
     shortDayName,
     month,
     year,
-    handleHourPmAM
+    handleHourPmAM,
+    formatDateInTimeZone,
   }
 }
