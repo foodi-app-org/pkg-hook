@@ -564,6 +564,17 @@ export const EDIT_PRODUCT = gql`
     editProductFoods(input: $input) {
       success
       message
+      errors {
+        path
+        message
+        type
+        context {
+          limit
+          value
+          label
+          key
+        }
+      }
     }
   }
 `

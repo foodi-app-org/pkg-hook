@@ -105,8 +105,17 @@ export const useCreateProduct = ({
     )
   }
   const handleChange = (e, error) => {
-    setValues({ ...values, [e.target.name]: e.target.value })
-    setErrors({ ...errors, [e.target.name]: error })
+    const { name, value } = e.target
+    setValues((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+    console.log('🚀 ~ handleChange ~ name, value:', name, value)
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error
+    }))
   }
   const handleChangeFilter = e => {
     setSearch(e.target.value)
@@ -187,16 +196,16 @@ export const useCreateProduct = ({
       ValueDelivery: 0,
       carProId: ''
     }
-    const formatPrice = ProPrice ?? 0
+    console.log('handleRegister values', values)
     if (!carProId && !names) return setErrors({ ...errors, carProId: true })
     const ProImage = '/images/placeholder-image.webp'
-    const pCode = RandomCode(9)
+    const pCode = RandomCode(10)
     try {
-      const res = await updateProductFoods({
+      const response = await updateProductFoods({
         variables: {
           input: {
             idStore: dataStore?.getStore?.idStore || '',
-            ProPrice: check?.desc ? 0 : formatPrice,
+            ProPrice: check?.desc ? 0 : ProPrice,
             ProDescuento: check?.desc ? 0 : ProDescuento,
             ValueDelivery: check?.desc ? 0 : ValueDelivery,
             ProDescription,
@@ -214,7 +223,7 @@ export const useCreateProduct = ({
             ProOutstanding: check?.desc ? 1 : 0,
             ProDelivery: check?.desc ? 1 : 0
           }
-        },
+        }
         // update (cache) {
         //   cache.modify({
         //     fields: {
@@ -228,18 +237,8 @@ export const useCreateProduct = ({
         //     }
         //   })
         // }
-      }).finally(() => {
-        setValues({
-          ProPrice: 0,
-          ProDescuento: 0,
-          ProDescription: '',
-          ProWeight: '',
-          ProHeight: '',
-          ValueDelivery: 0,
-          carProId: ''
-        })
       })
-      const { errors } = res ?? {
+      const { errors } = response?.data?.updateProductFoods ?? {
         errors: []
       }
       if (errors?.length > 0) {
@@ -253,10 +252,9 @@ export const useCreateProduct = ({
         return
       }
       if (image !== null) {
-        console.log(image)
         try {
           await updateImageProducts({
-            pId: res?.data?.updateProductFoods?.data?.pId,
+            pId: response?.data?.updateProductFoods?.data?.pId,
             image
           })
         } catch {
@@ -267,10 +265,9 @@ export const useCreateProduct = ({
           })
         }
       }
-      setPid(res?.data?.updateProductFoods?.data?.pId ?? null)
-      return res
+      setPid(response?.data?.updateProductFoods?.data?.pId ?? null)
+      return response
     } catch (error) {
-      console.log('🚀 ~ handleRegister ~ error:', error)
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }

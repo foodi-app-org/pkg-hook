@@ -1,4 +1,4 @@
-const MAX_PRICE = 2147483647
+const MAX_PRICE = 999999999999.99
 
 /**
  * Verifica si alguno de los valores en el array excede el precio máximo.
@@ -9,7 +9,7 @@ const MAX_PRICE = 2147483647
  */
 export const verifyPriceInRange = ({ values = [], sendNotification }) => {
   const isAnyValueOutOfRange = values.some(value => value > MAX_PRICE)
-
+  // Si algún valor está fuera del rango, envía una notificación y retorna false
   if (isAnyValueOutOfRange) {
     sendNotification({
       backgroundColor: 'warning',

@@ -10,7 +10,7 @@ export const transformData = (dataExtra) => {
   return transformedData
 }
 
-export const MAX_INTEGER = 2147483647
+export const MAX_INTEGER = 999999999999.99
 /**
  * Validate if a number is within a specified range.
  * @param {number} num - The number to validate.
@@ -60,7 +60,7 @@ export const updateErrorFieldByIndex = ({
 
         // Actualiza el campo 'error' del elemento a true
         updatedLine.error = true
-        updatedLine.messageError = 'El precio no puede ser mayor a 2147483647.00'
+        updatedLine.messageError = 'El precio no puede ser mayor a 999999999999.99'
 
         // Devuelve el elemento actualizado
         return updatedLine
