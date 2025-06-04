@@ -11,6 +11,7 @@ import { useMutation } from '@apollo/client'
 import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
 import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
 import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
+import { parseFormattedFloat } from '../../utils'
 
 export const useDessertWithPrice = ({
   dataExtra = [],
@@ -82,7 +83,7 @@ export const useDessertWithPrice = ({
     setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [initialLineItems])
 
-  const [updateMultipleExtProductFoods, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { return } })
+  const [updateMultipleExtProductFoods, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { } })
   /**
    * Handles the addition of two new lines to the Lines array in LineItems state.
    */
@@ -151,51 +152,82 @@ export const useDessertWithPrice = ({
  * @param {number} index - Index of the line to be filtered out.
  */
   const filterOneLine = (index) => {
-  // Use optional chaining to safely access nested properties.
+    // Use optional chaining to safely access nested properties.
     const Lines = LineItems?.Lines?.filter((_, i) => { return i !== index })
     // Use spread operator to create a new object with the filtered Lines array.
     return setLine({ ...LineItems, Lines })
   }
+
+  /**
+   * Removes a product extra by index or external product ID.
+   *
+   * @param {number} i - Index of the item in the list.
+   * @param {string} [exPid] - External product ID to remove (optional).
+   * @returns {Promise<void>}
+   */
   const handleRemove = async (i, exPid) => {
     try {
-      if (exPid) {
-        const findDataExtra = dataExtra?.find(x => { return x?.exPid === exPid })
-        if (findDataExtra) {
-          const data = await deleteExtraProductFoods({
-            variables: {
-              state: 1,
-              id: exPid
-            },
-            update: (cache) => {
-              cache.modify({
-                fields: {
-                  ExtProductFoodsAll: (dataOld = []) => {
-                    const { success } = data?.data?.deleteextraproductfoods || {}
-                    if (success && Array.isArray(dataOld)) {
-                      const transformedData = transformData(dataOld)
-                      const Lines = transformedData.filter((_, index) => { return index !== i })
-                      const newCache = dataOld.filter((_, index) => { return index !== i })
-                      setLine({ ...LineItems, Lines })
-                      return newCache
-                    }
-                  }
-                }
-              })
-            }
-          })
-        }
-      }
       if (!exPid) {
         return filterOneLine(i)
       }
+
+      const findDataExtra = dataExtra?.find(x => x?.exPid === exPid)
+      if (!findDataExtra) return
+
+      await deleteExtraProductFoods({
+        variables: {
+          state: 1,
+          id: exPid
+        },
+        update: (cache, { data }) => {
+          const res = data?.deleteextraproductfoods
+          const success = res?.success
+          const message = res?.message || ''
+
+          if (!success) {
+            return sendNotification({
+              title: 'Error',
+              description: message,
+              backgroundColor: 'error'
+            })
+          }
+
+          sendNotification({
+            title: 'Producto eliminado',
+            description: message,
+            backgroundColor: 'success'
+          })
+
+          cache.modify({
+            fields: {
+              ExtProductFoodsAll: (dataOld = []) => {
+                if (!Array.isArray(dataOld)) return dataOld
+
+                const transformedData = transformData(dataOld)
+                const Lines = transformedData.filter((_, index) => index !== i)
+                const newCache = dataOld.filter((_, index) => index !== i)
+
+                setLine(prev => ({
+                  ...prev,
+                  Lines
+                }))
+
+                return newCache
+              }
+            }
+          })
+        }
+      })
     } catch (error) {
+      console.log('🚀 ~ handleRemove ~ error:', error)
       sendNotification({
-        title: 'error',
-        description: 'Ocurrió un error',
+        title: 'Error',
+        description: 'Ocurrió un error al eliminar el producto',
         backgroundColor: 'error'
       })
     }
   }
+
   useEffect(() => {
     setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [dataExtra.length])
@@ -219,36 +251,11 @@ export const useDessertWithPrice = ({
     return dataArr
   }, [LineItems])
 
-  /**
- * Convierte un string con números y puntos en un número entero.
- * @param {string} str - El string a convertir.
- * @returns {number} El número entero resultante.
- */
-  function stringToInt (str) {
-    try {
-      // Verifica si el string es válido
-      if (!str || typeof str !== 'string') {
-        throw new Error('Input must be a valid string.')
-      }
-
-      // Elimina los puntos y convierte a número
-      const num = parseInt(str.replace(/\./g, ''), 10)
-
-      // Verifica si el resultado es un número válido
-      if (isNaN(num)) {
-        throw new Error('The string must contain only numbers and dots.')
-      }
-
-      return num
-    } catch (_error) {
-      return 0
-    }
-  }
   const handleEdit = async (i, exPid) => {
     setSelected({ exPid: null, loading: true })
     const findOneExtra = LineItems?.Lines?.find((x, i) => { return x?.exPid === exPid })
     const { extraName, extraPrice: price } = findOneExtra || {}
-    const extraPrice = stringToInt(price)
+    const extraPrice = parseFormattedFloat(price)
     const { data } = await editExtraProductFoods({
       variables: {
         exPid,
@@ -281,6 +288,7 @@ export const useDessertWithPrice = ({
       })
     }
   }
+
   function filterItemsWithValidExPid (items, pId) {
     // Primero, filtrar los elementos basados en exPid
     const filteredItems = items.filter(({ exPid }) => {
@@ -291,7 +299,7 @@ export const useDessertWithPrice = ({
     // Luego, transformar los elementos filtrados
     return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => ({
       exPid,
-      extraPrice,
+      extraPrice: parseFormattedFloat(extraPrice),
       exState: exState === true ? 1 : 0,
       extraName,
       pId
@@ -308,7 +316,7 @@ export const useDessertWithPrice = ({
 
       if (!prepareAndValidateData(pId)) return
       const dataArr = LineItems?.Lines?.map(x => {
-        const extraPrice = stringToInt(x.extraPrice)
+        const extraPrice = parseFormattedFloat(x.extraPrice)
         const extraName = x.extraName
         return {
           extraPrice,

@@ -212,3 +212,74 @@ export const paymentMethodCards = [
 export const CATEGORY_EMPTY = 'NINGUNO'
 
 export * from './UtilDateRange'
+
+const cleanValue = ({ value, decimalSeparator, groupSeparator, allowDecimals, decimalsLimit, allowNegativeValue, disableAbbreviations }) => {
+  if (typeof value !== 'string') return null
+
+  // Remove currency symbols and whitespace
+  let cleaned = value.replace(/[$€£¥]/g, '').trim()
+
+  // Handle abbreviations like K, M, B
+  if (!disableAbbreviations) {
+    cleaned = cleaned.replace(/([kmb])\b/i, (match) => {
+      const multipliers = { k: 1e3, m: 1e6, b: 1e9 }
+      return multipliers[match.toLowerCase()] ? `*${multipliers[match.toLowerCase()]}` : ''
+    })
+  }
+
+  // Replace group separator with empty string
+  if (groupSeparator) {
+    cleaned = cleaned.replace(new RegExp(`\\${groupSeparator}`, 'g'), '')
+  }
+
+  // Replace decimal separator with a dot
+  if (decimalSeparator) {
+    cleaned = cleaned.replace(new RegExp(`\\${decimalSeparator}`, 'g'), '.')
+  }
+
+  // Remove any non-numeric characters except for the decimal point
+  cleaned = cleaned.replace(/[^0-9.-]/g, '')
+
+  // Limit decimals if specified
+  if (allowDecimals && decimalsLimit > 0) {
+    const parts = cleaned.split('.')
+    if (parts.length > 1) {
+      parts[1] = parts[1].slice(0, decimalsLimit)
+      cleaned = parts.join('.')
+    }
+  }
+
+  // Handle negative values
+  if (!allowNegativeValue) {
+    cleaned = cleaned.replace(/-/g, '')
+  }
+
+  return cleaned
+}
+/**
+ * Converts a formatted string with group and decimal separators into a float number.
+ *
+ * @param value - The formatted string input, e.g., "$ 1.234,56"
+ * @param decimalSeparator - The character used as decimal separator, e.g., ','
+ * @param groupSeparator - The character used as group/thousands separator, e.g., '.'
+ * @returns The parsed float value or null if input is invalid
+ */
+export function parseFormattedFloat (value) {
+  if (!value) return 0
+  const options = {
+    decimalSeparator: ',',
+    groupSeparator: '.',
+    allowDecimals: true,
+    decimalsLimit: 20,
+    allowNegativeValue: true,
+    disableAbbreviations: false
+  }
+  const cleaned = cleanValue({ value, ...options })
+
+  const normalized = (typeof options.decimalSeparator === 'string' && options.decimalSeparator !== '')
+    ? cleaned.replace(options.decimalSeparator, '.')
+    : cleaned
+
+  const num = parseFloat(normalized)
+  return isNaN(num) ? 0 : num
+}
