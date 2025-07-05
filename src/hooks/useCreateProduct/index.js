@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
-import { convertBase64, parseFormattedFloat, RandomCode } from '../../utils'
+import { convertBase64, RandomCode } from '../../utils'
 import { useLocalStorage } from '../useLocalSorage'
 import {
   GET_ALL_FOOD_PRODUCTS,
@@ -205,9 +205,9 @@ export const useCreateProduct = ({
         variables: {
           input: {
             idStore: dataStore?.getStore?.idStore || '',
-            ProPrice: check?.desc ? 0 : parseFormattedFloat(ProPrice),
-            ProDescuento: check?.desc ? 0 : parseFormattedFloat(ProDescuento),
-            ValueDelivery: check?.desc ? 0 : parseFormattedFloat(ValueDelivery),
+            ProPrice: check?.desc ? 0 : ProPrice,
+            ProDescuento: check?.desc ? 0 : ProDescuento,
+            ValueDelivery: check?.desc ? 0 : ValueDelivery,
             ProDescription,
             pName: names,
             manageStock: checkStock,

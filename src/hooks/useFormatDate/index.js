@@ -1,6 +1,6 @@
 export const useFormatDate = ({
   date,
-  local = 'ES'
+  local = 'ES-CO'
 } = {}) => {
   const dateToFormat = new Date(date ?? Date.now())
   const fullDate = dateToFormat.toLocaleDateString(local, { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -24,7 +24,7 @@ export const useFormatDate = ({
    * @param {string | number | Date} dateInput - Date to format (ISO string, timestamp or Date object)
    * @returns {string} - Formatted date string in Colombian time
    */
-  function formatDateInTimeZone(dateInput) {
+  function formatDateInTimeZone (dateInput) {
     const timeZone = 'America/Bogota'
     const locale = 'es-CO'
     const options = {
@@ -43,11 +43,35 @@ export const useFormatDate = ({
     // Cambiar coma por "a las" para mejor legibilidad
     return formatted.replace(',', ' a las')
   }
+  /**
+   * Formats a date into YYYY-MM-DD using a given IANA timezone.
+   *
+   * @param {string | number | Date} inputDate - The date to format.
+   * @param {string} timeZone - IANA timezone string (default is "America/Bogota").
+   * @returns {string} Formatted date string in YYYY-MM-DD.
+   * @throws {Error} If the input date is invalid.
+   */
+  const formatToLocalDateYMD = (inputDate, timeZone = 'America/Bogota') => {
+    const date = new Date(inputDate)
 
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date input provided to formatToLocalDateYMD')
+    }
+
+    const localDateStr = date.toLocaleString('en-US', { timeZone })
+    const localDate = new Date(localDateStr)
+
+    const year = localDate.getFullYear()
+    const month = String(localDate.getMonth() + 1).padStart(2, '0')
+    const day = String(localDate.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
 
   return {
     day,
     fullDate,
+    formatToLocalDateYMD,
     hourMinutes12,
     numberDay,
     yearMonthDay,
@@ -57,6 +81,6 @@ export const useFormatDate = ({
     month,
     year,
     handleHourPmAM,
-    formatDateInTimeZone,
+    formatDateInTimeZone
   }
 }

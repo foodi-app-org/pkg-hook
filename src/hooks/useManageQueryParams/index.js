@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 /**
  * Hook to manage query parameters in Next.js 13+ (App Router),
  * with support for custom router/query injection.
+ * @param {Object} [options] - Optional parameters.
+ * @param {Object} [options.location] - Custom location object with query and push method
  */
 export const useManageQueryParams = ({
   location

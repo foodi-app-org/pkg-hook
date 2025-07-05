@@ -277,6 +277,7 @@ export function parseFormattedFloat (value) {
   const cleaned = cleanValue({ value, ...options })
 
   const normalized = (typeof options.decimalSeparator === 'string' && options.decimalSeparator !== '')
+  // Replace the decimal separator with a dot for parsing
     ? cleaned.replace(options.decimalSeparator, '.')
     : cleaned
 

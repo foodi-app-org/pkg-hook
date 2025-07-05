@@ -11,7 +11,6 @@ import { useMutation } from '@apollo/client'
 import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
 import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
 import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
-import { parseFormattedFloat } from '../../utils'
 
 export const useDessertWithPrice = ({
   dataExtra = [],
@@ -255,7 +254,7 @@ export const useDessertWithPrice = ({
     setSelected({ exPid: null, loading: true })
     const findOneExtra = LineItems?.Lines?.find((x, i) => { return x?.exPid === exPid })
     const { extraName, extraPrice: price } = findOneExtra || {}
-    const extraPrice = parseFormattedFloat(price)
+    const extraPrice = price
     const { data } = await editExtraProductFoods({
       variables: {
         exPid,
@@ -299,7 +298,7 @@ export const useDessertWithPrice = ({
     // Luego, transformar los elementos filtrados
     return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => ({
       exPid,
-      extraPrice: parseFormattedFloat(extraPrice),
+      extraPrice,
       exState: exState === true ? 1 : 0,
       extraName,
       pId
@@ -316,7 +315,7 @@ export const useDessertWithPrice = ({
 
       if (!prepareAndValidateData(pId)) return
       const dataArr = LineItems?.Lines?.map(x => {
-        const extraPrice = parseFormattedFloat(x.extraPrice)
+        const extraPrice = x.extraPrice
         const extraName = x.extraName
         return {
           extraPrice,
