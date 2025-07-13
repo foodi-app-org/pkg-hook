@@ -10,6 +10,7 @@ import { useState } from 'react'
  */
 export function useLocationManager (getDepartments, getCities) {
   const [values, setValues] = useState({})
+  console.log('🚀 ~ useLocationManager ~ values:', values)
   const [errors, setErrors] = useState({})
   const [showLocation, setShowLocation] = useState(true)
 
@@ -26,7 +27,8 @@ export function useLocationManager (getDepartments, getCities) {
   }
 
   const handleDepartmentSearch = (value) => {
-    getCities({ variables: { dId: 'ddd5a096-efc6-4541-a568-c91895bc219e' } })
+    setValues(prevValues => ({ ...prevValues, ctId: '' }))
+    getCities({ variables: { dId: value } })
   }
 
   const handleChangeLocation = (e, error) => {

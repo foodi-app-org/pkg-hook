@@ -397,6 +397,21 @@ export const useDessert = ({
       addCard(valueItems, listId)
     }
     setValueItems('')
+    // Reset the value of all lists in dataListIds to 0 in a single setData call
+    setData(prevData => {
+      const updatedLists = Object.fromEntries(
+        Object.entries(prevData.lists).map(([listId, list]) => {
+          if (dataListIds.includes(listId)) {
+            return [listId, { ...list, value: '' }]
+          }
+          return [listId, list]
+        })
+      )
+      return {
+        ...prevData,
+        lists: updatedLists
+      }
+    })
   }
 
   /**

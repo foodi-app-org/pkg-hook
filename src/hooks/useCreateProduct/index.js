@@ -38,12 +38,19 @@ export const useCreateProduct = ({
     ValueDelivery: 0,
     carProId: ''
   })
+  const STEPS = Object.freeze({
+    PRODUCT: 0,
+    DESSERTS: 1,
+    COMPLEMENTS: 2,
+    DISPONIBILITY: 3
+  })
+
   const [updateImageProducts] = useSetImageProducts()
   const [names, setName] = useLocalStorage('namefood', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
   const [imageBase64, setImageBase64] = useState(null)
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState(STEPS.PRODUCT)
   const [pId, setPid] = useState(null)
 
   const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
@@ -196,7 +203,6 @@ export const useCreateProduct = ({
       ValueDelivery: 0,
       carProId: ''
     }
-    console.log('handleRegister values', values)
     if (!carProId && !names) return setErrors({ ...errors, carProId: true })
     const ProImage = '/images/placeholder-image.webp'
     const pCode = RandomCode(10)
@@ -320,6 +326,7 @@ export const useCreateProduct = ({
     setCheck,
     handleRegister,
     setActive,
+    STEPS,
     onFileInputChange,
     handleRegisterTags,
     setShowMore,
