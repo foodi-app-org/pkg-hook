@@ -11,6 +11,7 @@ import {
   GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE } from '../useStore/queries'
+import { useStore } from '../useStore'
 export { GET_MIN_PEDIDO } from './queries'
 export * from './queries'
 
@@ -23,12 +24,23 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   const fileInputRefLogo = useRef(null)
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
-    onCompleted: (data) => { return sendNotification({ message: data?.registerBanner?.message }) },
-    context: { clientName: 'admin-server' }
+    onCompleted: (data) => {
+      const { registerBanner } = data || {}
+      const { message = '', success = false } = registerBanner || {}
+      if (!success) {
+        setPreviewImg(initialState)
+        return
+      }
+      sendNotification({
+        title: success ? 'Banner subido' : 'Error al subir banner',
+        description: message,
+        backgroundColor: success ? 'success' : 'error'
+      })
+    }
+
   })
   const [setALogoStore] = useMutation(CREATE_LOGO, {
-    onCompleted: (data) => { return sendNotification({ message: data?.setALogoStore?.message }) },
-    context: { clientName: 'admin-server' }
+    onCompleted: (data) => { return sendNotification({ message: data?.setALogoStore?.message }) }
   })
   const [DeleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
     onCompleted: (data) => { return sendNotification({ message: data?.DeleteOneBanner?.message }) },
@@ -82,27 +94,15 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
         update (cache) {
           cache.modify({
             fields: {
-              getOneBanners (dataOld = []) {
-                return cache.writeQuery({ query: GET_ONE_BANNER_STORE, data: dataOld })
+              getStore (dataOld = {}) {
+                return cache.writeQuery({ query: GET_ONE_STORE, data: dataOld })
               }
             }
           })
         }
-      }).catch(() => {
-        sendNotification({
-          title: 'No pudimos cargar la imagen',
-          description: 'Error',
-          backgroundColor: 'error'
-        })
-        setPreviewImg(initialState)
       })
     } catch {
       setPreviewImg(initialState)
-      sendNotification({
-        title: 'No pudimos cargar la imagen',
-        description: 'Error',
-        backgroundColor: 'error'
-      })
     }
   }
   const handleInputChangeLogo = event => {
@@ -165,6 +165,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     e.preventDefault()
     fileInputRef.current.click()
   }
+
   return {
     fileInputRefLogo,
     src,

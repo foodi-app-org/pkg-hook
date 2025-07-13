@@ -117,7 +117,6 @@ export const useCreateProduct = ({
       ...prev,
       [name]: value
     }))
-    console.log('🚀 ~ handleChange ~ name, value:', name, value)
 
     setErrors((prev) => ({
       ...prev,
