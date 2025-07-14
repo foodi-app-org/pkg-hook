@@ -4,19 +4,18 @@ import { useRef, useState } from 'react'
 import { convertBase64, RandomCode } from '../../utils'
 import { useLocalStorage } from '../useLocalSorage'
 import {
-  GET_ALL_FOOD_PRODUCTS,
   UPDATE_PRODUCT_FOOD
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
 import { useTagsProducts } from './../useProductsFood/usetagsProducts'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
-import { assignWith } from 'lodash'
 import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
 import { useSetImageProducts } from '../useSetImageProducts'
 
 export const useCreateProduct = ({
   router,
+  image,
   setAlertBox = (args) => { return args },
   sendNotification = (args) => { return args }
 }) => {
@@ -56,7 +55,6 @@ export const useCreateProduct = ({
   const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
   const [filter, setFilter] = useState({ gender: [], desc: [], speciality: [] })
   const initialState = { alt: '/ images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
-  const [image, setImage] = useState(null)
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRef = useRef(null)
   const [arrTags, setTags] = useState([])
@@ -159,23 +157,6 @@ export const useCreateProduct = ({
   })
   const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD)
 
-  const onFileInputChange = async event => {
-    const { files } = event.target
-
-    const file = event.target.files[0]
-    setImage(file)
-    const base64 = await convertBase64(file)
-    // const [size, { unit }] = await getFileSizeByUnit(file, "B");
-    setImageBase64(base64)
-    setPreviewImg(
-      files.length
-        ? {
-            src: URL.createObjectURL(files[0]),
-            alt: files[0].name
-          }
-        : initialState
-    )
-  }
   const onTargetClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click()
@@ -326,7 +307,6 @@ export const useCreateProduct = ({
     handleRegister,
     setActive,
     STEPS,
-    onFileInputChange,
     handleRegisterTags,
     setShowMore,
     handleCheckStock,

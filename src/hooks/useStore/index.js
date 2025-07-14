@@ -4,7 +4,11 @@ import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con 
 import { errorHandler } from '../../config/client'
 import { useLogout } from '../useLogout'
 
-export const useStore = ({ isClient = false, idStore = null, callback = () => {} } = {}) => {
+export const useStore = ({
+  isClient = false,
+  idStore = null,
+  callback = () => { }
+} = {}) => {
   const client = useApolloClient()
   const [onClickLogout, { loading: load }] = useLogout()
 

@@ -11,8 +11,7 @@ import {
   GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE } from '../useStore/queries'
-import { useStore } from '../useStore'
-export { GET_MIN_PEDIDO } from './queries'
+import { color } from './utils'
 export * from './queries'
 
 export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) => {
@@ -34,26 +33,44 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       sendNotification({
         title: success ? 'Banner subido' : 'Error al subir banner',
         description: message,
-        backgroundColor: success ? 'success' : 'error'
+        backgroundColor: success ? color.success : color.error
       })
     }
 
   })
   const [setALogoStore] = useMutation(CREATE_LOGO, {
-    onCompleted: (data) => { return sendNotification({ message: data?.setALogoStore?.message }) }
+    onCompleted: (data) => {
+      const { setALogoStore } = data || {}
+      const { message = '', success = false } = setALogoStore || {}
+      sendNotification({
+        title: success ? 'Logo subido' : color.error,
+        description: message,
+        backgroundColor: success ? color.success : color.error
+      })
+    }
   })
-  const [DeleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
-    onCompleted: (data) => { return sendNotification({ message: data?.DeleteOneBanner?.message }) },
-    context: { clientName: 'admin-server' }
+  const [deleteOneBanner] = useMutation(DELETE_ONE_BANNER_STORE, {
+    onCompleted: (data) => {
+      const { deleteOneBanner } = data || {}
+      const { message = '', success = false } = deleteOneBanner || {}
+      return sendNotification({
+        title: success ? 'Logo subido' : color.error,
+        description: message,
+        backgroundColor: success ? color.success : color.error
+      })
+    }
   })
   const [deleteALogoStore] = useMutation(DELETE_ONE_LOGO_STORE, {
     onCompleted: (data) => {
+      const { deleteALogoStore } = data || {}
+      const { message = '', success = false } = deleteALogoStore || {}
       sendNotification({
-        message: data.deleteALogoStore.message
+        title: success ? 'Logo Eliminado' : 'Error al eliminar el logo',
+        description: message,
+        backgroundColor: success ? color.success : color.error
       })
       setPreviewImgLogo(initialState)
     },
-    context: { clientName: 'admin-server' },
     update (cache) {
       cache.modify({
         fields: {
@@ -132,15 +149,15 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     }).catch(() => {
       sendNotification({
         title: 'No pudimos cargar la imagen',
-        description: 'Error',
-        backgroundColor: 'error'
+        description: color.error,
+        backgroundColor: color.error
       })
       setPreviewImgLogo(initialState)
     })
   }
   const HandleDeleteBanner = async () => {
     setPreviewImg(initialState)
-    DeleteOneBanner({
+    deleteOneBanner({
       variables: {
         idStore
       },
@@ -175,6 +192,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     altLogo,
     fileInputRef,
     handleDeleteLogo,
+    setPreviewImg,
     onTargetClick,
     onTargetClickLogo,
     HandleDeleteBanner,
