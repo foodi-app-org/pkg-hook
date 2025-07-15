@@ -3,15 +3,15 @@
  * @param {File} file
  * @returns {Promise<number>} Orientation value from 1 to 8
  */
-export const getOrientation = (file: File): Promise<number> => {
+export const getOrientation = (file: File, validTypes: string[]): Promise<number> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (event) => {
       const view = new DataView(event.target?.result as ArrayBuffer)
 
-      if (view.getUint16(0, false) !== 0xFFD8) {
-        return reject(new Error('Not a JPEG'))
-      }
+    if (!validTypes.includes(file.type)) {
+      return reject(new Error(`Archivo no soportado: ${file.type}`))
+    }
 
       let offset = 2
       const length = view.byteLength
