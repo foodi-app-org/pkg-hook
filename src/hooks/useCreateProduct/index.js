@@ -81,6 +81,8 @@ export const useCreateProduct = ({
   const {
     data,
     tags,
+    setNewTags,
+    newTags,
     handleRegister: handleRegisterTags,
     handleAddTag
   } = useTagsProducts()
@@ -224,6 +226,16 @@ export const useCreateProduct = ({
         //   })
         // }
       })
+      const { data } = response
+      const { updateProductFoods: dataResponse } = data
+      const { success, data: productData } = dataResponse
+      const { pId } = productData
+      if (success) {
+        handleRegisterTags({
+          pId,
+          nameTag: tags?.tag ?? null
+        })
+      }
       const { errors } = response?.data?.updateProductFoods ?? {
         errors: []
       }
@@ -254,7 +266,6 @@ export const useCreateProduct = ({
       setPid(response?.data?.updateProductFoods?.data?.pId ?? null)
       return response
     } catch (error) {
-      console.log('🚀 ~ handleRegister ~ error:', error)
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }
@@ -292,6 +303,8 @@ export const useCreateProduct = ({
     active,
     idStore: dataStore?.getStore?.idStore || '',
     arrTags,
+    newTags,
+    setNewTags,
     setPid,
     handleChange,
     onClickClear,

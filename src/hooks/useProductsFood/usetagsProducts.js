@@ -1,51 +1,12 @@
 import { useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { REGISTER_TAGS_PRODUCT } from './queriesStore'
+import { useGetAllTags } from '../useTagProducts'
 
 export const useTagsProducts = () => {
   const [registerTag] = useMutation(REGISTER_TAGS_PRODUCT)
-  const data = [
-    {
-      id: 1,
-      tag: 'Bebida fría'
-    },
-    {
-      id: 2,
-      tag: 'Bebida caliente'
-    },
-    {
-      id: 3,
-      tag: 'Bebida alcohólica'
-    },
-    {
-      id: 4,
-      tag: 'Bebida sin alcohol'
-    },
-    {
-      id: 5,
-      tag: 'Entrante'
-    },
-    {
-      id: 6,
-      tag: 'Plato principal'
-    },
-    {
-      id: 7,
-      tag: 'Postre'
-    },
-    {
-      id: 8,
-      tag: 'Sopa'
-    },
-    {
-      id: 9,
-      tag: 'Ensalada'
-    },
-    {
-      id: 10,
-      tag: 'Mariscos'
-    }
-  ]
+  const { tags: listTags } = useGetAllTags()
+  const [newTags, setNewTags] = useState([])
 
   const [tags, setTags] = useState({
     id: '',
@@ -83,11 +44,20 @@ export const useTagsProducts = () => {
       }
     }).catch(err => { return console.log({ message: `${err}`, duration: 7000 }) })
   }
+  const data = listTags.map((tag) => {
+    return {
+      id: tag?.tgId ?? '',
+      tag: String(tag?.nameTag ?? '')
+    }
+  })
+
   return {
     tags,
     error: false,
     data,
     loading: false,
+    newTags: newTags ?? [],
+    setNewTags,
     handleRegister,
     handleAddTag
   }

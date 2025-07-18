@@ -14,7 +14,7 @@ query getProductsInStock($limit: Int, $offset: Int) {
       fId #Características
       pName
       getOneTags {
-        tPsId
+        tgId
         idUser
         idStore
         pId

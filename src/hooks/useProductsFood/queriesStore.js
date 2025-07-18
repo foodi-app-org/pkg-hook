@@ -122,7 +122,7 @@ export const GET_ALL_PRODUCT_STORE = gql`
       fId #Características
       pName
       getOneTags {
-        tPsId
+        tgId
         idUser
         idStore
         pId
@@ -603,6 +603,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       ctId
       tpId
       fId
+    	tgId
       pName
       ProPrice
       ProBarCode
@@ -627,7 +628,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       pDatCre
       pDatMod
       getOneTags {
-        tPsId
+        tgId
         idUser
         idStore
         pId
@@ -908,12 +909,27 @@ export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
 export const REGISTER_TAGS_PRODUCT = gql`
   mutation registerTag($input: ITag) {
     registerTag(input: $input) {
-      tPsId
+      data {
+            tgId
       idUser
       idStore
       pId
       nameTag
       aName
+      }
+  success
+      message
+      errors {
+        path
+        message
+        type 
+        context {
+          limit
+          value
+          label
+          key
+        }
+      }
     }
   }
 `
