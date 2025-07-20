@@ -5,6 +5,11 @@ export const UPDATE_IMAGE_PRODUCT_FOOD = gql`
     setImageProducts(input: $input) {
       success
       message
+      data {
+        pId
+        ProImage
+        __typename
+      }
       errors {
         message
       }
