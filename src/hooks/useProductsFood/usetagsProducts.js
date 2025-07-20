@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { REGISTER_TAGS_PRODUCT } from './queriesStore'
-import { useGetAllTags } from '../useTagProducts'
+import { useDeleteOneTag, useGetAllTags } from '../useTagProducts'
 
-export const useTagsProducts = () => {
+export const useTagsProducts = ({
+  sendNotification = () => { }
+} = {}) => {
   const [registerTag] = useMutation(REGISTER_TAGS_PRODUCT)
+  const [handleDeleteTag, { loading }] = useDeleteOneTag()
   const { tags: listTags } = useGetAllTags()
   const [newTags, setNewTags] = useState([])
 
@@ -25,6 +28,36 @@ export const useTagsProducts = () => {
       tag
     })
   }
+
+  const handleRemoveTag = async (tag) => {
+    try {
+      if (loading) return
+      const { id: tgId, tag: nameTag } = tag ?? {
+        tgId: null,
+        nameTag: null
+      }
+      const response = await handleDeleteTag({ tgId, nameTag })
+      const {
+        success = false,
+        message = '',
+        data
+      } = response ?? {}
+
+      const name = data?.nameTag ?? ''
+      return sendNotification({
+        title: name ?? 'error',
+        description: message,
+        backgroundColor: success ? 'success' : 'error'
+      })
+    } catch (e) {
+      sendNotification({
+        title: 'Error',
+        description: 'error',
+        backgroundColor: 'error'
+      })
+    }
+  }
+
   const handleRegister = tag => {
     const {
       pId,
@@ -59,6 +92,7 @@ export const useTagsProducts = () => {
     newTags: newTags ?? [],
     setNewTags,
     handleRegister,
+    handleRemoveTag,
     handleAddTag
   }
 }

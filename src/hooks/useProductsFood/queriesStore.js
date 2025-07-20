@@ -910,7 +910,7 @@ export const REGISTER_TAGS_PRODUCT = gql`
   mutation registerTag($input: ITag) {
     registerTag(input: $input) {
       data {
-            tgId
+      tgId
       idUser
       idStore
       pId

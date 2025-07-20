@@ -83,9 +83,10 @@ export const useCreateProduct = ({
     tags,
     setNewTags,
     newTags,
+    handleRemoveTag,
     handleRegister: handleRegisterTags,
     handleAddTag
-  } = useTagsProducts()
+  } = useTagsProducts({ sendNotification })
 
   // HANDLESS
   const [check, setCheck] = useState({
@@ -325,6 +326,7 @@ export const useCreateProduct = ({
     handleCheckStock,
     onTargetClick,
     handleAddTag,
+    handleRemoveTag,
     handleCheck,
     handleCheckFreeShipping,
     check
