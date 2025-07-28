@@ -1,17 +1,17 @@
 import { gql } from '@apollo/client'
 
-export const CHANGE_STATE_STORE_PEDIDO = gql`
-mutation changePPStatePPedido($pPStateP: Int, $pCodeRef: String, $pDatMod: String) {
-  changePPStatePPedido(pPStateP: $pPStateP, pCodeRef: $pCodeRef,  pDatMod: $pDatMod){
+export const CHANGE_STATE_STORE_ORDER = gql`
+mutation changePPStateOrder($pPStateP: Int, $pCodeRef: String, $pDatMod: String) {
+  changePPStateOrder(pPStateP: $pPStateP, pCodeRef: $pCodeRef,  pDatMod: $pDatMod){
     success
     message
   }
 }
 
 `
-export const GET_ALL_PEDIDOS = gql`
-query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
-  getAllPedidoStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
+export const GET_ALL_ORDER = gql`
+query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int, $fromDate:  DateTime, $toDate:  DateTime) {
+  getAllOrderStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder, toDate: $toDate,fromDate: $fromDate ) {
     pdpId
     idStore
     pCodeRef
@@ -86,54 +86,21 @@ query getAllOrdersFromStore(
     max: $max
     statusOrder: $statusOrder
   ) {
-    ACCEPT {
-      pdpId
-      idStore
-      pCodeRef
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      pSState
-      pDatCre
-      channel
-      locationUser
-      pDatMod
-      getAllPedidoStore {
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
-      }
+    statusKey
+    priority
+    state
+    getStatusOrderType {
+      idStatus
+      backgroundColor
+      name
+      description
+      color
+      priority
+      state
+      createdAt
+      updatedAt
     }
-    PROCESSING {
+    items {
       pdpId
       idStore
       pCodeRef
@@ -145,148 +112,18 @@ query getAllOrdersFromStore(
       channel
       locationUser
       pDatMod
-      getAllPedidoStore {
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
+      getStatusOrderType {
+        idStatus
+        name
+        description
+        backgroundColor
+        color
+        priority
+        state
+        createdAt
+        updatedAt
       }
-    }
-    READY {
-      pdpId
-      idStore
-      pCodeRef
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      pSState
-      pDatCre
-      channel
-      locationUser
-      pDatMod
-      getAllPedidoStore {
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-                        ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
-      }
-    }
-    CONCLUDES {
-      pdpId
-      idStore
-      pCodeRef
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      pSState
-      pDatCre
-      channel
-      locationUser
-      pDatMod
-      getAllPedidoStore {
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
-      }
-    }
-    REJECTED {
-      pdpId
-      idStore
-      pCodeRef
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      pSState
-      pDatCre
-      channel
-      locationUser
-      pDatMod
-      getAllPedidoStore {
+      getStoreOrders {
         pdpId
         pId
         idStore
@@ -323,6 +160,5 @@ query getAllOrdersFromStore(
     }
   }
 }
-
 
 `

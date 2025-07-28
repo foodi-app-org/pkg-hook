@@ -11,7 +11,7 @@ function readFile(file: File): Promise<string> {
     })
 }
 
-type SendNotificationFn = (params: {
+export type SendNotificationFn = (params: {
     description: string
     title: string
     backgroundColor: string

@@ -2,11 +2,6 @@ export const isValidCodeRef = (codeRef) => {
   return typeof codeRef === 'string' && codeRef.trim() !== ''
 }
 
-export const isValidState = (state) => {
-  const validStates = [1, 2, 3, 4, 5]
-  return validStates.includes(state)
-}
-
 export const updateExistingOrders = (
   existingOrders,
   pCodeRef,
@@ -17,11 +12,11 @@ export const updateExistingOrders = (
     // existingOrders no es un objeto válido
     return existingOrders
   }
-  if (typeof pCodeRef !== 'string' || typeof pSState !== 'number') {
-    // Los tipos de datos de pCodeRef y pSState no son los esperados
+  if (typeof pCodeRef !== 'string') {
+    // Los tipos de datos de pCodeRef
     return existingOrders
   }
-  if (!isValidCodeRef(pCodeRef) || !isValidState(pSState)) {
+  if (!isValidCodeRef(pCodeRef)) {
     // Valores de entrada no válidos, devuelve existingOrders sin cambios
     return existingOrders
   }
@@ -41,7 +36,6 @@ export const updateExistingOrders = (
     // El valor de pSState no está mapeado a ninguna propiedad existente en existingOrders
     return existingOrders
   }
-
   Object.keys(updatedExistingOrders).forEach((key) => {
     if (Array.isArray(updatedExistingOrders[key])) {
       const oneSale = updatedExistingOrders[key].find((order) => {

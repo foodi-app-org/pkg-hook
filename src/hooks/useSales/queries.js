@@ -392,9 +392,9 @@ export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
   }
 `
 
-export const GET_ALL_PEDIDOS = gql`
-query getAllPedidoStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int) {
-  getAllPedidoStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder) {
+export const GET_ALL_ORDER = gql`
+query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int, $statusOrder: Int) {
+  getAllOrderStoreFinal(idStore: $idStore, search: $search, min: $min, max: $max, statusOrder: $statusOrder) {
     pdpId
     idStore
     pCodeRef
