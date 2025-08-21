@@ -67,7 +67,6 @@ upIdeDoc
 siteWeb
 description
 associateStore
-createAt
   role {
     name
     permissions

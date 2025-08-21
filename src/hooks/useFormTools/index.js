@@ -10,6 +10,7 @@ import { validationSubmitHooks } from '../../utils'
  * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
 export const useFormTools = ({
+  initialValues = {},
   sendNotification = ({
     title = '',
     description = '',
@@ -17,7 +18,7 @@ export const useFormTools = ({
   }) => { }
 }
 = {}) => {
-  const [dataForm, setDataForm] = useState({})
+  const [dataForm, setDataForm] = useState({ ...initialValues })
   const [errorForm, setErrorForm] = useState({})
   const [errorSubmit, setErrorSubmit] = useState(false)
   const [calledSubmit, setCalledSubmit] = useState(false)

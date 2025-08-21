@@ -47,7 +47,6 @@ query getAllClients($idStore: ID, $search: String, $min: Int, $max: Int, $fromDa
     success
     message
     data {
-      
       cliId
       idStore
       gender

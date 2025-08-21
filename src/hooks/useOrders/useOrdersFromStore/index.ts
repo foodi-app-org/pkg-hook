@@ -55,6 +55,7 @@ export const useOrdersFromStore = ({
   const {
     data,
     loading,
+    refetch,
     error,
     called
   } = useQuery(GET_ALL_PEDIDOS_FROM_STORE, {
@@ -77,6 +78,6 @@ export const useOrdersFromStore = ({
     }
   })
 
-  return [data?.getAllOrdersFromStore || [], { loading: called ? false : loading, error }]
+  return [data?.getAllOrdersFromStore || [], { refetch, loading: called ? false : loading, error }]
 }
 
