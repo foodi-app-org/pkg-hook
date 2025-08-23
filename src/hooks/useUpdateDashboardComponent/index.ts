@@ -4,7 +4,7 @@ import { gql, useMutation } from '@apollo/client';
  * GraphQL mutation for updating a dashboard component.
  */
 const UPDATE_DASHBOARD_COMPONENT = gql`
-  mutation UpdateDashboardComponent($input: DashboardComponentUpdateInput!) {
+  mutation UpdateDashboardComponent($input: [DashboardComponentUpdateInput]) {
     updateDashboardComponent(input: $input) {
       success
       message
@@ -65,14 +65,14 @@ interface UpdateDashboardComponentInput {
 export const useUpdateDashboardComponent = () => {
   const [mutate, { loading, error, data }] = useMutation<
     UpdateDashboardComponentResponse,
-    { input: UpdateDashboardComponentInput }
+    { input: UpdateDashboardComponentInput[] }
   >(UPDATE_DASHBOARD_COMPONENT);
 
   /**
    * Calls the mutation with the provided input.
    * @param input DashboardComponentUpdateInput
    */
-  const updateComponent = async (input: UpdateDashboardComponentInput) => {
+  const updateComponent = async (input: UpdateDashboardComponentInput[]) => {
     try {
       const response = await mutate({ variables: { input } });
       return response.data?.updateDashboardComponent;
