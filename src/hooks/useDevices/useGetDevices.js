@@ -12,13 +12,15 @@ export const useDevices = () => {
   // Función para formatear la fecha
   const { formatDateInTimeZone } = useFormatDate({})
 
-  const listDevices = Array.isArray(data?.getDeviceUsers) ? data?.getDeviceUsers.map((device) => {
-    const formattedDate = formatDateInTimeZone(device.DatCre)
-    return {
-      ...device,
-      DatCre: formattedDate
-    }
-  }) : []
+  const listDevices = Array.isArray(data?.getDeviceUsers)
+    ? data?.getDeviceUsers.map((device) => {
+      // const formattedDate = formatDateInTimeZone(device.createdAt)
+      return {
+        ...device
+        // createdAt: formattedDate
+      }
+    })
+    : []
   return {
     data: listDevices,
     loading

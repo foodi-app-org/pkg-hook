@@ -15,12 +15,12 @@ const REGISTER_DEVICE_USER = gql`
         deviceName
         locationFormat
         type
-        short_name
+        shortName
         platform
         version
         dState
-        DatCre
-        DatMod
+        createdAt
+        dState
       }
       errors {
         path
