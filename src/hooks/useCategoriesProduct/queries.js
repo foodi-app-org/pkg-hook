@@ -9,8 +9,8 @@ query catProductsAll($search: String, $min: Int, $max: Int, $gender: [String], $
     ProDescription
     ProImage
     pState
-    pDatCre
-    pDatMod
+    createdAt
+    updatedAt
   }
 }
 `

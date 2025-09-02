@@ -820,8 +820,8 @@ export const GET_ULTIMATE_CATEGORY_PRODUCTS = gql`
       ProDescription
       ProImage
       pState
-      pDatCre
-      pDatMod
+      createdAt
+      updatedAt
     }
   }
 `

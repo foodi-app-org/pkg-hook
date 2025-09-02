@@ -11,68 +11,68 @@ mutation  newRegisterStore($input: IStore){
 `
 
 export const GET_ONE_STORE = gql`
-query getStore($id: ID, $idStore: ID){
- getStore(id: $id, idStore: $idStore){
-cId
-id
-deliveryTimeMinutes
-scheduleOpenAll
-dId
-idStore
-ctId
-neighborhoodStore
-Viaprincipal
-catStore
-storeOwner
-storeName
-ImageName
-emailStore
-storePhone
-socialRaz
-Image
-banner
-  
-documentIdentifier
-uPhoNum
-storeName
-ULocation
-upLat
-upLon
-uState
-siteWeb
-  dailyGoal
-description
-createdAt
-secVia
-NitStore
-typeRegiments
-typeContribute
-addressStore
-pais {
-        cId
-        cName
-        cCalCod
-        cState
-        cDatCre
-        cDatMod
-      }
-      city {
-        ctId
-        dId
-        cName
-        cState
-        cDatCre
-        cDatMod
-      } 
-      department {
-        dId
-        cId
-        dName
-        dState
-        dDatCre
-        dDatMod
-      }
-  getStoreSchedules {
+query getStore($id: ID, $idStore: ID) {
+  getStore(id: $id, idStore: $idStore) {
+    cId
+    id
+    deliveryTimeMinutes
+    scheduleOpenAll
+    dId
+    idStore
+    ctId
+    neighborhoodStore
+    Viaprincipal
+    catStore
+    storeOwner
+    storeName
+    ImageName
+    emailStore
+    storePhone
+    socialRaz
+    Image
+    banner
+
+    documentIdentifier
+    uPhoNum
+    storeName
+    ULocation
+    upLat
+    upLon
+    uState
+    siteWeb
+    dailyGoal
+    description
+    createdAt
+    secVia
+    NitStore
+    typeRegiments
+    typeContribute
+    addressStore
+    pais {
+      cId
+      cName
+      cCalCod
+      cState
+      cDatCre
+      cDatMod
+    }
+    city {
+      ctId
+      dId
+      cName
+      cState
+      cDatCre
+      cDatMod
+    }
+    department {
+      dId
+      cId
+      dName
+      dState
+      dDatCre
+      dDatMod
+    }
+    getStoreSchedules {
       idStore
       schId
       id
@@ -80,17 +80,16 @@ pais {
       schHoSta
       schHoEnd
       schState
+    }
+    cateStore {
+      catStore
+      cName
+      cState
+      createdAt
+      updatedAt
+      csDescription
+    }
   }
-  cateStore {
-    catStore
-    cName
-    cState
-    cDatCre
-    cDatMod
-    csDescription
-    
-  }
-}
 }
 `
 export const GET_ONE_STORE_BY_ID = gql`

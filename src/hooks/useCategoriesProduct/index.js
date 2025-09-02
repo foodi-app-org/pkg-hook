@@ -8,5 +8,6 @@ export const useCategoriesProduct = () => {
     error,
     networkStatus
   } = useQuery(GET_ULTIMATE_CATEGORY_PRODUCTS)
+
   return [data?.catProductsAll, { loading, error, networkStatus }]
 }
