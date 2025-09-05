@@ -7,9 +7,9 @@ getOneCatStore(catStore: $catStore){
   idUser
   cName
   cState
-  cDatCre
+  createdAt
   cPathImage
-  cDatMod
+  updatedAt
   csDescription
   getAllStore {
       idStore

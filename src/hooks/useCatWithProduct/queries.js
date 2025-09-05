@@ -117,26 +117,42 @@ query ExtProductFoodsAll($search: String, $min: Int, $max: Int, $pId: ID) {
 }
 `
 export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
-query getCatProductsWithProduct($search: String, $productName: String, $min: Int, $max: Int, $gender: [String], $desc: [String], $categories: [ID], ) {
-  getCatProductsWithProduct(search: $search, min: $min, productName:$productName, max: $max, gender: $gender, desc: $desc, categories: $categories,) {
-    totalCount,
-    catProductsWithProduct {
-    carProId
-    pState
-    pState
-    ProImage
-    idStore
-    pName
+query getCatProductsWithProduct(
+  $search: String
+  $productName: String
+  $min: Int
+  $max: Int
+  $gender: [String]
+  $desc: [String]
+  $categories: [ID]
+) {
+  getCatProductsWithProduct(
+    search: $search
+    min: $min
+    productName: $productName
+    max: $max
+    gender: $gender
+    desc: $desc
+    categories: $categories
+  ) {
     totalCount
-    ProDescription
-    ProImage
-    pState
-    pDatCre
-    pDatMod
-    productFoodsAll {
-         pId
-         stock
-         manageStock
+    catProductsWithProduct {
+      carProId
+      pState
+      pState
+      ProImage
+      idStore
+      pName
+      totalCount
+      ProDescription
+      ProImage
+      pState
+      createdAt
+      updatedAt
+      productFoodsAll {
+        pId
+        stock
+        manageStock
         sizeId
         colorId
         carProId
@@ -165,9 +181,9 @@ query getCatProductsWithProduct($search: String, $productName: String, $min: Int
         ProVoltaje
         pState
         sTateLogistic
-        pDatCre
-        pDatMod
-    }
+        createdAt
+        updatedAt
+      }
     }
   }
 }
