@@ -4,36 +4,36 @@ import { useQuery, gql } from '@apollo/client'
  * GraphQL query to fetch all tags
  */
 export const GET_ALL_TAGS = gql`
-  query getAllTags {
-    getAllTags {
-      success
+query getAllTags {
+  getAllTags {
+    success
+    message
+    pagination {
+      totalRecords
+      totalPages
+      currentPage
+    }
+    data {
+      tgId
+      idUser
+      idStore
+      pId
+      nameTag
+      aName
+    }
+    errors {
+      path
       message
-      pagination {
-        totalRecords
-        totalPages
-        currentPage
-      }
-      data {
-        tgId
-        idUser
-        idStore
-        pId
-        nameTag
-        aName
-      }
-      errors {
-        path
-        message
-        type
-        context {
-          limit
-          value
-          label
-          key
-        }
+      type
+      context {
+        limit
+        value
+        label
+        key
       }
     }
   }
+}
 `
 
 /**
