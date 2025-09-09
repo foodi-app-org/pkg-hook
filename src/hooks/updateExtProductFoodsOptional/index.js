@@ -3,7 +3,7 @@ import { updateCacheMod } from '../../utils'
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL, UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useProductsFood/queriesStore'
 
 export const useUpdateExtProductFoodsOptional = () => {
-  const [updateExtProductFoodsOptional] = useMutation(UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL)
+  const [updateExtProductOptional] = useMutation(UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL)
 
   const handleUpdateExtProduct = async ({
     pId,
@@ -13,7 +13,7 @@ export const useUpdateExtProductFoodsOptional = () => {
     required,
     numbersOptionalOnly
   }) => {
-    return await updateExtProductFoodsOptional({
+    return await updateExtProductOptional({
       variables: {
         input: {
           pId,

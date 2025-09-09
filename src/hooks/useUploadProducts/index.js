@@ -14,7 +14,6 @@ export const useUploadProducts = ({
   sendNotification: () => { return null }
 }) => {
   const [data, setData] = useState([])
-  console.log("🚀 ~ data:", data)
   const [isLoading, setIsLoading] = useState(false)
   const [active, setActive] = useState(STEPS.UPLOAD_FILE)
   const [overActive, setOverActive] = useState(STEPS.UPLOAD_FILE)

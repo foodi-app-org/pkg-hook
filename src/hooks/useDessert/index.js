@@ -73,9 +73,13 @@ export const useDessert = ({
   // Here, it seems to exclude a specific list ID ('01list') from the listIds.
 
   //  HOOKS
-  const { handleMutateExtProductFoodsSubOptional } = useUpdateExtProductFoodsSubOptional()
+  const { handleMutateExtProductFoodsSubOptional } = useUpdateExtProductFoodsSubOptional({
+    sendNotification
+  })
   const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional()
-  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional()
+  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional({
+    sendNotification
+  })
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
   const [editExtFoodSubsOptional, { loading: loadingEditSubOptional }] = useEditSubProductOptional()
 
@@ -100,7 +104,7 @@ export const useDessert = ({
   * @throws {Error} Will throw an error if the provided index (i) is out of range.
   * @throws {Error} Will throw an error if the provided listID is invalid (optional validation).
   */
-  const handleRemoveList = (i, listID) => {
+  const handleRemoveList = async (i, listID) => {
     // Validate that the provided index (i) is a non-negative number
     if (typeof i !== 'number' || i < 0) {
       throw new Error('Invalid index provided. The index must be a non-negative number.')
@@ -129,7 +133,7 @@ export const useDessert = ({
       try {
         // Assuming DeleteExtProductFoodsOptional is a function that deletes an external product
         // Call the function to delete the external product using the provided listID
-        DeleteExtProductFoodsOptional({
+        const resultDeleteExtProductFoodsOptional = await DeleteExtProductFoodsOptional({
           variables: {
             state: 1,
             opExPid: listID,
@@ -144,9 +148,20 @@ export const useDessert = ({
             })
           }
         })
+        const { data: { DeleteExtProductFoodsOptional: responseDelete } = {} } = resultDeleteExtProductFoodsOptional ?? {
+          data: { DeleteExtProductFoodsOptional: null }
+        }
+        const { success } = responseDelete || {}
+        if (!success) {
+          setData({
+            listIds: data.listIds,
+            lists: {
+              ...data.lists
+            }
+          })
+        }
       } catch (error) {
-        // Handle any errors that may occur during the deletion process
-        throw new Error('An error occurred while deleting the external product.')
+        return { success: false, message: error instanceof Error ? error.message : 'Unexpected error' }
       }
     }
   }
@@ -323,14 +338,14 @@ export const useDessert = ({
           numbersOptionalOnly: numberLimit
         })
         const { data } = response || {}
-        if (!data?.updateExtProductFoodsOptional) {
+        if (!data?.updateExtProductOptional) {
           return sendNotification({
             description: 'Ocurrió un error, intenta de nuevo',
             title: 'Error',
             backgroundColor: 'warning'
           })
         }
-        const { success, message } = data?.updateExtProductFoodsOptional || {}
+        const { success, message } = data?.updateExtProductOptional || {}
         if (success) {
           setSelectedExtra({})
           setOpenModalEditExtra(false)
@@ -383,15 +398,32 @@ export const useDessert = ({
         [listId]: list
       }
     })
-    handleMutateExtProductFoodsSubOptional({
+    const result = await handleMutateExtProductFoodsSubOptional({
       pId,
       title,
       listId,
       id,
       state: 1
     })
-    setTitle('')
+    const { data: { updateExtProductSubOptional } = {} } = result ?? {}
+    const { success } = updateExtProductSubOptional ?? {}
+    if (!success) {
+      setTitle('')
+      const currentList = data.lists[listId]
+      const filteredCart = currentList?.cards?.filter((cart) => cart.id !== id)
+      setData(prevData => ({
+        ...prevData,
+        lists: {
+          ...prevData.lists,
+          [listId]: {
+            ...currentList,
+            cards: filteredCart
+          }
+        }
+      }))
+    }
   }
+
   const handleAdd = ({ listId }) => {
     if (valueItems !== '' && valueItems.trim() !== '') {
       addCard(valueItems, listId)

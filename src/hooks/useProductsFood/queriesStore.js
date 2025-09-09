@@ -396,8 +396,8 @@ export const UPDATE_EXTRAS_PRODUCT_FOOD = gql`
 `
 // EXTRA PRODUCTS
 export const UPDATE_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
-  mutation updateExtProductFoodsOptional($input: InputExtProductFoodOptional) {
-    updateExtProductFoodsOptional(input: $input) {
+  mutation updateExtProductOptional($input: InputExtProductFoodOptional) {
+    updateExtProductOptional(input: $input) {
       success,
       message
     }
@@ -441,10 +441,13 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
   }
 `
 export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
-  mutation updateExtProductFoodsSubOptional(
-    $input: InputExtProductFoodSubOptional
-  ) {
-    updateExtProductFoodsSubOptional(input: $input) {
+mutation updateExtProductSubOptional(
+  $input: InputExtProductFoodSubOptional
+) {
+  updateExtProductSubOptional(input: $input) {
+    success
+    message
+    data {
       pId
       opExPid
       idStore
@@ -453,10 +456,23 @@ export const GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL = gql`
       exCodeOptionExtra
       exCode
       state
-      pDatCre
-      pDatMod
+      createdAt
+      updatedAt
+    }
+    errors {
+      path
+      message
+      type
+      context {
+        limit
+        value
+        label
+        key
+        __typename
+      }
     }
   }
+}
 `
 
 export const DELETE_ONE_PRODUCT = gql`
