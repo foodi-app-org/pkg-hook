@@ -3,53 +3,38 @@ import { updateCacheMod } from '../../utils'
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL, GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL } from '../useProductsFood/queriesStore'
 
 export const useUpdateExtProductFoodsSubOptional = ({
-  sendNotification = () => { }
+  sendNotification = (args) => { return args }
 } = {}) => {
   const [updateExtProductSubOptional] = useMutation(GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL, {
     onCompleted: (data) => {
-      const { updateExtProductSubOptional } = data
-      const {
-        success,
-        errors,
-        message
-      } = updateExtProductSubOptional ?? {
-        success: false,
-        message: 'Error inesperado'
-      }
-      if (errors?.length) {
-        errors.forEach(({ message: msg }) => {
-          sendNotification({
-            description: msg,
-            title: 'Error',
-            backgroundColor: 'error'
-          })
-        })
-        return
-      }
-      if (!success) {
+      console.log('🚀 ~ useUpdateExtProductFoodsSubOptional ~ data:', data)
+      const { updateExtProductSubOptional } = data ?? {}
+      const { success, message, errors } = updateExtProductSubOptional ?? {}
+      sendNotification({
+        description: message,
+        title: success ? 'Sub item creado' : 'Error',
+        backgroundColor: success ? 'success' : 'error'
+      })
+      for (const err of errors || []) {
+        const { message: msg } = err || {}
         sendNotification({
-          description: message,
+          description: msg,
           title: 'Error',
           backgroundColor: 'error'
         })
-        return
       }
-      sendNotification({
-        description: message,
-        title: 'Actualizado',
-        backgroundColor: 'success'
-      })
+      return data
     }
   })
 
-  const handleMutateExtProductFoodsSubOptional = async ({
+  const handleMutateExtProductFoodsSubOptional = ({
     pId,
     title,
     listId,
     id,
     state = 1
   }) => {
-    return updateExtProductSubOptional({
+    updateExtProductSubOptional({
       variables: {
         input: {
           pId,

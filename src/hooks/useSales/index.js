@@ -1198,7 +1198,7 @@ export const useSales = ({
             }
             const extProductFoodsSubOptionalAll =
               obj.ExtProductFoodsSubOptionalAll || []
-            const updateExtProductFoodsSubOptionalAll =
+            const updateExtProductSubOptionalAll =
               extProductFoodsSubOptionalAll.map((subObj) => {
                 const newItem =
                   matchingArray.ExtProductFoodsSubOptionalAll.find(
@@ -1216,7 +1216,7 @@ export const useSales = ({
             return {
               ...obj,
               ExtProductFoodsSubOptionalAll:
-                updateExtProductFoodsSubOptionalAll
+                updateExtProductSubOptionalAll
             }
           })
           .filter((obj) => obj)

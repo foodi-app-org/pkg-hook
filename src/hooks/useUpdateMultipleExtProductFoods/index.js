@@ -11,11 +11,11 @@ export const useUpdateMultipleExtProductFoods = ({ cleanLines = () => { }, handl
   cleanLines: () => { },
   handleCleanLines: () => { }
 }) => {
-  const [updateMultipleExtProductFoods, { loading }] = useMutation(UPDATE_MULTI_EXTRAS_PRODUCT_FOOD, {
+  const [updateMultipleExtProduct, { loading }] = useMutation(UPDATE_MULTI_EXTRAS_PRODUCT_FOOD, {
     onCompleted: () => {
       cleanLines()
     }
   })
 
-  return [updateMultipleExtProductFoods, { loading }]
+  return [updateMultipleExtProduct, { loading }]
 }

@@ -77,9 +77,7 @@ export const useDessert = ({
     sendNotification
   })
   const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional()
-  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional({
-    sendNotification
-  })
+  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional()
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
   const [editExtFoodSubsOptional, { loading: loadingEditSubOptional }] = useEditSubProductOptional()
 
@@ -104,7 +102,7 @@ export const useDessert = ({
   * @throws {Error} Will throw an error if the provided index (i) is out of range.
   * @throws {Error} Will throw an error if the provided listID is invalid (optional validation).
   */
-  const handleRemoveList = async (i, listID) => {
+  const handleRemoveList = (i, listID) => {
     // Validate that the provided index (i) is a non-negative number
     if (typeof i !== 'number' || i < 0) {
       throw new Error('Invalid index provided. The index must be a non-negative number.')
@@ -133,7 +131,7 @@ export const useDessert = ({
       try {
         // Assuming DeleteExtProductFoodsOptional is a function that deletes an external product
         // Call the function to delete the external product using the provided listID
-        const resultDeleteExtProductFoodsOptional = await DeleteExtProductFoodsOptional({
+        DeleteExtProductFoodsOptional({
           variables: {
             state: 1,
             opExPid: listID,
@@ -148,20 +146,9 @@ export const useDessert = ({
             })
           }
         })
-        const { data: { DeleteExtProductFoodsOptional: responseDelete } = {} } = resultDeleteExtProductFoodsOptional ?? {
-          data: { DeleteExtProductFoodsOptional: null }
-        }
-        const { success } = responseDelete || {}
-        if (!success) {
-          setData({
-            listIds: data.listIds,
-            lists: {
-              ...data.lists
-            }
-          })
-        }
       } catch (error) {
-        return { success: false, message: error instanceof Error ? error.message : 'Unexpected error' }
+        // Handle any errors that may occur during the deletion process
+        throw new Error('An error occurred while deleting the external product.')
       }
     }
   }
@@ -398,32 +385,15 @@ export const useDessert = ({
         [listId]: list
       }
     })
-    const result = await handleMutateExtProductFoodsSubOptional({
+    handleMutateExtProductFoodsSubOptional({
       pId,
       title,
       listId,
       id,
       state: 1
     })
-    const { data: { updateExtProductSubOptional } = {} } = result ?? {}
-    const { success } = updateExtProductSubOptional ?? {}
-    if (!success) {
-      setTitle('')
-      const currentList = data.lists[listId]
-      const filteredCart = currentList?.cards?.filter((cart) => cart.id !== id)
-      setData(prevData => ({
-        ...prevData,
-        lists: {
-          ...prevData.lists,
-          [listId]: {
-            ...currentList,
-            cards: filteredCart
-          }
-        }
-      }))
-    }
+    setTitle('')
   }
-
   const handleAdd = ({ listId }) => {
     if (valueItems !== '' && valueItems.trim() !== '') {
       addCard(valueItems, listId)

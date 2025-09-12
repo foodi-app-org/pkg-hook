@@ -82,7 +82,7 @@ export const useDessertWithPrice = ({
     setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [initialLineItems])
 
-  const [updateMultipleExtProductFoods, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { } })
+  const [updateMultipleExtProduct, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { } })
   /**
    * Handles the addition of two new lines to the Lines array in LineItems state.
    */
@@ -327,7 +327,7 @@ export const useDessertWithPrice = ({
       })
       const filteredItems = filterItemsWithValidExPid(LineItems?.Lines, pId)
 
-      return updateMultipleExtProductFoods({
+      return updateMultipleExtProduct({
         variables: {
           inputLineItems: {
             setData: filteredItems
