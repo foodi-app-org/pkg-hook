@@ -7,12 +7,24 @@ import { UPDATE_MULTI_EXTRAS_PRODUCT_FOOD } from './queries'
  * @param {Function} handleCleanLines - Función.
  * @returns {Array} Retorna un array con la función de mutación y el estado de carga.
  */
-export const useUpdateMultipleExtProductFoods = ({ cleanLines = () => { }, handleCleanLines = () => { } } = {
+export const useUpdateMultipleExtProduct = ({
+  cleanLines = () => { },
+  handleCleanLines = () => { },
+  sendNotification = () => { }
+} = {
   cleanLines: () => { },
-  handleCleanLines: () => { }
+  handleCleanLines: () => { },
+  sendNotification: () => { }
 }) => {
   const [updateMultipleExtProduct, { loading }] = useMutation(UPDATE_MULTI_EXTRAS_PRODUCT_FOOD, {
-    onCompleted: () => {
+    onCompleted: (data) => {
+      const { updateMultipleExtProduct: result } = data
+      const { success, message } = result ?? {}
+      sendNotification({
+        title: message,
+        description: success ? 'Operación exitosa' : 'Error',
+        backgroundColor: success ? 'success' : 'error'
+      })
       cleanLines()
     }
   })

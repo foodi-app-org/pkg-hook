@@ -23,6 +23,7 @@ export const useSaveAvailableProduct = () => {
     handleDaySelection,
     handleCleanSelectedDays,
     selectedDays,
+    setSelectedDays,
     days,
     Loading: loading,
     registerAvailableProduct

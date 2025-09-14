@@ -32,7 +32,6 @@ export const useSetImageProducts = () => {
         query: GET_ONE_PRODUCTS_FOOD,
         variables: { pId }
       })
-      console.log('🚀 ~ updateImageProducts ~ existing:', existing)
 
       if (!existing?.productFoodsOne) return response
 

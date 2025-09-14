@@ -6,7 +6,7 @@ import {
   useState,
   createRef
 } from 'react'
-import { useUpdateMultipleExtProductFoods } from '../useUpdateMultipleExtProductFoods'
+import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
 import { useMutation } from '@apollo/client'
 import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
 import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
@@ -82,7 +82,10 @@ export const useDessertWithPrice = ({
     setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [initialLineItems])
 
-  const [updateMultipleExtProduct, { loading }] = useUpdateMultipleExtProductFoods({ handleCleanLines: () => { } })
+  const [updateMultipleExtProduct, { loading }] = useUpdateMultipleExtProduct({
+    handleCleanLines: () => { },
+    sendNotification
+  })
   /**
    * Handles the addition of two new lines to the Lines array in LineItems state.
    */

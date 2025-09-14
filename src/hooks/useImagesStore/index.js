@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useApolloClient } from '@apollo/client'
 import {
   useRef,
   useState
@@ -21,6 +21,8 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   const initialState = { alt: '/images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRefLogo = useRef(null)
+  const client = useApolloClient()
+
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
     onCompleted: (data) => {
@@ -38,10 +40,10 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     }
 
   })
-  const [setALogoStore] = useMutation(CREATE_LOGO, {
+  const [registerLogo] = useMutation(CREATE_LOGO, {
     onCompleted: (data) => {
-      const { setALogoStore } = data || {}
-      const { message = '', success = false } = setALogoStore || {}
+      const { registerLogo } = data || {}
+      const { message = '', success = false } = registerLogo || {}
       sendNotification({
         title: success ? 'Logo subido' : color.error,
         description: message,
@@ -74,7 +76,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     update (cache) {
       cache.modify({
         fields: {
-          getStore (dataOld = []) {
+          getStore (dataOld = {}) {
             return cache.writeQuery({ query: GET_ONE_STORE, data: dataOld })
           }
         }
@@ -122,26 +124,39 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       setPreviewImg(initialState)
     }
   }
-  const handleInputChangeLogo = event => {
+  /**
+   * Handle store logo upload and update cache Image field
+   * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
+   * @returns {void}
+   */
+  const handleInputChangeLogo = (event) => {
     const { files } = event.target
-    setPreviewImgLogo(
-      files.length
-        ? {
-            srcLogo: URL.createObjectURL(files[0]),
-            altLogo: files[0].name
-          }
-        : initialState
-    )
-    setALogoStore({
-      variables: {
-        logo: files[0],
-        idStore
-      },
+
+    if (!files || files.length === 0) {
+      sendNotification({
+        title: 'Debes seleccionar un archivo',
+        description: color.error,
+        backgroundColor: color.error
+      })
+      return
+    }
+
+    const file = files[0]
+
+    // Preview local
+    setPreviewImgLogo({
+      srcLogo: URL.createObjectURL(file),
+      altLogo: file.name
+    })
+
+    registerLogo({
+      variables: { logo: file, idStore },
       update (cache) {
         cache.modify({
           fields: {
-            getStore (dataOld = []) {
-              return cache.writeQuery({ query: GET_ONE_STORE, data: dataOld })
+            getStore (dataOld = {}) {
+              const storeData = client.readQuery({ query: GET_ONE_STORE })
+              return {}
             }
           }
         })
@@ -155,6 +170,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       setPreviewImgLogo(initialState)
     })
   }
+
   const HandleDeleteBanner = async () => {
     setPreviewImg(initialState)
     deleteOneBanner({

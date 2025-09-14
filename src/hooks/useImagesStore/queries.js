@@ -134,8 +134,8 @@ export const GET_All_RATING_STORE = gql`
   }
 `
 export const CREATE_LOGO = gql`
-  mutation setALogoStore($logo: Upload, $idStore: ID) {
-    setALogoStore(logo: $logo, idStore: $idStore) {
+  mutation registerLogo($logo: Upload, $idStore: ID) {
+    registerLogo(logo: $logo, idStore: $idStore) {
       success
       message
     }
