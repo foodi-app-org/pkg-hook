@@ -1,4 +1,4 @@
-import { useMutation, useApolloClient } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import {
   useRef,
   useState
@@ -17,11 +17,11 @@ export * from './queries'
 export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) => {
   // STATES
   const fileInputRef = useRef(null)
-  const [{ altLogo, srcLogo }, setPreviewImgLogo] = useState({})
   const initialState = { alt: '/images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
+  const initialStateLogo = { altLogo: '/images/DEFAULTLOGO.png', srcLogo: '/images/DEFAULTLOGO.png' }
+  const [{ altLogo, srcLogo }, setPreviewImgLogo] = useState(initialStateLogo)
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRefLogo = useRef(null)
-  const client = useApolloClient()
 
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
@@ -43,9 +43,18 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   const [registerLogo] = useMutation(CREATE_LOGO, {
     onCompleted: (data) => {
       const { registerLogo } = data || {}
-      const { message = '', success = false } = registerLogo || {}
+      const { message = '', success = false } = registerLogo ?? {
+        message: 'Error al subir logo',
+        success: false,
+        data: null
+      }
+      if (!success) {
+        setPreviewImgLogo(initialStateLogo)
+        return
+      }
+
       sendNotification({
-        title: success ? 'Logo subido' : color.error,
+        title: success ? 'Logo creado con exito' : color.error,
         description: message,
         backgroundColor: success ? color.success : color.error
       })
@@ -71,7 +80,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
         description: message,
         backgroundColor: success ? color.success : color.error
       })
-      setPreviewImgLogo(initialState)
+      setPreviewImgLogo(initialStateLogo)
     },
     update (cache) {
       cache.modify({
@@ -129,7 +138,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
    * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
    * @returns {void}
    */
-  const handleInputChangeLogo = (event) => {
+  const handleInputChangeLogo = async (event) => {
     const { files } = event.target
 
     if (!files || files.length === 0) {
@@ -143,36 +152,33 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
 
     const file = files[0]
 
-    // Preview local
+    const result = await registerLogo({
+      variables: { logo: file, idStore }
+    })
+    const {
+      data: {
+        registerLogo: {
+          success = false,
+          data: url = ''
+        } = {}
+      } = {}
+    } = result ?? {
+      data: '',
+      success: false,
+      message: ''
+    }
+    if (!success) {
+      setPreviewImgLogo(initialStateLogo)
+      return
+    }
     setPreviewImgLogo({
       srcLogo: URL.createObjectURL(file),
-      altLogo: file.name
-    })
-
-    registerLogo({
-      variables: { logo: file, idStore },
-      update (cache) {
-        cache.modify({
-          fields: {
-            getStore (dataOld = {}) {
-              const storeData = client.readQuery({ query: GET_ONE_STORE })
-              return {}
-            }
-          }
-        })
-      }
-    }).catch(() => {
-      sendNotification({
-        title: 'No pudimos cargar la imagen',
-        description: color.error,
-        backgroundColor: color.error
-      })
-      setPreviewImgLogo(initialState)
+      altLogo: url
     })
   }
 
   const HandleDeleteBanner = async () => {
-    setPreviewImg(initialState)
+    setPreviewImg(initialStateLogo)
     deleteOneBanner({
       variables: {
         idStore
@@ -208,6 +214,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     altLogo,
     fileInputRef,
     handleDeleteLogo,
+    setPreviewImgLogo,
     setPreviewImg,
     onTargetClick,
     onTargetClickLogo,

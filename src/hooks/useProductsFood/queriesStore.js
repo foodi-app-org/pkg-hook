@@ -225,7 +225,20 @@ export const CREATE_LOGO = gql`
   mutation registerLogo($logo: Upload, $idStore: ID) {
     registerLogo(logo: $logo, idStore: $idStore) {
       success
-      message
+      message 
+      data
+      errors {
+        path
+        message
+        type
+        context {
+          limit
+          value
+          label
+          key
+          __typename
+        }
+      }
     }
   }
 `
