@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client'
 
 export const DELETE_EXTRA_PRODUCTS = gql`
-  mutation  deleteextraproductfoods($id: ID, $state: Int){
-    deleteextraproductfoods(id: $id, state: $state){
+  mutation  deleteExtraProduct($id: ID, $state: Int){
+    deleteExtraProduct(id: $id, state: $state){
       success,
       message
   }

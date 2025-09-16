@@ -182,7 +182,7 @@ export const useDessertWithPrice = ({
           id: exPid
         },
         update: (cache, { data }) => {
-          const res = data?.deleteextraproductfoods
+          const res = data?.deleteExtraProduct
           const success = res?.success
           const message = res?.message || ''
 

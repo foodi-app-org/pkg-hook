@@ -435,9 +435,9 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
       state
       code
       numbersOptionalOnly
-      pDatCre
+      createdAt
       required
-      pDatMod
+      updatedAt
       ExtProductFoodsSubOptionalAll {
         pId
         opExPid
@@ -447,8 +447,8 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
         exCodeOptionExtra
         exCode
         state
-        pDatCre
-        pDatMod
+        createdAt
+        updatedAt
       }
     }
   }
@@ -654,8 +654,8 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       ProVoltaje
       pState
       sTateLogistic
-      pDatCre
-      pDatMod
+      createdAt
+      updatedAt
       getOneTags {
         tgId
         idUser
@@ -669,8 +669,8 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
         idStore
         pId
         dayAvailable
-        pDatCre
-        pDatMod
+        createdAt
+        updatedAt
       }
       ExtProductFoodsAll {
         pId
@@ -679,8 +679,8 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
         extraName
         extraPrice
         state
-        pDatCre
-        pDatMod
+        createdAt
+        updatedAt
       }
       getStore {
         idStore
@@ -787,8 +787,8 @@ export const DELETE_ONE_CAT_PRODUCTS_FINAL = gql`
   }
 `
 export const DELETE_EXTRA_PRODUCTS = gql`
-  mutation deleteextraproductfoods($id: ID, $state: Int) {
-    deleteextraproductfoods(id: $id, state: $state) {
+  mutation deleteExtraProduct($id: ID, $state: Int) {
+    deleteExtraProduct(id: $id, state: $state) {
       success
       message
     }
@@ -863,8 +863,8 @@ export const GET_ALL_EXTRA_PRODUCT = gql`
       extraName
       extraPrice
       state
-      pDatCre
-      pDatMod
+      createdAt
+      updatedAt
     }
   }
 `

@@ -312,8 +312,8 @@ export const GET_ONE_SALE = gql`
             newExtraPrice
             quantity
             state
-            pDatCre
-            pDatMod
+            createdAt
+            updatedAt
           }
           productFood {
             pId
