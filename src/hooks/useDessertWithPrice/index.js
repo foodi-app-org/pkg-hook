@@ -309,7 +309,6 @@ export const useDessertWithPrice = ({
   }
 
   const handleSubmit = ({ pId }) => {
-    console.log('🚀 ~ handleSubmit ~ pId:', pId)
     try {
       const checkNumberRange = findNumbersExceedingRange(LineItems?.Lines)
       updateErrorFieldByIndex({ checkNumberRange, setLine })

@@ -183,6 +183,16 @@ query getCatProductsWithProduct(
         sTateLogistic
         createdAt
         updatedAt
+        product_availables {
+          availableProductId
+          pId
+          idStore
+          dayAvailable
+          startDate
+          endDate
+          createdAt
+          updatedAt
+        }
       }
     }
   }
