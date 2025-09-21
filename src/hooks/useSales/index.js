@@ -112,8 +112,8 @@ export const useSales = ({
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
       onCompleted: (data) => {
-        const message = `${data?.registerSalesStore?.Response?.message}`
-        const error = data?.registerSalesStore?.Response.success
+        const message = `${data?.registerSalesStore?.message}`
+        const error = data?.registerSalesStore?.success
           ? 'Éxito'
           : 'Error'
         sendNotification({
@@ -126,7 +126,7 @@ export const useSales = ({
           // @ts-ignore
           onClickLogout()
         }
-        setOpenCurrentSale(data?.registerSalesStore?.Response.success)
+        setOpenCurrentSale(data?.registerSalesStore.success)
       },
       onError: (error) => {
         sendNotification({
@@ -795,7 +795,6 @@ export const useSales = ({
       sendAlertStock(stock)
       return state
     }
-
     const updatedProduct = {
       pId,
       pName,
@@ -954,6 +953,7 @@ export const useSales = ({
         }
       )
       const refCodePid = RandomCode(20)
+      const shoppingCartRefCode = RandomCode(36)
       return {
         pId: product?.pId,
         refCodePid,
@@ -1059,9 +1059,18 @@ export const useSales = ({
       tableId: null,
       cliId: null
     }
+
+    const shoppingCartRefCode = `REF-${RandomCode(36)}`
+
+    const input = finalArrayProduct.map((item) => {
+      return {
+        ...item,
+        shoppingCartRefCode
+      }
+    })
     return registerSalesStore({
       variables: {
-        input: finalArrayProduct || [],
+        input,
         id: values?.cliId,
         pCodeRef: code,
         tableId,
@@ -1069,7 +1078,8 @@ export const useSales = ({
         valueDelivery: convertInteger(valueDelivery),
         payMethodPState: data.payMethodPState,
         pickUp: 1,
-        discount: discount.discount || 0,
+        shoppingCartRefCode,
+        discount: discount.discount ?? 0,
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
       },
       update (cache) {
@@ -1082,12 +1092,12 @@ export const useSales = ({
         })
       }
     })
-      .then((responseRegisterR) => {
-        if (responseRegisterR) {
-          const { data } = responseRegisterR || {}
-          const { registerSalesStore } = data || {}
-          const { Response } = registerSalesStore || {}
-          if (Response && Response.success === true) {
+      .then((response) => {
+        if (response) {
+          const { data } = response
+          const { registerSalesStore } = data ?? {}
+          const { success } = registerSalesStore ?? {}
+          if (success) {
             setPrint(false)
             client.query({
               query: GET_ALL_COUNT_SALES,

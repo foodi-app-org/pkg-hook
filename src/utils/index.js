@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto'
+
 /**
  * @description It takes an array of elements and returns an object with a submit hook for each element.
  * @version 0.1.1
@@ -57,15 +59,33 @@ export const getCurrentDomain = () => {
   return typeof window !== 'undefined' && window.location.hostname
 }
 
-export function RandomCode (length) {
-  let result = ''
+/**
+ * Generates a cryptographically secure random string of given length.
+ * @param length - Desired length of the generated code.
+ * @param options - Optional prefix/suffix configuration.
+ * @returns Random alphanumeric string with optional prefix and suffix.
+ */
+export const RandomCode = (
+  length,
+  options
+) => {
+  if (length <= 0) {
+    throw new Error('Length must be greater than 0')
+  }
+
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   const charactersLength = characters.length
+
+  // Generate enough random bytes
+  const randomBuffer = randomBytes(length)
+  let code = ''
+
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() *
-        charactersLength))
+    const index = randomBuffer[i] % charactersLength
+    code += characters.charAt(index)
   }
-  return result
+
+  return `${options?.prefix ?? ''}${code}${options?.suffix ?? ''}`
 }
 
 /**

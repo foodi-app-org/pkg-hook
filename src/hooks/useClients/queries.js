@@ -133,29 +133,80 @@ mutation  registerShoppingCard($input: IShoppingCard, $idSubArray: IID_SUB_ITEMS
 }
 `
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
-mutation  registerSalesStore($input: [IShoppingCard], $id: ID, $idStore: ID, $tableId: ID, $pCodeRef: String, $change: Float, $valueDelivery: Float, $payMethodPState: Int, $pickUp: Int, $totalProductsPrice: Float, $idSubArray: IID_SUB_ITEMS){
-    registerSalesStore(input: $input, id: $id, idStore: $idStore, tableId: $tableId, pCodeRef: $pCodeRef,  change: $change, valueDelivery: $valueDelivery, payMethodPState: $payMethodPState, pickUp: $pickUp, totalProductsPrice: $totalProductsPrice,  idSubArray: $idSubArray){
-            ShoppingCard {
-      ShoppingCard
-      id
-      pId
-      subProductsId
-      ShoppingCardRefCode
-      uuid
-      discountCardProduct
-      idUser
-      cName
-      idStore
-      cState
-      cDatCre
-      cDatMod
-      csDescription
-      cantProducts
-      comments
-        }
-    Response {
-      success
+mutation registerSalesStore(
+  $input: [IShoppingCart]
+  $id: ID
+  $tableId: ID
+  $discount: Int
+  $idStore: ID
+  $pCodeRef: String
+  $change: Float
+  $shoppingCartRefCode: String
+  $payMethodPState: Int
+  $pickUp: Int
+  $totalProductsPrice: Float
+  $valueDelivery: Float
+  $idSubArray: IID_SUB_ITEMS
+) {
+  registerSalesStore(
+    input: $input
+    id: $id
+    tableId: $tableId
+    discount: $discount
+    shoppingCartRefCode: $shoppingCartRefCode
+    idStore: $idStore
+    pCodeRef: $pCodeRef
+    change: $change
+
+    payMethodPState: $payMethodPState
+    pickUp: $pickUp
+    totalProductsPrice: $totalProductsPrice
+    valueDelivery: $valueDelivery
+    idSubArray: $idSubArray
+  ) {
+    success
+    message
+    errors {
+      path
       message
+      type
+      context {
+        limit
+        value
+        label
+        key
+        __typename
+      }
+    }
+    data {
+      shoppingCartId
+      pCodeRef
+      idStore
+      id
+      channel
+      payMethodPState
+      pSState
+      createdAt
+      updatedAt
+      unidProducts
+      totalProductsPrice
+      getOneStore {
+        idStore
+        cId
+        dId
+        catStore
+        scheduleOpenAll
+        dailyGoal
+        deliveryTimeMinutes
+      }
+      getUser {
+        id
+        name
+        email
+        createdAt
+        updatedAt
+        __typename
+      }
     }
   }
 }

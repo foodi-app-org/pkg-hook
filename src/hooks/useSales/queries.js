@@ -338,58 +338,83 @@ export const GET_ONE_SALE = gql`
 `
 
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
-  mutation registerSalesStore(
-    $input: [IShoppingCard]
-    $id: ID
-    $idStore: ID
-    $pCodeRef: String
-    $discount: Int
-    $change: Float
-    $tableId: ID
-    $valueDelivery: Float
-    $payMethodPState: Int
-    $pickUp: Int
-    $totalProductsPrice: Float
-    $idSubArray: IID_SUB_ITEMS
+mutation registerSalesStore(
+  $input: [IShoppingCart]
+  $id: ID
+  $tableId: ID
+  $discount: Int
+  $idStore: ID
+  $pCodeRef: String
+  $change: Float
+  $shoppingCartRefCode: String
+  $payMethodPState: Int
+  $pickUp: Int
+  $totalProductsPrice: Float
+  $valueDelivery: Float
+  $idSubArray: IID_SUB_ITEMS
+) {
+  registerSalesStore(
+    input: $input
+    id: $id
+    tableId: $tableId
+    discount: $discount
+    shoppingCartRefCode: $shoppingCartRefCode
+    idStore: $idStore
+    pCodeRef: $pCodeRef
+    change: $change
+
+    payMethodPState: $payMethodPState
+    pickUp: $pickUp
+    totalProductsPrice: $totalProductsPrice
+    valueDelivery: $valueDelivery
+    idSubArray: $idSubArray
   ) {
-    registerSalesStore(
-      input: $input
-      id: $id
-      idStore: $idStore
-      pCodeRef: $pCodeRef
-      change: $change
-      tableId: $tableId
-      discount: $discount
-      valueDelivery: $valueDelivery
-      payMethodPState: $payMethodPState
-      pickUp: $pickUp
-      totalProductsPrice: $totalProductsPrice
-      idSubArray: $idSubArray
-    ) {
-      ShoppingCard {
-        ShoppingCard
-        id
-        pId
-        subProductsId
-        ShoppingCardRefCode
-        uuid
-        discountCardProduct
-        idUser
-        cName
-        idStore
-        cState
-        cDatCre
-        cDatMod
-        csDescription
-        cantProducts
-        comments
+    success
+    message
+    errors {
+      path
+      message
+      type
+      context {
+        limit
+        value
+        label
+        key
+        __typename
       }
-      Response {
-        success
-        message
+    }
+    data {
+      shoppingCartId
+      pCodeRef
+      idStore
+      id
+      channel
+      payMethodPState
+      pSState
+      createdAt
+      updatedAt
+      unidProducts
+      totalProductsPrice
+      getOneStore {
+        idStore
+        cId
+        dId
+        catStore
+        scheduleOpenAll
+        dailyGoal
+        deliveryTimeMinutes
+      }
+      getUser {
+        id
+        name
+        email
+        createdAt
+        updatedAt
+        __typename
       }
     }
   }
+}
 `
 
 export const GET_ALL_ORDER = gql`

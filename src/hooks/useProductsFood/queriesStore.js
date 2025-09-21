@@ -76,39 +76,39 @@ export const GET_ALL_EMPLOYEE_STORE = gql`
 `
 
 export const GET_ALL_PRODUCT_STORE = gql`
- query productFoodsAll(
-    $search: String
-    $min: Int
-    $max: Int
-    $gender: [String]
-    $pState: Int
-    $desc: [String]
-    $categories: [ID]
-    $fromDate: DateTime
-    $toDate: DateTime
-    $page: Int
+query productFoodsAll(
+  $search: String
+  $min: Int
+  $max: Int
+  $gender: [String]
+  $pState: Int
+  $desc: [String]
+  $categories: [ID]
+  $fromDate: DateTime
+  $toDate: DateTime
+  $page: Int
+) {
+  productFoodsAll(
+    search: $search
+    min: $min
+    max: $max
+    gender: $gender
+    desc: $desc
+    pState: $pState
+    categories: $categories
+    toDate: $toDate
+    fromDate: $fromDate
+    page: $page
   ) {
-    productFoodsAll(
-      search: $search
-      min: $min
-      max: $max
-      gender: $gender
-      desc: $desc
-      pState: $pState
-      categories: $categories
-      toDate: $toDate
-      fromDate: $fromDate
-      page: $page
-    ) {
-      success
-      message
-		pagination {
+    success
+    message
+    pagination {
       totalRecords
       totalPages
       currentPage
       __typename
     }
-     data {
+    data {
       pId
       sizeId #Talla
       colorId #Color
@@ -145,8 +145,8 @@ export const GET_ALL_PRODUCT_STORE = gql`
       ProWeight
       ProQuantity
       ProOutstanding
-      pDatCre
-      pDatMod
+      createdAt
+      updatedAt
       ProDelivery
       ProVoltaje
       pState
@@ -160,8 +160,8 @@ export const GET_ALL_PRODUCT_STORE = gql`
         aName
       }
     }
-    }
   }
+}
 `
 export const GET_ALL_RATING_START_STORE = gql`
   query getAllRatingStar($idStore: ID) {
@@ -928,8 +928,8 @@ export const GET_ALL_CATEGORIES_WITH_PRODUCT = gql`
         ProVoltaje
         pState
         sTateLogistic
-        pDatCre
-        pDatMod
+        createdAt
+        updatedAt
       }
     }
   }

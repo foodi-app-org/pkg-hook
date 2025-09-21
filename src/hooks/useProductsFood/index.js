@@ -37,13 +37,13 @@ export const useProductsFood = ({
     variables: {
       categories,
       desc,
-      fromDate,
+      // fromDate,
       gender,
       max,
       min,
       pState,
-      search,
-      toDate
+      search
+      // toDate
     }
   })
 
