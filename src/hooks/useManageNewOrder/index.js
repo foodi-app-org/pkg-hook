@@ -47,7 +47,7 @@ export const useManageNewOrder = ({
     }
   }, [data])
 
-  const { getOnePedidoStore } = useGetSale()
+  const { getOneSalesStore } = useGetSale()
 
   const handleNewOrder = (order) => {
     const dataOrder = data[KEY_STATUS_ORDER]
@@ -59,13 +59,13 @@ export const useManageNewOrder = ({
         return
       }
       setIsOpenOrder(true)
-      getOnePedidoStore({
+      getOneSalesStore({
         variables: {
           pCodeRef: pCodeRef ?? ''
         }
       }).then((response) => {
         console.log(response)
-        const currentSale = response?.data?.getOnePedidoStore || {}
+        const currentSale = response?.data?.getOneSalesStore || {}
         client.cache.modify({
           fields: {
             getAllOrdersFromStore (existingOrders = []) {

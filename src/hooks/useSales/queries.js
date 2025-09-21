@@ -94,52 +94,54 @@ export const GET_ALL_SALES_STATISTICS = gql`
 `
 
 export const GET_ONE_SALES = gql`
-  query getOnePedidoStore($pCodeRef: String) {
-    getOnePedidoStore(pCodeRef: $pCodeRef) {
-      pdpId
-      pCodeRef
-      idStore
-      pPDate
-      channel
-      pSState
-      pDatCre
-      pDatMod
-      pPRecoger
-      payMethodPState
-      pdpId
-      totalProductsPrice
-      locationUser
-      getAllPedidoStore {
+query getOneSalesStore($pCodeRef: String) {
+  getOneSalesStore(pCodeRef: $pCodeRef) {
+    pdpId
+    idStore
+    pCodeRef
+    payMethodPState
+    pPRecoger
+    totalProductsPrice
+    pSState
+    pDatCre
+    locationUser
+    pDatMod
+    getAllPedidoStore{
         pdpId
+        pId
         idStore
-        pCodeRef
         ShoppingCard
+        pCodeRef
+        pPStateP
+        payMethodPState
+        pPRecoger
+        pDatCre
+        pDatMod
         getAllShoppingCard {
           ShoppingCard
-          cantProducts
-          subProductsId
           comments
+          cantProducts
           pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
+        productFood{
+          pId
+          carProId
+          colorId
+          idStore
+          pName
+          ProPrice
+          ProDescuento
+          ProDescription
+          ValueDelivery
+          ProImage
+          ProStar
+          pState
+          pDatCre
+          pDatMod
         }
       }
     }
   }
+}
 `
 
 export const CREATE_CLIENTS = gql`
@@ -252,8 +254,8 @@ export const CREATE_SHOPPING_CARD = gql`
   }
 `
 export const GET_ONE_SALE = gql`
-  query getOnePedidoStore($pCodeRef: String) {
-    getOnePedidoStore(pCodeRef: $pCodeRef) {
+  query getOneSalesStore($pCodeRef: String) {
+    getOneSalesStore(pCodeRef: $pCodeRef) {
       pdpId
       pCodeRef
       idStore
@@ -384,7 +386,6 @@ mutation registerSalesStore(
       }
     }
     data {
-      shoppingCartId
       pCodeRef
       idStore
       id

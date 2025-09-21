@@ -1027,7 +1027,7 @@ export const useSales = ({
   }
   const totalProductsPrice = totalProductPrice
   const client = useApolloClient()
-  const { getOnePedidoStore } = useGetSale()
+  const { getOneSalesStore } = useGetSale()
 
   const handleSubmit = () => {
     // @ts-ignore
@@ -1109,13 +1109,13 @@ export const useSales = ({
             })
             setValues({})
             handleChange({ target: { name: 'tableId', value: '' } })
-            getOnePedidoStore({
+            getOneSalesStore({
               variables: {
                 pCodeRef: code || ''
               }
             }).then((responseSale) => {
-              if (responseSale?.data?.getOnePedidoStore) {
-                const currentSale = responseSale?.data?.getOnePedidoStore || {}
+              if (responseSale?.data?.getOneSalesStore) {
+                const currentSale = responseSale?.data?.getOneSalesStore || {}
                 const inComingCodeRef = currentSale?.pCodeRef || null
                 if (!inComingCodeRef) return
                 client.cache.modify({

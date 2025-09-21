@@ -179,7 +179,6 @@ mutation registerSalesStore(
       }
     }
     data {
-      shoppingCartId
       pCodeRef
       idStore
       id
