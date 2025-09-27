@@ -3,26 +3,15 @@ import { useSubscription, gql } from '@apollo/client'
 const NEW_STORE_ORDER_SUBSCRIPTION = gql`
   subscription NewStoreOrder($idStore: String!) {
     newStoreOrder(idStore: $idStore) {
-      pdpId
       id
       idStore
-      pId
-      ppState
       pCodeRef
-      pPDate
-      pSState
-      pPStateP
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      unidProducts
-      pDatCre
-      pDatMod
     }
   }
 `
 
 export const newStoreOrderSubscription = (idStore, onOrderReceived) => {
+  console.log('🚀 ~ newStoreOrderSubscription ~ idStore:', idStore)
   const subscription = useSubscription(NEW_STORE_ORDER_SUBSCRIPTION, {
     variables: { idStore },
     onSubscriptionData: ({ client, subscriptionData }) => {
