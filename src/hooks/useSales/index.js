@@ -131,7 +131,7 @@ export const useSales = ({
       onError: (error) => {
         sendNotification({
           backgroundColor: 'error',
-          title: error || 'Lo sentimos',
+          title: error ?? 'Lo sentimos',
           description: 'ha ocurrido un error'
         })
       }

@@ -28,9 +28,9 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
       state
       code
       numbersOptionalOnly
-      pDatCre
+      createdAt
       required
-      pDatMod
+      updatedAt
       ExtProductFoodsSubOptionalAll {
         pId
         opExPid
@@ -40,8 +40,8 @@ export const GET_EXTRAS_PRODUCT_FOOD_OPTIONAL = gql`
         exCodeOptionExtra
         exCode
         state
-        pDatCre
-        pDatMod
+        createdAt
+        updatedAt
       }
     }
   }
