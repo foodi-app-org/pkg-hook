@@ -4,8 +4,8 @@ import { useQuery, gql } from '@apollo/client'
  * GraphQL query to fetch order status types.
  */
 const GET_ORDER_STATUS_TYPES = gql`
-  query getOrderStatusTypes {
-    getOrderStatusTypes {
+  query getAllOrderStatusTypes {
+    getAllOrderStatusTypes {
       idStatus
       name
       priority
@@ -41,7 +41,7 @@ export const useOrderStatusTypes = () => {
     fetchPolicy: 'cache-and-network'
   })
 
-  const statusTypes = data?.getOrderStatusTypes ?? null
+  const statusTypes = data?.getAllOrderStatusTypes ?? null
 
   return {
     statusTypes,

@@ -254,89 +254,41 @@ export const CREATE_SHOPPING_CARD = gql`
   }
 `
 export const GET_ONE_SALE = gql`
-  query getOneSalesStore($pCodeRef: String) {
-    getOneSalesStore(pCodeRef: $pCodeRef) {
-      pdpId
-      pCodeRef
-      idStore
-      pPDate
-      channel
-      pSState
-      pDatCre
-      pDatMod
-      pPRecoger
-      payMethodPState
-      pdpId
-      totalProductsPrice
-      locationUser
-      getAllPedidoStore {
-        pdpId
-        idStore
-        pCodeRef
-        ShoppingCard
-        getAllShoppingCard {
-          ShoppingCard
-          cantProducts
-          priceProduct
-          refCodePid
-          subProductsId
-          comments
-          pId
-          salesExtProductFoodOptional {
-            pId
-            opExPid
-            OptionalProName
-            state
-            code
-            required
-            numbersOptionalOnly
-            pDatCre
-            pDatMod
-            saleExtProductFoodsSubOptionalAll {
-              pId
-              opExPid
-              idStore
-              opSubExPid
-              OptionalSubProName
-              exCodeOptionExtra
-              exCode
-              state
-              pDatCre
-              pDatMod
-            }
-          }
-          ExtProductFoodsAll {
-            pId
-            exPid
-            exState
-            extraName
-            extraPrice
-            newExtraPrice
-            quantity
-            state
-            createdAt
-            updatedAt
-          }
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
+ query getOneSalesStore($pCodeRef: String) {
+  getOneSalesStore(pCodeRef: $pCodeRef) {
+    message
+    message
+    errors {
+      message
+      path
+      type
+      context {
+        key
+        label
+        limit
+        value
+        __typename
       }
     }
+    data {
+      change
+      channel
+      id
+      locationUser
+      pCodeRef
+      pdpId
+      ppState
+      ppState
+      shoppingCartRefCode
+      pSState
+      totalProductsPrice
+      unidProducts
+      updatedAt
+      createdAt
+      __typename
+    }
   }
+}
 `
 
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
