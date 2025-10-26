@@ -5,7 +5,7 @@ export const errorHandler = (error) => {
   if (error && Array.isArray(error?.errors)) {
     error.errors?.length && error?.errors?.forEach(err => {
       if (err?.extensions) {
-        const { code, message: { message } } = err?.extensions || {}
+        const { code, message } = err?.extensions || {}
         if (code === 'UNAUTHENTICATED' || code === 'FORBIDDEN') {
           logout = true
           return {
