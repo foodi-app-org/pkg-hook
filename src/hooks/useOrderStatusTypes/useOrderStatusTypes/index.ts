@@ -6,12 +6,30 @@ import { useQuery, gql } from '@apollo/client'
 const GET_ORDER_STATUS_TYPES = gql`
   query getAllOrderStatusTypes {
     getAllOrderStatusTypes {
-      idStatus
-      name
-      priority
-      backgroundColor
-      color
-      state
+      message
+      success
+      __typename
+      data {
+        backgroundColor
+        color
+        createdAt
+        description
+        idStatus
+        name
+        priority
+        state
+        updatedAt
+        __typename
+      }
+      errors {
+         context {
+          key
+          label
+          limit
+          value
+          __typename
+         }
+      }
     }
   }
 `
@@ -37,14 +55,18 @@ const GET_ORDER_STATUS_TYPES = gql`
  * }}
  */
 export const useOrderStatusTypes = () => {
-  const { data, loading, error, refetch } = useQuery(GET_ORDER_STATUS_TYPES, {
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery(GET_ORDER_STATUS_TYPES, {
     fetchPolicy: 'cache-and-network'
   })
-
-  const statusTypes = data?.getAllOrderStatusTypes ?? null
+  const statusTypes = data?.getAllOrderStatusTypes?.data ?? null
 
   return {
-    statusTypes,
+    data: statusTypes,
     loading,
     error,
     refetch

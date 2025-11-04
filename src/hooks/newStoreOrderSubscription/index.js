@@ -11,7 +11,6 @@ const NEW_STORE_ORDER_SUBSCRIPTION = gql`
 `
 
 export const newStoreOrderSubscription = (idStore, onOrderReceived) => {
-  console.log('🚀 ~ newStoreOrderSubscription ~ idStore:', idStore)
   const subscription = useSubscription(NEW_STORE_ORDER_SUBSCRIPTION, {
     variables: { idStore },
     onSubscriptionData: ({ client, subscriptionData }) => {

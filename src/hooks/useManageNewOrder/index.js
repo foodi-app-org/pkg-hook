@@ -65,28 +65,28 @@ export const useManageNewOrder = ({
         }
       }).then((response) => {
         console.log(response)
-        const currentSale = response?.data?.getOneSalesStore || {}
+        // const currentSale = response?.data?.getOneSalesStore || {}
         client.cache.modify({
           fields: {
-            getAllOrdersFromStore (existingOrders = []) {
-              try {
-                const cache = updateExistingOrders(
-                  existingOrders,
-                  pCodeRef,
-                  1,
-                  currentSale
-                )
-                const currentOrder = cache[KEY_STATUS_ORDER]
-                const filteredOrders = currentOrder.filter(order =>
-                  isDateInRange(order.pDatCre)
-                )
-                setOrders(filteredOrders)
-                playNotificationSound()
-                return cache
-              } catch (e) {
-                return existingOrders
-              }
-            }
+            // getAllOrdersFromStore (existingOrders = []) {
+            //   try {
+            //     const cache = updateExistingOrders(
+            //       existingOrders,
+            //       pCodeRef,
+            //       1,
+            //       currentSale
+            //     )
+            //     const currentOrder = cache[KEY_STATUS_ORDER]
+            //     const filteredOrders = currentOrder.filter(order =>
+            //       isDateInRange(order.pDatCre)
+            //     )
+            //     setOrders(filteredOrders)
+            //     playNotificationSound()
+            //     return cache
+            //   } catch (e) {
+            //     return existingOrders
+            //   }
+            // }
           }
         })
       })

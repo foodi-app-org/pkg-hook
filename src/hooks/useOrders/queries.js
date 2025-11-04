@@ -61,104 +61,29 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
 }
 `
 
-export const GET_ALL_PEDIDOS_FROM_STORE = gql`
-query getAllOrdersFromStore(
-  $idStore: ID
-  $cId: ID
-  $dId: ID
-  $ctId: ID
-  $search: String
-  $min: Int
-  $fromDate: DateTime
-  $toDate: DateTime
-  $max: Int
-  $statusOrder: Int
-) {
-  getAllOrdersFromStore(
-    idStore: $idStore
-    cId: $cId
-    dId: $dId
-    ctId: $ctId
-    search: $search
-    min: $min
-    fromDate: $fromDate
-    toDate: $toDate
-    max: $max
-    statusOrder: $statusOrder
-  ) {
-    statusKey
-    priority
-    state
-    getStatusOrderType {
-      idStatus
-      backgroundColor
-      name
-      description
-      color
-      priority
-      state
-      createdAt
-      updatedAt
-    }
-    items {
-      pdpId
-      idStore
-      pCodeRef
-      payMethodPState
-      pPRecoger
-      totalProductsPrice
-      pSState
-      pDatCre
+export const GET_ALL_ORDER_FROM_STORE = gql`
+query getAllSalesStore {
+  getAllSalesStore {
+      change
       channel
+      status
+      createdAt
+      pCodeRef
+      idStore
+      pdpId
       locationUser
-      pDatMod
-      getStatusOrderType {
-        idStatus
-        name
-        description
-        backgroundColor
-        color
-        priority
-        state
-        createdAt
-        updatedAt
+      shoppingCartRefCode
+      payMethodPState
+      updatedAt
+      totalProductsPrice
+      unidProducts
+      getUser {
+         associateStore
+         avatar
+         createdAt
+         id
+         email
       }
-      getStoreOrders {
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payMethodPState
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-          productFood {
-            pId
-            carProId
-            colorId
-            idStore
-            pName
-            ProPrice
-            ProDescuento
-            ProDescription
-            ValueDelivery
-            ProImage
-            ProStar
-            pState
-            pDatCre
-            pDatMod
-          }
-        }
-      }
-    }
   }
 }
-
 `

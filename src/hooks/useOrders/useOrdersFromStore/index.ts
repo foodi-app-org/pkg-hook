@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
-import { GET_ALL_ORDER, GET_ALL_PEDIDOS_FROM_STORE } from '../queries.js'
+import { GET_ALL_ORDER, GET_ALL_ORDER_FROM_STORE } from '../queries.js'
+import groupBy from 'lodash/groupBy'
 
 export const useOrders = ({
   refetchWritePolicy = 'merge',
@@ -48,36 +49,29 @@ export const useOrdersFromStore = ({
   toDate,
   max,
   statusOrder,
-  callback = () => {
-
+  callback = (data) => {
+    return data
   }
 }) => {
+   const key = 'status'
   const {
     data,
     loading,
     refetch,
     error,
     called
-  } = useQuery(GET_ALL_PEDIDOS_FROM_STORE, {
+  } = useQuery(GET_ALL_ORDER_FROM_STORE, {
+    notifyOnNetworkStatusChange: true,
+    fetchPolicy: 'network-only',
     onCompleted: (data) => {
       if (typeof callback === 'function') {
         callback(data)
       }
-    },
-    variables: {
-      idStore,
-      cId,
-      dId,
-      ctId,
-      search,
-      min,
-      fromDate,
-      toDate,
-      max,
-      statusOrder
     }
   })
+  const grouped = groupBy(data?.getAllSalesStore ?? [], key)
+ 
 
-  return [data?.getAllOrdersFromStore || [], { refetch, loading: called ? false : loading, error }]
+  return [grouped, { refetch, loading: called ? false : loading, error }]
 }
 

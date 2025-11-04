@@ -1118,18 +1118,18 @@ export const useSales = ({
                 const currentSale = responseSale?.data?.getOneSalesStore || {}
                 const inComingCodeRef = currentSale?.pCodeRef || null
                 if (!inComingCodeRef) return
-                client.cache.modify({
-                  fields: {
-                    getAllOrdersFromStore (existingOrders = []) {
-                      try {
-                        const newGetAllOrdersFromStore = updateExistingOrders(existingOrders, inComingCodeRef, 4, currentSale)
-                        return newGetAllOrdersFromStore
-                      } catch (e) {
-                        return existingOrders
-                      }
-                    }
-                  }
-                })
+                // client.cache.modify({
+                //   fields: {
+                //     getAllOrdersFromStore (existingOrders = []) {
+                //       try {
+                //         const newGetAllOrdersFromStore = updateExistingOrders(existingOrders, inComingCodeRef, 4, currentSale)
+                //         return newGetAllOrdersFromStore
+                //       } catch (e) {
+                //         return existingOrders
+                //       }
+                //     }
+                //   }
+                // })
               }
             })
             router.push(

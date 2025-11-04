@@ -54,18 +54,18 @@ export const useChangeStateOrder = ({
                 if (!pCodeRef || !pSState) {
                     return
                 }
-                client.cache.modify({
-                    fields: {
-                        getAllOrdersFromStore(existingOrders = []) {
-                            try {
-                                // return 
-                                console.log({ cache: updateExistingOrders(existingOrders, pCodeRef, pSState) })
-                            } catch (e) {
-                                return existingOrders
-                            }
-                        }
-                    }
-                })
+                // client.cache.modify({
+                //     fields: {
+                //         getAllOrdersFromStore(existingOrders = []) {
+                //             try {
+                //                 // return 
+                //                 console.log({ cache: updateExistingOrders(existingOrders, pCodeRef, pSState) })
+                //             } catch (e) {
+                //                 return existingOrders
+                //             }
+                //         }
+                //     }
+                // })
             }
         }
     })
