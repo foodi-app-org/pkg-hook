@@ -66,26 +66,49 @@ export const useCreateOrderStatusType = ({
     backgroundColor: 'success' | 'error' | 'info' | 'warning'
   }) => void
 }) => {
-  const [createOrderStatusType, { data, loading, error }] =useMutation<{ createOrderStatusType: ResponseOrderStatusType }>(CREATE_ORDER_STATUS_TYPE, {
-    onCompleted: (data) => {
-      const createOrderStatusType = data.createOrderStatusType
-      const { success, message } = createOrderStatusType ?? {
-        success: false,
-        message: 'Error desconocido'
+  const [createOrderStatusType, { data, loading, error }] =
+    useMutation<{ createOrderStatusType: ResponseOrderStatusType }>(
+      CREATE_ORDER_STATUS_TYPE,
+      {
+        update(cache, { data }) {
+          console.log("🚀 ~ useCreateOrderStatusType ~ data:", data, cache)
+          const newItem = data?.createOrderStatusType?.data
+          if (!newItem) return
+
+          cache.modify({
+            fields: {
+              getAllOrderStatusTypes(existing = {}) {
+              console.log("🚀 ~ useCreateOrderStatusType ~ existing:", existing)
+              
+              }
+            }
+          })
+        },
+
+        onCompleted: (data) => {
+          const res = data.createOrderStatusType
+          const { success, message } = res ?? {
+            success: false,
+            message: 'Error desconocido'
+          }
+
+          sendNotification({
+            title: success
+              ? 'Estado de orden creado'
+              : 'Error al crear el estado de orden',
+            description: message,
+            backgroundColor: success ? 'success' : 'error',
+          })
+        }
       }
-      sendNotification({
-        title: success ? 'Estado de orden creado' : 'Error al crear el estado de orden',
-        description: message,
-        backgroundColor: success ? 'success' : 'error',
-      })
-    }
-  })
+    )
 
   const handleCreateStatus = async (input: OrderStatusTypeInput) => {
     try {
       const response = await createOrderStatusType({
         variables: { data: input },
       })
+
       return response.data?.createOrderStatusType
     } catch (err) {
       sendNotification({
@@ -97,9 +120,13 @@ export const useCreateOrderStatusType = ({
     }
   }
 
-  return [handleCreateStatus, {
-    data: data?.createOrderStatusType,
-    loading,
-    error,
-  }]
+  return [
+    handleCreateStatus,
+    {
+      data: data?.createOrderStatusType,
+      loading,
+      error,
+    }
+  ]
 }
+
