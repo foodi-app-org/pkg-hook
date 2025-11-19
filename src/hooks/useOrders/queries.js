@@ -15,7 +15,7 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
     pdpId
     idStore
     pCodeRef
-    payMethodPState
+    payId
     pPRecoger
     totalProductsPrice
     pSState
@@ -30,7 +30,7 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod
@@ -73,7 +73,7 @@ query getAllSalesStore {
       pdpId
       locationUser
       shoppingCartRefCode
-      payMethodPState
+      payId
       updatedAt
       totalProductsPrice
       unidProducts

@@ -142,7 +142,7 @@ mutation registerSalesStore(
   $pCodeRef: String
   $change: Float
   $shoppingCartRefCode: String
-  $payMethodPState: Int
+  $payId: ID
   $pickUp: Int
   $totalProductsPrice: Float
   $valueDelivery: Float
@@ -158,7 +158,7 @@ mutation registerSalesStore(
     pCodeRef: $pCodeRef
     change: $change
 
-    payMethodPState: $payMethodPState
+    payId: $payId
     pickUp: $pickUp
     totalProductsPrice: $totalProductsPrice
     valueDelivery: $valueDelivery
@@ -183,7 +183,7 @@ mutation registerSalesStore(
       idStore
       id
       channel
-      payMethodPState
+      payId
       pSState
       createdAt
       updatedAt

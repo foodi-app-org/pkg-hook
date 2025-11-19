@@ -6,7 +6,7 @@ export const GET_ALL_PEDIDOS_STATUS = gql`
       pdpId
       idStore
       pCodeRef
-      payMethodPState
+      payId
       pPRecoger
       totalProductsPrice
       pSState
@@ -48,7 +48,7 @@ export const GET_ALL_PEDIDOS_STATUS = gql`
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod

@@ -26,7 +26,7 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
     pdpId
     idStore
     pCodeRef
-    payMethodPState
+    payId
     pPRecoger
     totalProductsPrice
     pSState
@@ -40,7 +40,7 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod
@@ -77,7 +77,7 @@ query getOneSalesStore($pCodeRef: String) {
     pdpId
     idStore
     pCodeRef
-    payMethodPState
+    payId
     pPRecoger
     totalProductsPrice
     pSState
@@ -91,7 +91,7 @@ query getOneSalesStore($pCodeRef: String) {
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod

@@ -48,7 +48,7 @@ export const GET_ALL_SALES_STATISTICS = gql`
       pdpId
       idStore
       pCodeRef
-      payMethodPState
+      payId
       pPRecoger
       totalProductsPrice
       pSState
@@ -62,7 +62,7 @@ export const GET_ALL_SALES_STATISTICS = gql`
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod
@@ -99,7 +99,7 @@ query getOneSalesStore($pCodeRef: String) {
     pdpId
     idStore
     pCodeRef
-    payMethodPState
+    payId
     pPRecoger
     totalProductsPrice
     pSState
@@ -113,7 +113,7 @@ query getOneSalesStore($pCodeRef: String) {
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod
@@ -282,6 +282,15 @@ query getOneSalesStore($pCodeRef: String) {
         createdAt
         updatedAt
       }
+      paymentMethod {
+        payId
+        name
+        icon
+        state
+        paymentPriority
+        createdAt
+        updatedAt
+      }
       totals {
         name
         value
@@ -436,7 +445,7 @@ mutation registerSalesStore(
   $pCodeRef: String
   $change: Float
   $shoppingCartRefCode: String
-  $payMethodPState: Int
+  $payId: ID
   $pickUp: Int
   $totalProductsPrice: Float
   $valueDelivery: Float
@@ -452,7 +461,7 @@ mutation registerSalesStore(
     pCodeRef: $pCodeRef
     change: $change
 
-    payMethodPState: $payMethodPState
+    payId: $payId
     pickUp: $pickUp
     totalProductsPrice: $totalProductsPrice
     valueDelivery: $valueDelivery
@@ -477,7 +486,7 @@ mutation registerSalesStore(
       idStore
       id
       channel
-      payMethodPState
+      payId
       pSState
       createdAt
       updatedAt
@@ -511,7 +520,7 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
     pdpId
     idStore
     pCodeRef
-    payMethodPState
+    payId
     pPRecoger
     totalProductsPrice
     pSState
@@ -526,7 +535,7 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
         ShoppingCard
         pCodeRef
         pPStateP
-        payMethodPState
+        payId
         pPRecoger
         pDatCre
         pDatMod

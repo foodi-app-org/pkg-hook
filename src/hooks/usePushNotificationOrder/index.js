@@ -13,7 +13,7 @@ const PUSH_NOTIFICATION_ORDER = gql`
       pPDate
       pSState
       pPStateP
-      payMethodPState
+      payId
       pPRecoger
       totalProductsPrice
       unidProducts

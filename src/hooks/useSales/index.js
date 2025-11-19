@@ -43,7 +43,7 @@ export const initialState = {
   priceRange: 0,
   counter: 0,
   totalAmount: 0,
-  payMethodPState: 0
+  payId: ''
 }
 
 export const initializer = (initialValue = initialState) => {
@@ -206,7 +206,7 @@ export const useSales = ({
     priceRange: max || 0,
     counter: 0,
     totalAmount: 0,
-    payMethodPState: 0
+    payId: ''
   }
   // HANDLESS
   // FILTER PRODUCT DATA_DB
@@ -413,7 +413,7 @@ export const useSales = ({
   const paymentMethod = (state, action) => {
     return {
       ...state,
-      payMethodPState: action.payload
+      payId: action.payload
     }
   }
 
@@ -664,6 +664,7 @@ export const useSales = ({
     }
   }
   const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
+  console.log("🚀 ~ useSales ~ data:", data)
 
   const handleRemoveValue = useCallback(({ name, value, pId }) => {
     setValues({
@@ -1193,7 +1194,7 @@ export const useSales = ({
         tableId,
         change: convertInteger(change),
         valueDelivery: convertInteger(valueDelivery),
-        payMethodPState: data.payMethodPState,
+        payId: data.payId,
         pickUp: 1,
         shoppingCartRefCode,
         discount: data.discountPercent ?? 0,

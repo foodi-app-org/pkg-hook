@@ -12,7 +12,7 @@ export const GET_ALL_INCOMING_ORDERS = gql`
       pDatCre
       pDatMod
       pPRecoger
-      payMethodPState
+      payId
       pdpId
       totalProductsPrice
       locationUser
