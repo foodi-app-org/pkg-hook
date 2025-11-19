@@ -254,7 +254,7 @@ export const CREATE_SHOPPING_CARD = gql`
   }
 `
 export const GET_ONE_SALE = gql`
- query getOneSalesStore($pCodeRef: String) {
+query getOneSalesStore($pCodeRef: String) {
   getOneSalesStore(pCodeRef: $pCodeRef) {
     message
     message
@@ -271,8 +271,25 @@ export const GET_ONE_SALE = gql`
       }
     }
     data {
+      statusOrder {
+        idStatus
+        name
+        description
+        color
+        backgroundColor
+        priority
+        state
+        createdAt
+        updatedAt
+      }
+      totals {
+        name
+        value
+      }
+      createdAt
       change
       channel
+      pCodeRef
       id
       locationUser
       pCodeRef
@@ -285,12 +302,130 @@ export const GET_ONE_SALE = gql`
       unidProducts
       updatedAt
       createdAt
+      store {
+        addressStore
+        banner
+        cId
+        createdAt
+        dailyGoal
+        description
+        upLon
+        upLat
+        deliveryTimeMinutes
+        emailStore
+        documentIdentifier
+        Viaprincipal
+        uState
+      }
+      client {
+        cliId
+        idStore
+        idUser
+        clState
+        clientNumber
+        ClientAddress
+        ccClient
+        gender
+        clientLastName
+        clientName
+        createAt
+        updateAt
+      }
+      shoppingCarts {
+        shoppingCartId
+        id
+        pId
+        shoppingCartRefCode
+        priceProduct
+        comments
+        cantProducts
+        refCodePid
+        idUser
+        idStore
+        sState
+        createdAt
+        updatedAt
+        products {
+          pId
+          carProId
+          sizeId
+          colorId
+          idStore
+          cId
+          caId
+          dId
+          ctId
+          tpId
+          fId
+          pName
+          pCode
+          ProPrice
+          free
+          ProDescuento
+          ProUniDisponibles
+          ProDescription
+          ValueDelivery
+          ProProtegido
+          ProAssurance
+          ProImage
+          ProStar
+          ProWidth
+          ProHeight
+          ProLength
+          ProWeight
+          ProQuantity
+          ProOutstanding
+          ProDelivery
+          ProVoltaje
+          pState
+          tgId
+          sTateLogistic
+          ProBarCode
+          stock
+          manageStock
+          vat
+          ExtProductFoodOptional {
+            pId
+            opExPid
+            OptionalProName
+            state
+            code
+            required
+            numbersOptionalOnly
+            createdAt
+            updatedAt
+            ExtProductFoodsSubOptionalAll {
+              pId
+              opExPid
+              idStore
+              opSubExPid
+              OptionalSubProName
+              exCodeOptionExtra
+              exCode
+              state
+            }
+          }
+          ExtProductFoodsAll {
+            pId
+            exPid
+            exState
+            extraName
+            extraPrice
+            quantity
+            newExtraPrice
+            state
+            createdAt
+            updatedAt
+          }
+          createdAt
+          updatedAt
+        }
+      }
       __typename
     }
   }
 }
 `
-
 export const CREATE_SHOPPING_CARD_TO_USER_STORE = gql`
 mutation registerSalesStore(
   $input: [IShoppingCart]

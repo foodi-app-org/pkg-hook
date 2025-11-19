@@ -1,5 +1,9 @@
 'use client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  useRouter,
+  useSearchParams,
+  useParams
+} from 'next/navigation'
 
 /**
  * Hook to manage query parameters in Next.js 13+ (App Router),
@@ -32,9 +36,19 @@ export const useManageQueryParams = ({
     return activeQuery?.[name] || ''
   }
 
+  const getParams = ({
+    param: key,
+    callback
+  }) => {
+    const params = useParams()
+    return params?.[key] ?? ''
+  }
+
+
   return {
     getQuery,
     handleQuery,
-    handleCleanQuery
+    handleCleanQuery,
+    getParams
   }
 }

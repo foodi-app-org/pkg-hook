@@ -15,6 +15,7 @@ const GET_MODULES = gql`
         smName
         smPath
         view
+        smIcon
         smState
       }
     }

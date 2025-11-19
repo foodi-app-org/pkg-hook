@@ -46,5 +46,5 @@
     "rm": "rm -rf node_modules package-lock.json && npm i",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "1.12.4"
+  "version": "1.12.5"
 }

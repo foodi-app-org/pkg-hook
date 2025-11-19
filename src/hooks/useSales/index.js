@@ -93,7 +93,9 @@ export const useSales = ({
     valueDelivery: ''
   })
   const [dataStore] = useStore()
-  const { createdAt } = dataStore || {}
+  const { createdAt } = dataStore ?? {
+    createdAt: null
+  }
   const [code, setCode] = useState(null)
   const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const [oneProductToComment, setOneProductToComment] = useState({})
@@ -414,6 +416,139 @@ export const useSales = ({
       payMethodPState: action.payload
     }
   }
+
+  /**
+   * Apply percentage discount across cart items, distributing the total discount proportional to each item's total (base + extras).
+   *
+   * The function:
+   *  - Accepts a numeric percentage (0-100) or an object { percent: number }.
+   *  - Validates inputs.
+   *  - Calculates cart total including extras, computes total discount amount (rounded).
+   *  - Allocates discount per item proportionally and corrects rounding on the last item so allocations sum exactly.
+   *  - Mutates each product's ProPrice by subtracting the allocated discount (avoids negative prices).
+   *  - Stores discount metadata on state: discountPercent, discountAmount, discountBreakdown.
+   *
+   * @param {Object} state - reducer state
+   * @param {number|Object} payload - percent number or { percent: number }
+   * @returns {Object} new state with applied discount
+   */
+  function applyDiscountToState (state, payload) {
+    const rawPercent = (typeof payload === 'number') ? payload : (payload && payload.percent)
+    const percent = Number(rawPercent)
+
+    if (Number.isNaN(percent)) {
+      sendNotification({
+        title: 'Error',
+        backgroundColor: 'error',
+        description: 'Invalid discount value'
+      })
+      return state
+    }
+
+    if (percent < 0 || percent > 100) {
+      sendNotification({
+        title: 'Error',
+        backgroundColor: 'warning',
+        description: 'El porcentaje debe estar entre 0 y 100'
+      })
+      return state
+    }
+
+    const products = Array.isArray(state.PRODUCT) ? state.PRODUCT : []
+
+    // Compute per-item totals including extras
+    const itemsWithTotals = products.map((item) => {
+      const totalExtra = Array.isArray(item.dataExtra)
+        ? item.dataExtra.reduce((acc, curr) => acc + (Number(curr.newExtraPrice) || 0), 0)
+        : 0
+      const base = Number(item.ProPrice) || 0
+      const itemTotal = base + totalExtra
+      return { item, base, totalExtra, itemTotal }
+    })
+
+    const cartTotal = itemsWithTotals.reduce((acc, cur) => acc + cur.itemTotal, 0)
+
+    if (cartTotal <= 0) {
+      // nothing to discount
+      sendNotification({
+        title: 'Aviso',
+        backgroundColor: 'warning',
+        description: 'No hay valores en el carrito para aplicar el descuento'
+      })
+      return {
+        ...state,
+        discountPercent: percent,
+        discountAmount: 0,
+        discountBreakdown: []
+      }
+    }
+
+    // Total discount amount in same units as prices (rounded)
+    const totalDiscountAmount = Math.round((cartTotal * percent) / 100)
+
+    // Allocate discount proportionally, handle rounding by adjusting last item
+    let allocatedSum = 0
+    const breakdown = []
+    const newProducts = itemsWithTotals.map(({ item, base, totalExtra, itemTotal }, idx, arr) => {
+      // If itemTotal is zero, allocation is zero
+      let allocated = 0
+      if (itemTotal > 0) {
+        const rawAlloc = (itemTotal / cartTotal) * totalDiscountAmount
+        allocated = Math.round(rawAlloc)
+      }
+
+      // On last item, correct rounding difference so sum allocations == totalDiscountAmount
+      if (idx === arr.length - 1) {
+        allocated = totalDiscountAmount - allocatedSum
+      }
+
+      allocatedSum += allocated
+
+      // Apply allocated discount by reducing the item's ProPrice first.
+      // If allocated > base, we set ProPrice to 0 and leave extras untouched (no negative prices).
+      // This keeps extras visible separately and the cart total will reflect the discount because we subtracted from ProPrice.
+      const newProPrice = Math.max(0, (Number(item.ProPrice) || 0) - allocated)
+
+      const updatedItem = {
+        ...item,
+        ProPrice: newProPrice,
+        // metadata for tracking
+        discountAmount: allocated,
+        discountPercent: percent,
+        originalProPrice: item.ProPrice
+      }
+
+      breakdown.push({ pId: item.pId, discountAmount: allocated })
+
+      return updatedItem
+    })
+
+    // safety: ensure allocatedSum equals totalDiscountAmount (it should by correction)
+    if (allocatedSum !== totalDiscountAmount) {
+      // last resort fix: adjust first product
+      const diff = totalDiscountAmount - allocatedSum
+      if (newProducts.length > 0) {
+        newProducts[0].ProPrice = Math.max(0, newProducts[0].ProPrice - diff)
+        breakdown[0].discountAmount = (breakdown[0].discountAmount || 0) + diff
+        allocatedSum += diff
+      }
+    }
+
+    sendNotification({
+      title: 'Descuento aplicado',
+      backgroundColor: 'success',
+      description: `Se aplicó ${percent}% de descuento (total: ${totalDiscountAmount}).`
+    })
+
+    return {
+      ...state,
+      PRODUCT: newProducts,
+      discountPercent: percent,
+      discountAmount: totalDiscountAmount,
+      discountBreakdown: breakdown
+    }
+  }
+
   const PRODUCT = (state, action) => {
     switch (action.type) {
       case 'ADD_TO_CART':
@@ -520,6 +655,10 @@ export const useSales = ({
         }
       case 'PAYMENT_METHOD': return paymentMethod(state, action)
 
+      case 'APPLY_DISCOUNT': {
+        // action.payload can be a number (percent) or { percent: number }
+        return applyDiscountToState(state, action.payload)
+      }
       default:
         return state
     }
@@ -543,6 +682,7 @@ export const useSales = ({
       value: ''
     })
   }, [])
+
   useEffect(() => {
     // @ts-ignore
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
@@ -1002,29 +1142,6 @@ export const useSales = ({
     }
   }, [totalProductPrice, totalSale, data, finalArrayProduct])
 
-  const [discount, setDiscount] = useState({
-    price: totalProductPrice || 0,
-    discount: 0
-  })
-
-  function applyDiscount (percentage) {
-    const validateCondition =
-      isNaN(percentage) || percentage < 0 || percentage > 100
-
-    if (validateCondition) {
-      return sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'el descuento debe ser un número entre 0 y 100%'
-      })
-    }
-    const decimal = parseFloat(percentage) / 100
-    // @ts-ignore
-    const result = decimal * parseFloat(totalProductPrice)
-    setDiscount({ price: result, discount: percentage })
-
-    return { price: result, discount: percentage }
-  }
   const totalProductsPrice = totalProductPrice
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
@@ -1079,7 +1196,7 @@ export const useSales = ({
         payMethodPState: data.payMethodPState,
         pickUp: 1,
         shoppingCartRefCode,
-        discount: discount.discount ?? 0,
+        discount: data.discountPercent ?? 0,
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
       },
       update (cache) {
@@ -1342,7 +1459,7 @@ export const useSales = ({
     dataExtra: dataExtra || [],
     fetchMore,
     pagination,
-    discount,
+    discount: 0,
     datCat: categories,
     currentPage,
     loadingProduct: loading,
@@ -1360,7 +1477,6 @@ export const useSales = ({
     setErrors,
     onChangeInput,
     handleRemoveValue,
-    applyDiscount,
     setDelivery,
     setValues,
     setShowMore,

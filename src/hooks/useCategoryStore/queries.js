@@ -8,8 +8,8 @@ getAllCatStore{
   cPathImage
   cName
   cState
-  cDatCre
-  cDatMod
+  createdAt
+  updatedAt
   csDescription
   }
 }
