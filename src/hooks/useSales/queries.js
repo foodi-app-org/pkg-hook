@@ -93,57 +93,6 @@ export const GET_ALL_SALES_STATISTICS = gql`
   }
 `
 
-export const GET_ONE_SALES = gql`
-query getOneSalesStore($pCodeRef: String) {
-  getOneSalesStore(pCodeRef: $pCodeRef) {
-    pdpId
-    idStore
-    pCodeRef
-    payId
-    pPRecoger
-    totalProductsPrice
-    pSState
-    pDatCre
-    locationUser
-    pDatMod
-    getAllPedidoStore{
-        pdpId
-        pId
-        idStore
-        ShoppingCard
-        pCodeRef
-        pPStateP
-        payId
-        pPRecoger
-        pDatCre
-        pDatMod
-        getAllShoppingCard {
-          ShoppingCard
-          comments
-          cantProducts
-          pId
-        productFood{
-          pId
-          carProId
-          colorId
-          idStore
-          pName
-          ProPrice
-          ProDescuento
-          ProDescription
-          ValueDelivery
-          ProImage
-          ProStar
-          pState
-          pDatCre
-          pDatMod
-        }
-      }
-    }
-  }
-}
-`
-
 export const CREATE_CLIENTS = gql`
   mutation createClients($input: IClients) {
     createClients(input: $input) {

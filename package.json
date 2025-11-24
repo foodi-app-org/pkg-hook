@@ -10,6 +10,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-query": "^3.39.2",
+    "typesdefs": "1.0.4",
     "xlsx": "0.18.5"
   },
   "description": "description-pkg-hook",

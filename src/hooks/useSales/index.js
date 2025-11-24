@@ -370,7 +370,6 @@ export const useSales = ({
         sendNotification({
           title: 'Sin stock',
           backgroundColor: 'warning',
-          description: `El producto ${OneProduct?.pName} está agotado y no puede ser modificado.`
         })
         return state
       }
@@ -664,7 +663,6 @@ export const useSales = ({
     }
   }
   const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
-  console.log("🚀 ~ useSales ~ data:", data)
 
   const handleRemoveValue = useCallback(({ name, value, pId }) => {
     setValues({
