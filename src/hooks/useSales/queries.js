@@ -1,26 +1,41 @@
 import { gql } from '@apollo/client'
 
 export const GET_ALL_SALES = gql`
-  query getAllSalesStore(
-    $idStore: ID
-    $search: String
-    $min: Int
-    $max: Int
-    $fromDate: String
-    $toDate: String
-  ) {
-    getAllSalesStore(
-      idStore: $idStore
-      search: $search
-      min: $min
-      max: $max
-      toDate: $toDate
-      fromDate: $fromDate
-    ) {
-      totalProductsPrice
-      pDatCre
+query getAllSalesStore {
+  getAllSalesStore {
+    change
+    channel
+    status
+    createdAt
+    pCodeRef
+    idStore
+    pdpId
+    locationUser
+    shoppingCartRefCode
+    statusOrder {
+      idStatus
+      name
+      description
+      color
+      backgroundColor
+      priority
+      state
+      createdAt
+      updatedAt
+    }
+    updatedAt
+    totalProductsPrice
+    unidProducts
+    getUser {
+      associateStore
+      avatar
+      createdAt
+      id
+      email
     }
   }
+}
+
 `
 
 export const GET_ALL_COUNT_SALES = gql`

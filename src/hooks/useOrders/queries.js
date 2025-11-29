@@ -64,26 +64,36 @@ query getAllOrderStoreFinal($idStore: ID, $search: String, $min: Int, $max: Int,
 export const GET_ALL_ORDER_FROM_STORE = gql`
 query getAllSalesStore {
   getAllSalesStore {
-      change
-      channel
-      status
+    change
+    channel
+    status
+    createdAt
+    pCodeRef
+    idStore
+    pdpId
+    locationUser
+    shoppingCartRefCode
+    statusOrder {
+      idStatus
+      name
+      description
+      color
+      backgroundColor
+      priority
+      state
       createdAt
-      pCodeRef
-      idStore
-      pdpId
-      locationUser
-      shoppingCartRefCode
-      payId
       updatedAt
-      totalProductsPrice
-      unidProducts
-      getUser {
-         associateStore
-         avatar
-         createdAt
-         id
-         email
-      }
+    }
+    updatedAt
+    totalProductsPrice
+    unidProducts
+    getUser {
+      associateStore
+      avatar
+      createdAt
+      id
+      email
+    }
   }
 }
 `
