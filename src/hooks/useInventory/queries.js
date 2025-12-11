@@ -1,4 +1,4 @@
-import { useQuery, gql } from "@apollo/client";
+import { gql } from '@apollo/client'
 
 export const GET_PRODUCTS_IN_STOCK = gql`
 query getProductsInStock($limit: Int, $offset: Int) {

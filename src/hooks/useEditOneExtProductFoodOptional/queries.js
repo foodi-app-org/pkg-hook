@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from '@apollo/client'
 
 export const UPDATE_EXT_PRODUCT_FOOD_OPTIONAL = gql`
 mutation editExtProductFoodOptional($input: EditExtProductFoodOptionalInput!) {

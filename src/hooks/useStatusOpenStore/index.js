@@ -11,7 +11,6 @@ import {
   getTimeObject
 } from './helpers'
 import { useFormatDate } from '../useFormatDate'
-import { convertToMilitaryTime } from '../convertToMilitaryTime'
 
 export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
   const [open, setOpen] = useState('')

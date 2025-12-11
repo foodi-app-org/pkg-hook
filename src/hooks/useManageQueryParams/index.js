@@ -44,7 +44,6 @@ export const useManageQueryParams = ({
     return params?.[key] ?? ''
   }
 
-
   return {
     getQuery,
     handleQuery,

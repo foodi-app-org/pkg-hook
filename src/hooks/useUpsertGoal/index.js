@@ -1,5 +1,4 @@
 import { gql, useMutation } from '@apollo/client'
-import { GET_ONE_STORE } from '../useStore/queries'
 
 /**
  * GraphQL mutation to upsert (create or update) the daily goal.

@@ -1,4 +1,4 @@
-import { useGetAllSales } from '../../useSales/useGetAllSales'
+import { useGetAllSales } from '../../useGetAllSales'
 
 export const useChartDataAllOrders = ({
   onScreen = false

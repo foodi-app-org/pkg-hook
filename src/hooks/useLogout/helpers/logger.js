@@ -1,4 +1,4 @@
-function formatError(o) {
+function formatError (o) {
   if (hasErrorProperty(o)) {
     o.error = formatError(o.error)
     o.message = o.message ?? o.error.message
@@ -6,12 +6,12 @@ function formatError(o) {
   return o
 }
 
-function hasErrorProperty(x) {
+function hasErrorProperty (x) {
   return !!(x?.error)
 }
 
 const _logger = {
-  error(code, metadata) {
+  error (code, metadata) {
     metadata = formatError(metadata)
     console.error(
       `[next-auth][error][${code}]`,
@@ -20,18 +20,18 @@ const _logger = {
       metadata
     )
   },
-  warn(code) {
+  warn (code) {
     console.warn(
       `[next-auth][warn][${code}]`,
       `\nhttps://next-auth.js.org/warnings#${code.toLowerCase()}`
     )
   },
-  debug(code, metadata) {
+  debug (code, metadata) {
     console.log(`[next-auth][debug][${code}]`, metadata)
   }
 }
 
-export function setLogger(newLogger = {}, debug) {
+export function setLogger (newLogger = {}, debug) {
   if (!debug) _logger.debug = () => { }
 
   if (newLogger.error) _logger.error = newLogger.error
@@ -39,7 +39,7 @@ export function setLogger(newLogger = {}, debug) {
   if (newLogger.debug) _logger.debug = newLogger.debug
 }
 
-export function proxyLogger(logger = _logger, basePath) {
+export function proxyLogger (logger = _logger, basePath) {
   try {
     if (typeof window === 'undefined') {
       return logger

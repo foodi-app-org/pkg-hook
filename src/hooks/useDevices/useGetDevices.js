@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { GET_ALL_DEVICES } from './queries'
-import { useFormatDate } from '../useFormatDate'
 
 export const useDevices = () => {
   const { data, loading } = useQuery(GET_ALL_DEVICES, {
@@ -10,7 +9,7 @@ export const useDevices = () => {
   })
 
   // Función para formatear la fecha
-  const { formatDateInTimeZone } = useFormatDate({})
+  // const { formatDateInTimeZone } = useFormatDate({})
 
   const listDevices = Array.isArray(data?.getDeviceUsers)
     ? data?.getDeviceUsers.map((device) => {

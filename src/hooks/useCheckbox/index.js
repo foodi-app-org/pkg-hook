@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
  *  - clearAll (callback)
  */
 
-export const useCheckboxState = (elem, selectedIds = [], disabledIds = [], setArray = () => { return }) => {
+export const useCheckboxState = (elem, selectedIds = [], disabledIds = [], setArray = () => { }) => {
   const numTotalItems = elem?.length
   const [checkedItems, setCheckedItems] = useState(new Set(selectedIds))
   const [disabledItems, setDisabledItems] = useState(new Set(disabledIds))

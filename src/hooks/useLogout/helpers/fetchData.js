@@ -1,6 +1,6 @@
 import { apiBaseUrl } from './apiBaseUrl'
 
-async function fetchData(path, __NEXTAUTH, logger, { ctx, req } = {}) {
+async function fetchData (path, __NEXTAUTH, logger, { ctx, req } = {}) {
   const url = `${apiBaseUrl(__NEXTAUTH)}/${path}`
   try {
     const options = {

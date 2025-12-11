@@ -69,8 +69,7 @@ async function generateFingerprint () {
 
   const fingerprint = JSON.stringify(fingerprintData)
   // const uniqueID = md5(fingerprint)
-
-  return null
+  return fingerprint
 }
 
 // Función para generar huella digital del audio
@@ -168,5 +167,5 @@ function getTouchscreenInfo () {
 export async function fingerprintJs () {
   const fingerprint = await generateFingerprint()
   // const uniqueID = md5(fingerprint)
-  return null
+  return fingerprint
 }
