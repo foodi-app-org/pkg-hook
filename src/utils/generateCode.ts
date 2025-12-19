@@ -28,8 +28,8 @@ export interface TicketConfig {
  * Result returned by generators.
  */
 export type TicketResult =
-    | { success: true; code: string }
-    | { success: false; error: string };
+    | { success: true; code: string, error?: undefined }
+    | { success: false; error: string; code: string };
 
 /**
  * Async uniqueness checker signature.

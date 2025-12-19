@@ -231,13 +231,14 @@ export const useGetOneProductsFood = ({ fetchOnlyProduct = false } = {}) => {
   const handleGetOneProduct = async (food) => {
     const { pId } = food
     try {
-      productFoodsOne({
+      const product = await productFoodsOne({
         variables: {
           pId
         }
       })
       if (!fetchOnlyProduct) handleGetExtProductFood(pId)
       if (!fetchOnlyProduct) handleExtProductFoodsAll(pId)
+      return product
     } catch (e) {
       console.log(e)
     }

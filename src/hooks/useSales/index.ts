@@ -13,7 +13,7 @@ import {
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
 import { useFormatDate } from '../useFormatDate'
-import { useProductsFood } from '../useProductsFood'
+import { useGetOneProductsFood, useProductsFood } from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
@@ -32,6 +32,9 @@ import { generateTicket } from '../../utils/generateCode'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
 import { decrementExtra } from './helpers/extras.utils'
 import { handleRemoveProduct } from './helpers/remove-product.utils'
+import { addToCartFunc } from './helpers/add-product.utils'
+import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
+import { SalesActionTypes } from './helpers/constants'
 
 export const initialState = {
   PRODUCT: [],
@@ -76,7 +79,6 @@ export const useSales = ({
   const [modalItem, setModalItem] = useState(false)
   const [openCommentModal, setOpenCommentModal] = useState(false)
   const keyToSaveData = process.env.LOCAL_SALES_STORE
-  // @ts-ignore
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
   const [search, setSearch] = useState('')
   const [datCat] = useCatWithProduct({})
@@ -120,10 +122,23 @@ export const useSales = ({
   const [oneProductToComment, setOneProductToComment] = useState({})
   const [sumExtraProducts, setSumExtraProducts] = useState(0)
   const { yearMonthDay } = useFormatDate({ date: createdAt })
+  const [handleGetOneProduct] = useGetOneProductsFood()
   const [valuesDates, setValuesDates] = useState(() => {
     return { fromDate: yearMonthDay, toDate: '' }
   })
-  const [product, setProduct] = useState({
+
+  interface ProductState {
+    DB_DATA_PRODUCT: {
+      pId: string | null
+    },
+    PRODUCT: {
+      pId: string | null
+    }
+  }
+  const [product, setProduct] = useState<ProductState>({
+    DB_DATA_PRODUCT: {
+      pId: null
+    },
     PRODUCT: {
       pId: null
     }
@@ -227,10 +242,6 @@ export const useSales = ({
     });
   };
 
-  const max = productsFood?.reduce(function (a, b) {
-    return Math.max(a, b?.ProPrice || 0)
-  }, 0)
-
   const initialStateSales = {
     PRODUCT: [],
     totalPrice: 0,
@@ -238,7 +249,7 @@ export const useSales = ({
     itemsInCart: 0,
     animateType: '',
     startAnimateUp: '',
-    priceRange: max || 0,
+    priceRange: 0,
     counter: 0,
     totalAmount: 0,
     payId: ''
@@ -436,60 +447,6 @@ export const useSales = ({
     }
   }
 
-  const handleChangeNumber = useCallback(
-    (state: any, action: any) => {
-      const event = action.payload
-      const { value, index, id } = event || {}
-
-      const productExist = productsFood?.find((items: any) => items.pId === id)
-      const OneProduct = state?.PRODUCT.find((items: any) => items.pId === id)
-
-      if (!productExist) return state // Validar si el producto existe
-
-      // Validar si el stock es 0
-      if (productExist.stock === 0) {
-        sendNotification({
-          title: 'Sin stock',
-          backgroundColor: 'warning'
-        })
-        return state
-      }
-
-      // Si el valor ingresado es menor o igual a 0, eliminar el producto del carrito
-      if (value <= 0) {
-        dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: OneProduct })
-        return state
-      }
-
-      // Validar si se intenta superar el stock disponible
-      const finalQuantity = Math.min(value, productExist.stock)
-      if ((value > productExist.stock) && productExist.manageStock) {
-        sendNotification({
-          title: 'Stock insuficiente',
-          backgroundColor: 'warning',
-          description: `No puedes agregar más unidades de ${OneProduct?.pName}, stock disponible: ${productExist.stock}`
-        })
-      }
-
-      const ARR_PRODUCT = state?.PRODUCT?.map((items: any, i: number) =>
-        i === index
-          ? {
-            ...items,
-            ProQuantity: finalQuantity,
-            ProPrice: finalQuantity * productExist?.ProPrice
-          }
-          : items
-      )
-
-      return {
-        ...state,
-        PRODUCT: ARR_PRODUCT,
-        counter: state.counter + 1
-      }
-    },
-    [productsFood]
-  )
-
   const paymentMethod = (state: any, action: any) => {
     return {
       ...state,
@@ -633,19 +590,48 @@ export const useSales = ({
     }
   }
 
+  const handleAddProduct = async (product: any) => {
+    const pId = String(product?.pId)
+    const memo = productsFood.find((item: any) => String(item.pId) === pId)
+    if (!memo) {
+      const response = await handleGetOneProduct({ pId })
+      if (response.data?.productFoodsOne == null) return sendNotification({
+        title: 'Error',
+        backgroundColor: 'error',
+        description: 'No se pudo obtener el producto'
+      })
+      const productData = response.data?.productFoodsOne ?? { pId: null }
+      return dispatch({
+        type: SalesActionTypes.ADD_TO_CART,
+        payload: productData
+      })
+    }
+    return dispatch({
+      type: SalesActionTypes.ADD_TO_CART,
+      payload: product
+    })
+  }
+
   const PRODUCT = (state: any, action: any) => {
     switch (action.type) {
-      case 'ADD_TO_CART':
-        return addToCartFunc(state, action) // https://www.npmjs.com/package/@sourcetoad/vision-camera-plugin-barcode-scanner
-      case 'ADD_PRODUCT':
+      case SalesActionTypes.ADD_TO_CART:
+        return addToCartFunc({
+          state,
+          action,
+          product: action.payload,
+          sendAlertStock,
+          sendNotification
+        })
+      // https://www.npmjs.com/package/@sourcetoad/vision-camera-plugin-barcode-scanner
+      case SalesActionTypes.ADD_PRODUCT:
         return {
           ...state,
           // eslint-disable-next-line
           PRODUCT: [...state?.PRODUCT, action?.payload],
         }
-      case 'REMOVE_PRODUCT':
+      case SalesActionTypes.REMOVE_PRODUCT:
         return handleRemoveProduct(state, action, productsFood)
-      case 'REMOVE_PRODUCT_TO_CART':
+      case SalesActionTypes.REMOVE_PRODUCT_TO_CART:
         return {
           ...state,
           PRODUCT: state?.PRODUCT?.filter((t: any) => {
@@ -653,16 +639,16 @@ export const useSales = ({
           }),
           counter: state.counter - action.payload.ProQuantity
         }
-      case 'ON_CHANGE': {
+      case SalesActionTypes.ON_CHANGE: {
         return handleChangeNumber(state, action)
       }
-      case 'UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT': {
+      case SalesActionTypes.UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT: {
         return handleSuccessUpdateQuantity(state, action)
       }
-      case 'CANCEL_UPDATE_QUANTITY_EDITING_PRODUCT': {
+      case SalesActionTypes.CANCEL_UPDATE_QUANTITY_EDITING_PRODUCT: {
         return handleCancelUpdateQuantity(state, action)
       }
-      case 'REMOVE_ALL_PRODUCTS':
+      case SalesActionTypes.REMOVE_ALL_PRODUCTS:
         // @ts-ignore
         setValues({
           ...values,
@@ -677,70 +663,38 @@ export const useSales = ({
           counter: 0
         }
 
-      case 'TOGGLE_FREE_PRODUCT':
+      case SalesActionTypes.TOGGLE_FREE_PRODUCT:
         return toggleFreeProducts(state, action)
-      case 'TOGGLE_EDITING_PRODUCT': {
+      case SalesActionTypes.TOGGLE_EDITING_PRODUCT: {
         return handleToggleEditingStatus(state, action)
       }
-      case 'INCREMENT': {
-        return {
-          ...state,
-          counter: state.counter + 1,
-          PRODUCT: state?.PRODUCT?.map((items: any) => {
-            if (items.pId === action.id) {
-              const OurProduct = productsFood?.find((item: any) => item.pId === action.id)
-              const isFree = items.free
-              const newQuantity = items.ProQuantity + 1
-              // Validar si el stock es 0
-              if (OurProduct?.stock === 0) {
-                sendNotification({
-                  title: 'Sin stock',
-                  backgroundColor: 'warning',
-                  description: `El producto ${items.pName} está agotado y no puede ser añadido al carrito.`
-                })
-                return items // Retornar sin modificar
-              }
-
-              // Validar si se supera el stock
-              console.log(OurProduct)
-              if (newQuantity >= OurProduct?.stock && OurProduct?.manageStock) {
-                sendNotification({
-                  title: 'Stock insuficiente',
-                  backgroundColor: 'warning',
-                  description: `No puedes agregar más unidades de ${items.pName}, stock disponible: ${OurProduct?.stock}`
-                })
-                return items // Retornar el producto sin modificar
-              }
-              return {
-                ...items,
-                ProQuantity: newQuantity,
-                ProPrice: isFree ? 0 : newQuantity * OurProduct?.ProPrice
-              }
-            }
-            return items
-          })
-        }
+      case SalesActionTypes.INCREMENT: {
+        return incrementProductQuantity({
+          state,
+          productId: action.id,
+          productsFood,
+          sendNotification
+        });
       }
 
-      case 'PUT_COMMENT':
+      case SalesActionTypes.PUT_COMMENT:
         return commentProducts(state, action)
-      case 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT':
+      case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
         return handleUpdateAllExtraAndOptional(state, action)
-      case 'PRICE_RANGE':
+      case SalesActionTypes.PRICE_RANGE:
         return {
           ...state,
           priceRange: action.payload
         }
-      case 'SORT':
+      case SalesActionTypes.SORT:
         return { ...state, sortBy: action.payload }
-      case 'DECREMENT':
+      case SalesActionTypes.DECREMENT:
         return {
           ...state
         }
-      case 'PAYMENT_METHOD': return paymentMethod(state, action)
+      case SalesActionTypes.PAYMENT_METHOD: return paymentMethod(state, action)
 
-      case 'APPLY_DISCOUNT': {
-        // action.payload can be a number (percent) or { percent: number }
+      case SalesActionTypes.APPLY_DISCOUNT: {
         return applyDiscountToState(state, action.payload)
       }
       default:
@@ -768,16 +722,13 @@ export const useSales = ({
   }, [])
 
   useEffect(() => {
-    // @ts-ignore
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
   }, [data, domain])
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
-    // @ts-ignore
     const item = dataOptional.find((item) => item.code === codeCategory)
     if (!item) return
-    // @ts-ignore
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
       (el: any) => el.opSubExPid === exOptional
     )
@@ -806,6 +757,84 @@ export const useSales = ({
       setDataOptional(() => [...newData])
     }
   }
+
+  /**
+   * handleChangeNumber
+   * Updates product quantity from input change with full validations.
+   * @param {any} state - Current reducer state
+   * @param {any} action - Action with payload { value, index, id }
+   * @param {any[]} productsFood - Products memory source
+   * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
+   * @param {(a:any)=>void} dispatch
+   * @returns {any} Updated state
+   */
+  function handleChangeNumber(
+    state: any,
+    action: any,
+    productsFood: any[] = [],
+    sendNotification: Function,
+    dispatch: Function
+  ) {
+    const event = action?.payload ?? {}
+    const { value, index, id } = event
+
+    if (!id || index === undefined) return state
+
+    const productExist = productsFood.find((item: any) => item.pId === id)
+    const oneProduct = state?.PRODUCT?.find((item: any) => item.pId === id)
+
+    // Product not found
+    if (!productExist || !oneProduct) return state
+
+    // No stock
+    if (productExist.stock === 0) {
+      sendNotification({
+        title: 'Sin stock',
+        backgroundColor: 'warning',
+        description: 'Producto sin stock disponible'
+      })
+      return state
+    }
+
+    // Remove product if quantity <= 0
+    if (value <= 0) {
+      dispatch({
+        type: 'REMOVE_PRODUCT_TO_CART',
+        payload: oneProduct
+      })
+      return state
+    }
+
+    const safeValue = Number(value) || 0
+    const maxStock = productExist.manageStock ? productExist.stock : safeValue
+    const finalQuantity = Math.min(safeValue, maxStock)
+
+    // Stock exceeded
+    if (safeValue > productExist.stock && productExist.manageStock) {
+      sendNotification({
+        title: 'Stock insuficiente',
+        backgroundColor: 'warning',
+        description: `No puedes agregar más unidades de ${oneProduct.pName}. Stock disponible: ${productExist.stock}`
+      })
+    }
+
+    const updatedProducts = state.PRODUCT.map((item: any, i: number) =>
+      i === index
+        ? {
+          ...item,
+          ProQuantity: finalQuantity,
+          ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
+        }
+        : item
+    )
+
+    return {
+      ...state,
+      PRODUCT: updatedProducts,
+      counter: (state.counter ?? 0) + 1
+    }
+  }
+
 
   function handleUpdateAllExtraAndOptional(state: any, action: any) {
     return {
@@ -942,9 +971,6 @@ export const useSales = ({
     setDataExtra((prev) => decrementExtra(prev, exPid))
   }
 
-  function isStockInsufficient(currentQuantity: number, stock: number) {
-    return currentQuantity >= stock
-  }
 
   function sendAlertStock(stock: number) {
     return sendNotification({
@@ -953,110 +979,6 @@ export const useSales = ({
       description: `Solo hay ${stock} unidades disponibles en el inventario`
     })
   }
-
-  /**
-   * Adds a product to the cart with maximum performance.
-   * Avoids full array scans and minimizes object cloning.
-   * @param {any} state - Current reducer state.
-   * @param {any} action - Action containing product data.
-   * @returns {any} Updated state.
-   */
-  function addToCartFunc(state, action) {
-    const payload = action?.payload ?? {};
-    const {
-      pId,
-      pName,
-      getOneTags,
-      stock,
-      ProDescription,
-      ProImage,
-      ProPrice
-    } = payload;
-
-    // Validate basic stock
-    if (stock === 0) {
-      sendNotification({
-        title: "Sin stock",
-        backgroundColor: "warning",
-        description: "Producto sin stock disponible en tu inventario"
-      });
-      return state;
-    }
-
-    // PRE-FETCH product references (only ONCE)
-    const productExistIndex = state.PRODUCT.findIndex((item: any) => item.pId === pId);
-    const productExist = productExistIndex !== -1 ? state.PRODUCT[productExistIndex] : null
-
-    const OurProduct = productsFood?.find((item: any) => item.pId === pId);
-    if (!OurProduct) return state;
-
-    // Check stock handling rules
-    const currentQty = productExist?.ProQuantity ?? 0;
-    if (OurProduct.manageStock && isStockInsufficient(currentQty, OurProduct.stock)) {
-      sendAlertStock(stock);
-      return state;
-    }
-
-    const isFree = productExist?.free ?? false;
-    const newQuantity = productExist ? currentQty + 1 : 1;
-
-    // Calculate new unit price only once
-    const unitPrice = OurProduct.ProPrice ?? 0;
-
-    // Calculate final price respecting "free" mode
-    const newPrice = isFree ? 0 : newQuantity * unitPrice;
-
-    // COMMON STATE UPDATES
-    const baseState = {
-      ...state,
-      counter: state.counter + 1,
-      totalAmount: state.totalAmount + ProPrice,
-      startAnimateUp: "start-animate-up"
-    };
-
-    // CASE 1: Product does NOT exist → add it
-    if (!productExist) {
-      const newProduct = {
-        pId,
-        pName,
-        editing: false,
-        getOneTags,
-        unitPrice,
-        manageStock: OurProduct.manageStock ?? false,
-        ProDescription,
-        ProImage,
-        ProPrice,
-        stock,
-        ProQuantity: 1,
-        free: false
-      };
-
-      return {
-        ...baseState,
-        PRODUCT: [...state.PRODUCT, newProduct]
-      };
-    }
-
-    // CASE 2: Product already exists → update only ONE item
-    const newList = [...state.PRODUCT];
-
-    newList[productExistIndex] = {
-      ...productExist,
-      getOneTags: OurProduct.genderTags,
-      unitPrice,
-      editing: false,
-      oldQuantity: newQuantity,
-      ProPrice: newPrice,
-      ProQuantity: newQuantity,
-      free: isFree
-    };
-
-    return {
-      ...baseState,
-      PRODUCT: newList
-    };
-  }
-
 
   /**
    * Toggles free mode for a product and recalculates its price
@@ -1194,7 +1116,7 @@ export const useSales = ({
         dataExtra: filteredDataExtra,
         ProPrice: product.ProPrice
       };
-    });
+    })
   }, [data.PRODUCT, values?.cliId]);
 
   const finalArrayProduct = useMemo(() => {
@@ -1243,13 +1165,24 @@ export const useSales = ({
       })
     }
     setLoadingSale(true)
-    const { code, success, error } = generateTicket({
+    const {
+      code,
+      success,
+      error
+    } = generateTicket({
       length: 8,
       strategy: 'numeric',
       prefix: 'T-',
       timestamp: true
     })
-    console.log('🚀 ~ handleSubmit ~ error:', error)
+    if (error) {
+      setLoadingSale(false)
+      return sendNotification({
+        title: 'error',
+        backgroundColor: 'error',
+        description: 'Lo sentimos, ocurrió un error'
+      })
+    }
     if (!success) {
       setLoadingSale(false)
       return sendNotification({
@@ -1477,6 +1410,9 @@ export const useSales = ({
       setDataExtra(finalData)
       setProduct(() => {
         return {
+          DB_DATA_PRODUCT: {
+            pId: null
+          },
           PRODUCT
         }
       })
@@ -1508,7 +1444,7 @@ export const useSales = ({
       return []
     }
 
-    return products.filter(product => product?.checked === true).map(product => product.carProId)
+    return products.filter(product => product?.checked === true)?.map(product => product?.carProId)
   }
 
   // Obtener los carProIds de productos con checked en true
@@ -1518,7 +1454,7 @@ export const useSales = ({
   const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
 
   const allProducts = useMemo(() => {
-    const productMap = new Map(data.PRODUCT.map((item: any) => [String(item.pId), item.ProQuantity || 0]))
+    const productMap = new Map(data?.PRODUCT?.map((item: any) => [String(item.pId), item.ProQuantity || 0]))
 
     return filteredProducts.map(product => ({
       ...product,
@@ -1529,6 +1465,16 @@ export const useSales = ({
 
   const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: any) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0) }, [finalArrayProduct])
 
+  const handleAddAllProductsToCart = () => {
+    for (const product of allProducts) {
+      const existsInCart = data.PRODUCT.some((item: any) => item.pId === product.pId)
+      if (!existsInCart) {
+        dispatch({ type: 'ADD_TO_CART', payload: product })
+      } else {
+        dispatch({ type: 'INCREMENT', id: product.pId })
+      }
+    }
+  }
   return {
     loading: loading || loadingSale,
     loadingExtraProduct,
@@ -1549,7 +1495,6 @@ export const useSales = ({
     print,
     finalFilter,
     showMore,
-    max,
     search,
     values,
     initialStateSales,
@@ -1569,6 +1514,7 @@ export const useSales = ({
     handleChangeCheck,
     errors,
     handleUpdateAllExtra,
+    handleAddAllProductsToCart,
     dispatch,
     handlePageChange,
     handleComment,
@@ -1579,6 +1525,7 @@ export const useSales = ({
     setOpenCurrentSale,
     setErrors,
     onChangeInput,
+    handleAddProduct,
     handleRemoveValue,
     setDelivery,
     setValues,
