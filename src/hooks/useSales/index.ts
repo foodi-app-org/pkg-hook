@@ -128,17 +128,11 @@ export const useSales = ({
   })
 
   interface ProductState {
-    DB_DATA_PRODUCT: {
-      pId: string | null
-    },
     PRODUCT: {
       pId: string | null
     }
   }
   const [product, setProduct] = useState<ProductState>({
-    DB_DATA_PRODUCT: {
-      pId: null
-    },
     PRODUCT: {
       pId: null
     }
@@ -268,8 +262,8 @@ export const useSales = ({
     setPrint(!print)
   }
 
-  const handleChangeFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
-    return setSearch(e.target.value)
+  const handleChangeFilter = (value: string): void => {
+    return setSearch(value)
   }
 
   const handleChange = (
@@ -608,7 +602,7 @@ export const useSales = ({
     }
     return dispatch({
       type: SalesActionTypes.ADD_TO_CART,
-      payload: product
+      payload: memo
     })
   }
 
@@ -622,7 +616,6 @@ export const useSales = ({
           sendAlertStock,
           sendNotification
         })
-      // https://www.npmjs.com/package/@sourcetoad/vision-camera-plugin-barcode-scanner
       case SalesActionTypes.ADD_PRODUCT:
         return {
           ...state,
@@ -640,7 +633,12 @@ export const useSales = ({
           counter: state.counter - action.payload.ProQuantity
         }
       case SalesActionTypes.ON_CHANGE: {
-        return handleChangeNumber(state, action)
+        return handleChangeNumber(
+          state,
+          action,
+          productsFood,
+          sendNotification
+        )
       }
       case SalesActionTypes.UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT: {
         return handleSuccessUpdateQuantity(state, action)
@@ -757,84 +755,6 @@ export const useSales = ({
       setDataOptional(() => [...newData])
     }
   }
-
-  /**
-   * handleChangeNumber
-   * Updates product quantity from input change with full validations.
-   * @param {any} state - Current reducer state
-   * @param {any} action - Action with payload { value, index, id }
-   * @param {any[]} productsFood - Products memory source
-   * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
-   * @param {(a:any)=>void} dispatch
-   * @returns {any} Updated state
-   */
-  function handleChangeNumber(
-    state: any,
-    action: any,
-    productsFood: any[] = [],
-    sendNotification: Function,
-    dispatch: Function
-  ) {
-    const event = action?.payload ?? {}
-    const { value, index, id } = event
-
-    if (!id || index === undefined) return state
-
-    const productExist = productsFood.find((item: any) => item.pId === id)
-    const oneProduct = state?.PRODUCT?.find((item: any) => item.pId === id)
-
-    // Product not found
-    if (!productExist || !oneProduct) return state
-
-    // No stock
-    if (productExist.stock === 0) {
-      sendNotification({
-        title: 'Sin stock',
-        backgroundColor: 'warning',
-        description: 'Producto sin stock disponible'
-      })
-      return state
-    }
-
-    // Remove product if quantity <= 0
-    if (value <= 0) {
-      dispatch({
-        type: 'REMOVE_PRODUCT_TO_CART',
-        payload: oneProduct
-      })
-      return state
-    }
-
-    const safeValue = Number(value) || 0
-    const maxStock = productExist.manageStock ? productExist.stock : safeValue
-    const finalQuantity = Math.min(safeValue, maxStock)
-
-    // Stock exceeded
-    if (safeValue > productExist.stock && productExist.manageStock) {
-      sendNotification({
-        title: 'Stock insuficiente',
-        backgroundColor: 'warning',
-        description: `No puedes agregar más unidades de ${oneProduct.pName}. Stock disponible: ${productExist.stock}`
-      })
-    }
-
-    const updatedProducts = state.PRODUCT.map((item: any, i: number) =>
-      i === index
-        ? {
-          ...item,
-          ProQuantity: finalQuantity,
-          ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
-        }
-        : item
-    )
-
-    return {
-      ...state,
-      PRODUCT: updatedProducts,
-      counter: (state.counter ?? 0) + 1
-    }
-  }
-
 
   function handleUpdateAllExtraAndOptional(state: any, action: any) {
     return {
@@ -968,7 +888,7 @@ export const useSales = ({
   const handleDecrementExtra = ({ Adicionales }: { Adicionales: any }) => {
     const exPid = Adicionales?.exPid
     if (!exPid) return
-    setDataExtra((prev) => decrementExtra(prev, exPid))
+    setDataExtra((prev) => decrementExtra(prev as any, exPid))
   }
 
 
@@ -1410,26 +1330,26 @@ export const useSales = ({
       setDataExtra(finalData)
       setProduct(() => {
         return {
-          DB_DATA_PRODUCT: {
-            pId: null
-          },
           PRODUCT
         }
       })
       setLoadingExtraProduct(false)
     } catch (error) {
       setLoadingExtraProduct(false)
-      sendNotification({
-        title: 'error',
-        backgroundColor: 'error',
-        description: error || 'Lo sentimos, ocurrió un error'
-      })
+      if (error instanceof Error) {
+        return sendNotification({
+          title: 'error',
+          backgroundColor: 'error',
+          description: error.message ?? 'Lo sentimos, ocurrió un error'
+        })
+      }
     }
   }
-  const handleCleanFilter = () => {
-    // @ts-ignore
-    setValues({})
+
+  const handleCleanFilter = (): null => {
+    setValues(initialValuesState)
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
+    return null
   }
 
   const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
@@ -1475,6 +1395,88 @@ export const useSales = ({
       }
     }
   }
+
+  /**
+ * handleChangeNumber
+ * Updates product quantity from input change with full validations.
+ * @param {any} state - Current reducer state
+ * @param {any} action - Action with payload { value, index, id }
+ * @param {any[]} productsFood - Products memory source
+ * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
+ * @param {(a:any)=>void} dispatch
+ * @returns {any} Updated state
+ */
+  function handleChangeNumber(
+    state: any,
+    action: any,
+    productsFood: any[] = [],
+    sendNotification: Function
+  ) {
+    const event = action?.payload ?? {}
+    const { value, index, id } = event
+
+    if (!id || index === undefined) return state
+
+    const productExist = productsFood.find((item: any) => item.pId === id)
+    const oneProduct = state?.PRODUCT?.find((item: any) => item.pId === id)
+
+    // Product not found
+    if (!productExist || !oneProduct) return state
+
+    // No stock
+    if (productExist.stock === 0) {
+      sendNotification({
+        title: 'Sin stock',
+        backgroundColor: 'warning',
+        description: 'Producto sin stock disponible'
+      })
+      return state
+    }
+
+    // Remove product if quantity <= 0
+    if (value <= 0) {
+      sendNotification({
+        title: 'Producto eliminado',
+        backgroundColor: 'info',
+        description: `Has eliminado ${oneProduct.pName} del carrito.`
+      })
+      return {
+        ...state,
+        PRODUCT: state.PRODUCT.filter((t: any) => t.pId !== id),
+        counter: (state.counter ?? 0) - (oneProduct.ProQuantity || 0)
+      }
+    }
+
+    const safeValue = Number(value) || 0
+    const maxStock = productExist.manageStock ? productExist.stock : safeValue
+    const finalQuantity = Math.min(safeValue, maxStock)
+
+    // Stock exceeded
+    if (safeValue > productExist.stock && productExist.manageStock) {
+      sendNotification({
+        title: 'Stock insuficiente',
+        backgroundColor: 'warning',
+        description: `No puedes agregar más unidades de ${oneProduct.pName}. Stock disponible: ${productExist.stock}`
+      })
+    }
+
+    const updatedProducts = state.PRODUCT.map((item: any, i: number) =>
+      i === index
+        ? {
+          ...item,
+          ProQuantity: finalQuantity,
+          ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
+        }
+        : item
+    )
+
+    return {
+      ...state,
+      PRODUCT: updatedProducts,
+      counter: (state.counter ?? 0) + 1
+    }
+  }
+
   return {
     loading: loading || loadingSale,
     loadingExtraProduct,
