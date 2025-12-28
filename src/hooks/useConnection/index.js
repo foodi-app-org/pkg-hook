@@ -7,9 +7,6 @@ export const useConnection = ({ setConnectionStatus }) => {
     }
   }
 
-  // Attaching event handler for the load event
-  //   window.addEventListener('load', updateConnectionStatus);
-
   if (typeof window !== 'undefined') {
     // Attaching event handler for the online event
     window.addEventListener('online', function () {

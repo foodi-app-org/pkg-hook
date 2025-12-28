@@ -1,9 +1,10 @@
 import {
+  useApolloClient,
   useLazyQuery,
   useMutation,
   useQuery
 } from '@apollo/client'
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
@@ -11,9 +12,11 @@ import {
   GET_ONE_PRODUCTS_FOOD,
   UPDATE_PRODUCT_FOOD
 } from './queriesStore'
+import { useStockUpdatedAllSubscription } from '../useStock'
 export * from './useEditProduct'
 
 export const useProductsFood = ({
+  idStore = null,
   categories = [],
   desc = [],
   fetchPolicy = 'cache-and-network',
@@ -28,26 +31,84 @@ export const useProductsFood = ({
   isShopppingCard = false
 }) => {
   const [showMore, setShowMore] = useState(500)
+  const client = useApolloClient()
+  const variables = useMemo(() => ({
+    categories,
+    desc,
+    gender,
+    max,
+    min,
+    pState,
+    search
+  }), [categories, desc, gender, max, min, pState, search])
 
   const { data, loading, fetchMore, refetch, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     fetchPolicy,
     notifyOnNetworkStatusChange: true,
     nextFetchPolicy: 'cache-first',
     refetchWritePolicy: 'merge',
-    variables: {
-      categories,
-      desc,
-      // fromDate,
-      gender,
-      max,
-      min,
-      pState,
-      search
-      // toDate
-    }
+    variables
   })
 
   const productsFood = data?.productFoodsAll?.data ?? []
+  /**
+     * Callback when subscription emits a stock update.
+     * Updates Apollo cache for GET_ALL_PRODUCT_STORE with same variables so UI updates reactively.
+     */
+  const onStockUpdated = useCallback(
+    (payload) => {
+      try {
+        if (!payload || !payload.pId) return
+
+        // Try to read current query result from cache (may throw if not present)
+        const cached = client.readQuery({
+          query: GET_ALL_PRODUCT_STORE,
+          variables
+        })
+
+        if (!cached?.productFoodsAll?.data) return
+
+        const updatedData = cached.productFoodsAll.data.map((prod) => {
+          if (!prod || prod.pId !== payload.pId) return prod
+
+          // update stock in-place preserving other fields; prefer 'stock' field name but keep others
+          return {
+            ...prod,
+            // if your product model uses another field name replace 'stock' accordingly
+            stock: payload.newStock,
+            previousStock: payload.previousStock ?? prod.previousStock ?? null,
+            // keep a meta object with event info for UI if needed
+            lastStockEvent: {
+              event: payload.event,
+              meta: payload.meta
+            }
+          }
+        })
+
+        // Write back to cache so queries using GET_ALL_PRODUCT_STORE update automatically
+        client.writeQuery({
+          query: GET_ALL_PRODUCT_STORE,
+          variables,
+          data: {
+            ...cached,
+            productFoodsAll: {
+              ...cached.productFoodsAll,
+              data: updatedData
+            }
+          }
+        })
+      } catch (err) {
+        // be silent but log for debugging
+        // (don't throw — subscription should not break the app)
+        // eslint-disable-next-line no-console
+        console.error('useProductsFood: failed updating cache from subscription', err)
+      }
+    },
+    // include all variables that affect the cache key
+    [client, JSON.stringify(variables)]
+  )
+  // Attach subscription only if idStore is provided (the subscription hook internally skips when idStore is falsy)
+  useStockUpdatedAllSubscription(idStore ?? '', onStockUpdated)
 
   if (!isShopppingCard) {
     return [
@@ -69,7 +130,8 @@ export const useProductsFood = ({
   }))
 
   return [
-    updatedProductsFood, {
+    updatedProductsFood,
+    {
       pagination: data?.productFoodsAll?.pagination || {},
       loading: called ? false : loading,
       error,
@@ -85,9 +147,9 @@ export const useDeleteProductsFood = ({
   sendNotification = (arg) => { return arg },
   onSuccess = (arg) => { return arg }
 } = {
-  sendNotification: (arg) => { return arg },
-  onSuccess: (arg) => { return arg }
-}) => {
+    sendNotification: (arg) => { return arg },
+    onSuccess: (arg) => { return arg }
+  }) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
   const handleDelete = async product => {
@@ -99,10 +161,10 @@ export const useDeleteProductsFood = ({
           pState
         }
       },
-      update (cache) {
+      update(cache) {
         cache.modify({
           fields: {
-            productFoodsAll (dataOld = []) {
+            productFoodsAll(dataOld = []) {
               if (Array.isArray(dataOld) && dataOld?.length) {
                 const product = dataOld?.find((product) => {
                   return product.pId === pId
@@ -122,7 +184,7 @@ export const useDeleteProductsFood = ({
         })
         cache.modify({
           fields: {
-            getCatProductsWithProduct (dataOld = []) {
+            getCatProductsWithProduct(dataOld = []) {
               if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
                 const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories) => {
                   return {

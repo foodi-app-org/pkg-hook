@@ -114,8 +114,9 @@ export const useSales = ({
   const [values, setValues] = useState<ValuesState>(initialValuesState)
 
   const [dataStore] = useStore()
-  const { createdAt } = dataStore ?? {
-    createdAt: null
+  const { createdAt, idStore } = dataStore ?? {
+    createdAt: null,
+    idStore: null
   }
   const [code, setCode] = useState(null)
   const [openCurrentSale, setOpenCurrentSale] = useState(null)
@@ -202,6 +203,7 @@ export const useSales = ({
     max: showMore,
     min: 0,
     isShopppingCard: true,
+    idStore: idStore ?? '',
     dataSale: (Array.isArray(saveDataState?.PRODUCT) && saveDataState?.PRODUCT) ?? [],
     callback: () => { return null }
   })
