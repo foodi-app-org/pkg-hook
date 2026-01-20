@@ -27,6 +27,7 @@ mutation createClients ($input: IClients) {
     gender
     clientLastName
     clientName
+    default
     createAt
     updateAt
     }
@@ -56,6 +57,7 @@ query getAllClients($idStore: ID, $search: String, $min: Int, $max: Int, $fromDa
       clientLastName
       
       clientName
+      default
       createAt
       updateAt
     }
@@ -93,6 +95,7 @@ query getOneClients($cliId: ID) {
     ccClient
     clientLastName
     clientName
+    default
     createAt
     updateAt
 
@@ -137,7 +140,7 @@ mutation registerSalesStore(
   $input: [IShoppingCart]
   $id: ID
   $tableId: ID
-  $discount: Int
+  $discount: DiscountInput
   $idStore: ID
   $pCodeRef: String
   $change: Float

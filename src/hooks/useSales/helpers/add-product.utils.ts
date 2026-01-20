@@ -34,7 +34,8 @@ export const addToCartFunc = ({
     stock,
     ProDescription,
     ProImage,
-    ProPrice
+    ProPrice,
+    ProDescuento
   } = payload
 
   // Validate basic stock
@@ -89,6 +90,7 @@ export const addToCartFunc = ({
       ProImage,
       ProPrice,
       stock,
+      ProDescuento,
       ProQuantity: 1,
       free: false
     }

@@ -404,7 +404,7 @@ mutation registerSalesStore(
   $input: [IShoppingCart]
   $id: ID
   $tableId: ID
-  $discount: Int
+  $discount: DiscountInput
   $idStore: ID
   $pCodeRef: String
   $change: Float
