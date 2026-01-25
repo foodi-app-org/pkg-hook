@@ -157,7 +157,6 @@ export const useSales = ({
         })
         setAlertBox({ message, type: 'success' })
         if (message === 'Token expired') {
-          // @ts-ignore
           onClickLogout()
         }
         setOpenCurrentSale(data?.registerSalesStore.success)
