@@ -1,3 +1,12 @@
+export enum TypeDiscount {
+  PERCENT = 'PERCENT',
+  AMOUNT = 'AMOUNT'
+}
+interface DiscountPayload {
+  type: TypeDiscount
+  value: number
+}
+
 /**
  * Apply a discount to the reducer state in a mathematically-exact way.
  *
@@ -21,14 +30,14 @@
  */
 export const applyDiscountToCart = (
   state: any,
-  payload: any,
+  payload: DiscountPayload,
   sendNotification?: (notification: {
     title: string
     backgroundColor: 'success' | 'error' | 'warning' | 'info'
     description: string
   }) => void
 ) => {
-  const discountType = (payload?.type || 'PERCENT').toString().toUpperCase()
+  const discountType = (payload?.type ?? TypeDiscount.PERCENT).toString().toUpperCase()
   const rawValue = Number(payload?.value)
 
   // Basic validations
@@ -56,7 +65,7 @@ export const applyDiscountToCart = (
     return state
   }
 
-  if (discountType !== 'PERCENT' && discountType !== 'AMOUNT') {
+  if (discountType !== TypeDiscount.PERCENT && discountType !== TypeDiscount.AMOUNT) {
     sendNotification?.({
       title: 'Error',
       backgroundColor: 'error',
@@ -65,7 +74,7 @@ export const applyDiscountToCart = (
     return state
   }
 
-  if (discountType === 'PERCENT' && (rawValue < 0 || rawValue > 100)) {
+  if (discountType === TypeDiscount.PERCENT && (rawValue < 0 || rawValue > 100)) {
     sendNotification?.({
       title: 'Error',
       backgroundColor: 'warning',
@@ -103,7 +112,7 @@ export const applyDiscountToCart = (
       }
     })
 
-    const extrasCentsList = extrasNormalized.map((e) => e.originalNewExtraPriceCents)
+    const extrasCentsList = extrasNormalized.map((e: any) => e.originalNewExtraPriceCents)
     const extrasTotalCents = extrasCentsList.reduce((s: number, v: number) => s + v, 0)
     const itemTotalCents = baseCents + extrasTotalCents
 
@@ -136,7 +145,7 @@ export const applyDiscountToCart = (
 
   // Determine requested total discount in cents
   let totalDiscountCents = 0
-  if (discountType === 'PERCENT') {
+  if (discountType === TypeDiscount.PERCENT) {
     totalDiscountCents = Math.round((cartTotalCents * rawValue) / 100)
   } else {
     totalDiscountCents = toCents(rawValue)
@@ -156,20 +165,20 @@ export const applyDiscountToCart = (
     return {
       ...state,
       discountType,
-      discountPercent: discountType === 'PERCENT' ? rawValue : +((totalDiscountCents / cartTotalCents) * 100).toFixed(2),
+      discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : +((totalDiscountCents / cartTotalCents) * 100).toFixed(2),
       discountAmount: fromCents(totalDiscountCents),
       discountBreakdown: []
     }
   }
 
   // ---- Allocation using Largest Remainder Method (exact cents) ----
-  const rawAllocs = normalizedItems.map((it) => (it.itemTotalCents * totalDiscountCents) / cartTotalCents)
-  const floorAllocs = rawAllocs.map((v) => Math.floor(v))
-  const remainders = rawAllocs.map((v, i) => ({ idx: i, rem: v - floorAllocs[i] }))
-  const sumFloor = floorAllocs.reduce((s, v) => s + v, 0)
+  const rawAllocs = normalizedItems.map((it: any) => (it.itemTotalCents * totalDiscountCents) / cartTotalCents)
+  const floorAllocs = rawAllocs.map((v: any) => Math.floor(v))
+  const remainders = rawAllocs.map((v: any, i: number) => ({ idx: i, rem: v - floorAllocs[i] }))
+  const sumFloor = floorAllocs.reduce((s: number, v: number) => s + v, 0)
   let remainingCents = totalDiscountCents - sumFloor
 
-  remainders.sort((a, b) => b.rem - a.rem)
+  remainders.sort((a: any, b: any) => b.rem - a.rem)
   const finalAllocs = [...floorAllocs]
   for (let i = 0; i < remainders.length && remainingCents > 0; i++) {
     finalAllocs[remainders[i].idx] += 1
@@ -199,7 +208,7 @@ export const applyDiscountToCart = (
       let rest = remainingToTake - usedExtraFloor
 
       const extraRemainders = rawExtraAllocs.map((v: number, i: number) => ({ idx: i, rem: v - floorExtraAllocs[i] }))
-      extraRemainders.sort((a, b) => b.rem - a.rem)
+      extraRemainders.sort((a: any, b: any) => b.rem - a.rem)
       const finalExtraAllocs = [...floorExtraAllocs]
       for (let k = 0; k < extraRemainders.length && rest > 0; k++) {
         finalExtraAllocs[extraRemainders[k].idx] += 1
@@ -269,14 +278,14 @@ export const applyDiscountToCart = (
   sendNotification?.({
     title: 'Discount applied',
     backgroundColor: 'success',
-    description: `${discountType === 'PERCENT' ? rawValue + '%' : fromCents(totalDiscountCents)} discount applied successfully.`
+    description: `${discountType === TypeDiscount.PERCENT ? rawValue + '%' : fromCents(totalDiscountCents)} discount applied successfully.`
   })
 
   return {
     ...state,
     PRODUCT: newProducts,
     discountType,
-    discountPercent: discountType === 'PERCENT' ? rawValue : overallPercent,
+    discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : overallPercent,
     discountAmount: fromCents(totalDiscountCents),
     discountBreakdown: breakdown
   }

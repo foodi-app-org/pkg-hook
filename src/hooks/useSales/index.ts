@@ -8,7 +8,8 @@ import {
   useEffect,
   useReducer,
   useMemo,
-  useState
+  useState,
+  ReducerStateWithoutAction,
 } from 'react'
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
@@ -26,7 +27,7 @@ import {
 } from './queries'
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
 import { useGetSale } from './useGetSale'
-import { useCatWithProduct } from '../useCatWithProduct/index'
+import { useCatWithProduct } from '../useCatWithProduct'
 import { useLogout } from '../useLogout'
 import { generateTicket } from '../../utils/generateCode'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
@@ -34,37 +35,11 @@ import { decrementExtra } from './helpers/extras.utils'
 import { handleRemoveProduct } from './helpers/remove-product.utils'
 import { addToCartFunc } from './helpers/add-product.utils'
 import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
-import { SalesActionTypes } from './helpers/constants'
-import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
-
-export const initialState = {
-  PRODUCT: [],
-  totalPrice: 0,
-  sortBy: null,
-  itemsInCart: 0,
-  animateType: '',
-  startAnimateUp: '',
-  priceRange: 0,
-  counter: 0,
-  totalAmount: 0,
-  payId: ''
-}
-
-export const initializer = (initialValue = initialState) => {
-  return (
-    JSON.parse(
-      // @ts-ignore
-      Cookies.get(process.env.LOCAL_SALES_STORE) || JSON.stringify(initialState)
-    ) || initialValue
-  )
-}
-
-interface UseSalesProps {
-  disabled?: boolean;
-  router?: any;
-  sendNotification?: (args: any) => any;
-  setAlertBox?: (args: any) => any;
-}
+import { initialStateSales, SalesActionTypes } from './helpers/constants'
+import { applyDiscountToCart, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
+import { SalesReducerAction, SalesState, ValuesState } from './types'
+import { UseSalesProps } from './types/use-sales.types'
+import { initializer } from './helpers/initializer.utils'
 
 export const useSales = ({
   disabled = false,
@@ -96,14 +71,6 @@ export const useSales = ({
   const [delivery, setDelivery] = useState(false)
   const [print, setPrint] = useState(false)
   const [errors, setErrors] = useState({})
-
-  interface ValuesState {
-    change: string
-    cliId: string
-    comment: string
-    tableId: string
-    valueDelivery: string
-  }
 
   const initialValuesState: ValuesState = {
     change: '',
@@ -157,6 +124,7 @@ export const useSales = ({
         })
         setAlertBox({ message, type: 'success' })
         if (message === 'Token expired') {
+          // @ts-ignore
           onClickLogout()
         }
         setOpenCurrentSale(data?.registerSalesStore.success)
@@ -238,18 +206,7 @@ export const useSales = ({
     });
   };
 
-  const initialStateSales = {
-    PRODUCT: [],
-    totalPrice: 0,
-    sortBy: null,
-    itemsInCart: 0,
-    animateType: '',
-    startAnimateUp: '',
-    priceRange: 0,
-    counter: 0,
-    totalAmount: 0,
-    payId: ''
-  }
+
   // HANDLESS
   // FILTER PRODUCT DATA_DB
   // @ts-ignore
@@ -402,7 +359,7 @@ export const useSales = ({
         backgroundColor: 'error',
         description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
       })
-      return state // Retorna el estado sin cambios si `PRODUCT` no es un array.
+      return state
     }
 
     // Validación de `payload`
@@ -418,7 +375,7 @@ export const useSales = ({
 
     return {
       ...state,
-      PRODUCT: state.PRODUCT.map((item) => {
+      PRODUCT: state.PRODUCT.map((item: any) => {
         // Validación de propiedades en cada item
         if (item.pId === pId) {
           if (typeof item.oldQuantity !== 'number' || typeof item.unitPrice !== 'number') {
@@ -570,7 +527,8 @@ export const useSales = ({
         return state
     }
   }
-  const [data, dispatch] = useReducer(PRODUCT, initialStateSales, initializer)
+
+  const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
 
   const handleRemoveValue = useCallback(({ name, value, pId }: { name: string; value: any; pId: string }) => {
     setValues({
@@ -578,13 +536,13 @@ export const useSales = ({
       [name]: value ?? ''
     })
     sendNotification({
-      backgroundColor: 'sucess',
+      backgroundColor: 'success',
       title: 'Comentario eliminado',
       description: 'Has eliminado el comentario!'
     })
     // @ts-ignore
     return dispatch({
-      type: 'PUT_COMMENT',
+      type: SalesActionTypes.PUT_COMMENT,
       payload: pId,
       value: ''
     })
@@ -702,7 +660,7 @@ export const useSales = ({
       if (product?.PRODUCT?.pId) {
         // @ts-ignore
         dispatch({
-          type: 'PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT',
+          type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
           payload: product.PRODUCT.pId,
           dataOptional: filteredDataOptional,
           dataExtra: filteredDataExtra
@@ -816,7 +774,7 @@ export const useSales = ({
 
 
   // COMMENT_FREE_PRODUCT
-  function commentProducts(state, action, deleteValue = false) {
+  function commentProducts(state: any, action: any, deleteValue = false) {
     if (values.comment) {
       sendNotification({
         backgroundColor: 'success',
@@ -827,7 +785,7 @@ export const useSales = ({
     setOpenCommentModal(!openCommentModal)
     return {
       ...state,
-      PRODUCT: state?.PRODUCT?.map((items) => {
+      PRODUCT: state?.PRODUCT?.map((items: any) => {
         return items.pId === action.payload
           ? {
             ...items,
@@ -838,7 +796,7 @@ export const useSales = ({
     }
   }
 
-  const getSortedProduct = useCallback((data, sort) => {
+  const getSortedProduct = useCallback((data: any[], sort: string | null) => {
     if (sort && sort === 'PRICE_HIGH_TO_LOW') {
       return data.sort((a, b) => {
         return b.ProPrice - a.ProPrice
@@ -852,7 +810,7 @@ export const useSales = ({
     return data
   }, [])
 
-  const PriceRangeFunc = (products, price) => {
+  const PriceRangeFunc = (products: any[], price: number) => {
     return (
       products?.length > 0 &&
       products?.filter((items) => {
@@ -867,7 +825,7 @@ export const useSales = ({
 
   const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange)
 
-  const handleList = (text) => {
+  const handleList = (text: string) => {
     const inputText = text.toLowerCase()
     let dataList = []
     dataList = finalFilter.filter((item) => {
@@ -945,7 +903,7 @@ export const useSales = ({
 
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
-
+  console.log(data)
   const handleSubmit = () => {
     // @ts-ignore
     if (errors?.change || errors?.valueDelivery) {
@@ -984,7 +942,7 @@ export const useSales = ({
     }
     // @ts-ignore
     setCode(code)
-    function convertInteger(cadena) {
+    function convertInteger(cadena: string | number) {
       if (typeof cadena === 'string') {
         const numeroEntero = parseInt(cadena?.replace('.', ''))
         return numeroEntero
@@ -1022,7 +980,7 @@ export const useSales = ({
         pickUp: 1,
         shoppingCartRefCode,
         discount: {
-          type: 'PERCENT',
+          type: String(data.discountType),
           value: 2
         },
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
@@ -1263,9 +1221,9 @@ export const useSales = ({
     for (const product of allProducts) {
       const existsInCart = data.PRODUCT.some((item: any) => item.pId === product.pId)
       if (!existsInCart) {
-        dispatch({ type: 'ADD_TO_CART', payload: product })
+        dispatch({ type: SalesActionTypes.ADD_TO_CART, payload: product })
       } else {
-        dispatch({ type: 'INCREMENT', id: product.pId })
+        dispatch({ type: SalesActionTypes.INCREMENT, id: product.pId })
       }
     }
   }

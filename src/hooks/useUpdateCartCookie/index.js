@@ -1,7 +1,7 @@
 import { useEffect, useReducer } from 'react'
-import { initializer } from '../useSales'
 import { Cookies } from '../../cookies'
 import { getCurrentDomain } from '../../utils'
+import { initializer } from '../useSales/helpers/initializer.utils'
 
 export const useUpdateCartCookie = () => {
   const keyToSaveData = process.env.LOCAL_SALES_STORE
