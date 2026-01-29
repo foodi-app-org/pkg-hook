@@ -1,13 +1,15 @@
 import { useQuery } from '@apollo/client'
 import { GET_ALL_CATEGORIES_WITH_PRODUCT } from './queries'
+import { GetCatProductsWithProductResponse, ICatWithProduct } from './types'
 
 export const useCatWithProduct = ({
-  max = 1,
+  max = 400,
   min = 0,
   search = null,
   productName = null,
-  searchFilter = {}
-}) => {
+  searchFilter = {},
+  callback = () => {}
+}: ICatWithProduct) => {
   const {
     gender,
     desc,
@@ -23,6 +25,9 @@ export const useCatWithProduct = ({
     error,
     fetchMore
   } = useQuery(GET_ALL_CATEGORIES_WITH_PRODUCT, {
+    onCompleted: (data) => {
+      callback(data as GetCatProductsWithProductResponse)
+    },
     fetchPolicy: 'network-only',
     variables:
     {
@@ -30,7 +35,7 @@ export const useCatWithProduct = ({
       productName,
       gender,
       min,
-      max: 400,
+      max,
       desc,
       categories: speciality
     }

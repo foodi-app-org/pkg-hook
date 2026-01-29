@@ -9,7 +9,6 @@ import {
   useReducer,
   useMemo,
   useState,
-  ReducerStateWithoutAction,
 } from 'react'
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
@@ -36,10 +35,11 @@ import { handleRemoveProduct } from './helpers/remove-product.utils'
 import { addToCartFunc } from './helpers/add-product.utils'
 import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
-import { applyDiscountToCart, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
+import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
 import { SalesReducerAction, SalesState, ValuesState } from './types'
 import { UseSalesProps } from './types/use-sales.types'
 import { initializer } from './helpers/initializer.utils'
+import { CatProductWithProduct, GetCatProductsWithProductResponse } from '../useCatWithProduct/types'
 
 export const useSales = ({
   disabled = false,
@@ -47,29 +47,31 @@ export const useSales = ({
   sendNotification = (args) => { return args },
   setAlertBox = (args) => { return args }
 }: UseSalesProps) => {
+  const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
+  const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
   const [errorSale, setErrorSale] = useState(false)
   const [onClickLogout] = useLogout({})
-
   const [modalItem, setModalItem] = useState(false)
   const [openCommentModal, setOpenCommentModal] = useState(false)
-  const keyToSaveData = process.env.LOCAL_SALES_STORE
-  const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
   const [search, setSearch] = useState('')
-  const [datCat] = useCatWithProduct({})
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<CatProductWithProduct[]>([])
+
+  useCatWithProduct({
+    max: Infinity,
+    callback: (data: GetCatProductsWithProductResponse) => {
+      return setCategories(data.getCatProductsWithProduct?.catProductsWithProduct || [])
+    }
+  })
   const [currentPage, setCurrentPage] = useState<number>(1)
-  useEffect(() => {
-    setCategories(datCat)
-  }, [datCat])
-  const [totalProductPrice, setTotalProductPrice] = useState(0)
-  const [showMore, setShowMore] = useState(100)
-  const [inputValue, setInputValue] = useState('')
+  const [totalProductPrice, setTotalProductPrice] = useState<number>(0)
+  const [showMore, setShowMore] = useState<number>(100)
+  const [inputValue, setInputValue] = useState<string>('')
   // eslint-disable-next-line no-unused-vars
   const [_, setFilteredList] = useState([])
-  const [delivery, setDelivery] = useState(false)
-  const [print, setPrint] = useState(false)
+  const [delivery, setDelivery] = useState<boolean>(false)
+  const [print, setPrint] = useState<boolean>(false)
   const [errors, setErrors] = useState({})
 
   const initialValuesState: ValuesState = {
@@ -96,16 +98,12 @@ export const useSales = ({
     return { fromDate: yearMonthDay, toDate: '' }
   })
 
-  interface ProductState {
-    PRODUCT: {
-      pId: string | null
-    }
-  }
-  const [product, setProduct] = useState<ProductState>({
+  const [product, setProduct] = useState({
     PRODUCT: {
       pId: null
     }
   })
+
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState<any[]>([])
   const [dataExtra, setDataExtra] = useState<any[]>([])
@@ -132,7 +130,7 @@ export const useSales = ({
       onError: (error) => {
         sendNotification({
           backgroundColor: 'error',
-          title: error ?? 'Lo sentimos',
+          title: typeof error === 'string' ? error : 'Lo sentimos',
           description: 'ha ocurrido un error'
         })
       }
@@ -173,7 +171,7 @@ export const useSales = ({
     isShopppingCard: true,
     idStore: idStore ?? '',
     dataSale: (Array.isArray(saveDataState?.PRODUCT) && saveDataState?.PRODUCT) ?? [],
-    callback: () => { return null }
+    callback: () => { return }
   })
 
   const handlePageChange = (pageNumber: number) => {
@@ -530,7 +528,7 @@ export const useSales = ({
 
   const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
 
-  const handleRemoveValue = useCallback(({ name, value, pId }: { name: string; value: any; pId: string }) => {
+  const handleRemoveValue = useCallback(({ name, value, pId }: { name: string; value: string | null; pId: string }) => {
     setValues({
       ...values,
       [name]: value ?? ''
@@ -547,10 +545,6 @@ export const useSales = ({
       value: ''
     })
   }, [])
-
-  useEffect(() => {
-    Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
-  }, [data, domain])
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
@@ -1308,6 +1302,10 @@ export const useSales = ({
       counter: (state.counter ?? 0) + 1
     }
   }
+
+  useEffect(() => {
+    Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
+  }, [data, domain])
 
   return {
     loading: loading || loadingSale,

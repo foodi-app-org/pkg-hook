@@ -12,7 +12,7 @@ export const useLogout = ({
     message
   }) => { return { message } }
 }: UseLogoutOptions = {}) => {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState(false)
   const client = useApolloClient()
 
@@ -40,21 +40,23 @@ export const useLogout = ({
   }
   const deleteCookie = async () => {
     await eliminarCookie(String(process.env.NEXT_PUBLIC_SESSION_NAME))
-    await eliminarCookie(String(process.env.LOCAL_SALES_STORE))
+    await eliminarCookie(String(process.env.NEXT_LOCAL_SALES_STORE))
     await eliminarCookie('restaurant')
     await eliminarCookie('usuario')
     await eliminarCookie('session')
   }
   const onClickLogout = async (params?: { redirect?: boolean }) => {
-    const redirect = params?.redirect !== undefined ? params.redirect : true
-    console.log(redirect)
+    const redirect = params?.redirect ?? true
     try {
-      if (!redirect) return await deleteCookie()
-      setLoading(true)
+      if (redirect) {
+        setLoading(true)
+      } else {
+        return await deleteCookie()
+      }
       await deleteCookie()
       // Logout from the server
-      const port = window.location.port ? `:${window.location.port}` : ''
-      const baseUrl = `${window.location.protocol}//${window.location.hostname}${port}`
+      const port = globalThis.location.port ? `:${globalThis.location.port}` : ''
+      const baseUrl = `${globalThis.location.protocol}//${globalThis.location.hostname}${port}`
       const logoutResponse = await fetch(`${baseUrl}/api/auth/signout/`, {
         method: 'POST',
         headers: {
@@ -73,7 +75,7 @@ export const useLogout = ({
 
       // Eliminar la cookie process.env.NEXT_PUBLIC_SESSION_NAME
       await eliminarCookie(String(process.env.NEXT_PUBLIC_SESSION_NAME))
-      Cookies.remove(process.env.LOCAL_SALES_STORE)
+      Cookies.remove(String(process.env.NEXT_LOCAL_SALES_STORE))
       Cookies.remove('restaurant')
       Cookies.remove('usuario')
       Cookies.remove('session')
@@ -84,13 +86,15 @@ export const useLogout = ({
       setLoading(false)
       console.log('Cookies eliminadas y sesión cerrada con éxito')
       signOutAuth({ redirect: true, callbackUrl: '/' })
-        .catch(() => {
+        .catch((err) => {
           setError(true)
+          console.error('Error in signOutAuth:', err)
           setAlertBox({ message: 'Ocurrió un error al cerrar sesión' })
         })
-    } catch (error) {
+    } catch (err) {
       setLoading(false)
       setError(true)
+      console.error('Error al cerrar sesión:', err)
       setAlertBox({ message: 'Ocurrió un error al cerrar sesión' })
     }
   }

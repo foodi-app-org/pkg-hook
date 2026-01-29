@@ -7,10 +7,10 @@
     "js-cookie": "3.0.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
+    "next": "15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-query": "^3.39.2",
-    "typesdefs": "1.0.4",
     "xlsx": "0.18.5"
   },
   "description": "description-pkg-hook",
@@ -31,7 +31,9 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "jest": "^30.2.0",
-    "ts-jest": "^29.4.6"
+    "ts-jest": "^29.4.6",
+    "tsup": "8.5.1",
+    "typesdefs": "1.0.6"
   },
   "license": "ISC",
   "main": "/src/index.jsx",
@@ -49,7 +51,8 @@
     "lint:fix": "npm run lint -- --fix",
     "rm": "rm -rf node_modules package-lock.json && npm i",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "build": "tsup src/index.ts --format esm,cjs --dts"
   },
   "version": "1.12.6"
 }

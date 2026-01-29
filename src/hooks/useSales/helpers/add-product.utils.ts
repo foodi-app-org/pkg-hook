@@ -1,14 +1,11 @@
+import { NotificationPayload } from '../types'
 import { isStockInsufficient } from './isStockInsufficient'
 
 interface AddToCartProps {
   state: any
   action: any
   product: any
-  sendNotification: (notification: {
-    title: string
-    backgroundColor: string
-    description: string
-  }) => void
+  sendNotification?: (args: NotificationPayload) => any
   sendAlertStock: (stock: number) => void
 }
 

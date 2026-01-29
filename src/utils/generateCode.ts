@@ -28,8 +28,8 @@ export interface TicketConfig {
  * Result returned by generators.
  */
 export type TicketResult =
-    | { success: true; code: string, error?: undefined }
-    | { success: false; error: string; code: string };
+    | { success: true; code: string; error?: undefined }
+    | { success: false; error: string; code?: string };
 
 /**
  * Async uniqueness checker signature.
@@ -144,7 +144,7 @@ const normalizeConfig = (cfg?: TicketConfig): { cfg?: Required<TicketConfig>; er
 export const generateTicket = (config?: TicketConfig): TicketResult => {
     const normalized = normalizeConfig(config);
     if (normalized.error) return { success: false, error: normalized.error };
-    const cfg = normalized.cfg;
+    const cfg = normalized.cfg!;
 
     const payloadLen = cfg.length;
     const prefix = cfg.prefix || '';
@@ -153,7 +153,7 @@ export const generateTicket = (config?: TicketConfig): TicketResult => {
     const numericCharset = '0123456789';
     const alphaNumCharset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789'; // removed O/0/l for readability
     const charset = cfg.strategy === 'numeric' ? numericCharset : alphaNumCharset;
-    
+
     // prepare timestamp chunk if requested (keep it short and strategy-aware)
     const ts = cfg.timestamp ? timestampChunk(cfg.strategy, 4) : '';
 
@@ -179,7 +179,7 @@ export const generateTicket = (config?: TicketConfig): TicketResult => {
 export const generateUniqueAsync = async (isUnique: IsUniqueFn, config?: TicketConfig): Promise<TicketResult> => {
     const normalized = normalizeConfig(config);
     if (normalized.error) return { success: false, error: normalized.error };
-    const cfg = normalized.cfg;
+    const cfg = normalized.cfg!;
 
     for (let attempt = 1; attempt <= cfg.maxAttempts; attempt += 1) {
         const candidateRes = generateTicket(cfg);
