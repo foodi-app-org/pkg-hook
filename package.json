@@ -19,6 +19,7 @@
     "@babel/preset-react": "^7.18.6",
     "@babel/preset-typescript": "^7.18.6",
     "@types/jest": "^30.0.0",
+    "@types/js-cookie": "3.0.6",
     "@types/node": "^20.11.16",
     "@types/react": "^18.0.20",
     "@typescript-eslint/eslint-plugin": "5.29.0",
@@ -35,9 +36,21 @@
     "tsup": "8.5.1",
     "typesdefs": "1.0.6"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "license": "ISC",
-  "main": "/src/index.jsx",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "name": "npm-pkg-hook",
+  "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
@@ -45,14 +58,15 @@
     "type": "git",
     "url": "https://github.com/Jesus123780/pkg-hook"
   },
-  "private": false,
   "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
     "rm": "rm -rf node_modules package-lock.json && npm i",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "build": "tsup src/index.ts --format esm,cjs --dts"
+    "test:watch": "jest --watch"
   },
-  "version": "1.12.6"
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "version": "1.12.7"
 }

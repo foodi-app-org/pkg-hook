@@ -1,20 +1,49 @@
-import { useMutation } from '@apollo/client'
-import { UPDATE_MULTIPLE_PRODUCTS } from './queries'
-import { CATEGORY_EMPTY } from '../../utils/index'
-import { useCategoriesProduct } from '../useCategoriesProduct'
+import { useMutation } from '@apollo/client';
+import { UPDATE_MULTIPLE_PRODUCTS } from './queries';
+import { CATEGORY_EMPTY } from '../../utils/index';
+import { useCategoriesProduct } from '../useCategoriesProduct';
+
+interface UpdateMultipleProductsProps {
+  sendNotification?: (notification: Notification) => void;
+}
+
+interface Product {
+  PRECIO_AL_PUBLICO: number;
+  DESCRIPCION: string;
+  NOMBRE: string;
+  pCode: string;
+  CANTIDAD?: number;
+  'IMPUESTO (%)': number;
+  CODIGO_DE_BARRAS: string | null;
+}
+
+interface Notification {
+  backgroundColor: string;
+  description: string;
+  title: string;
+}
 
 export const useUpdateMultipleProducts = ({
-  sendNotification = () => { }
-}) => {
+  sendNotification = () => {}
+}: UpdateMultipleProductsProps): {
+    updateProducts: (products: Product[]) => Promise<any[]>;
+    data: any; 
+    loading: boolean; 
+    error: any; 
+} => {
+  
   const [updateMultipleProducts, {
     data,
     loading,
     error
-  }] = useMutation(UPDATE_MULTIPLE_PRODUCTS)
+  }] = useMutation(UPDATE_MULTIPLE_PRODUCTS);
 
-  const [dataCategoriesProducts] = useCategoriesProduct()
-  const findEmptyCategory = dataCategoriesProducts?.find(({ pName }) => pName === CATEGORY_EMPTY)
-  const updateProducts = async (products) => {
+  const [dataCategoriesProducts] = useCategoriesProduct();
+  
+  const findEmptyCategory = dataCategoriesProducts?.find(({ pName }: { pName: string }) => pName === CATEGORY_EMPTY);
+  
+  const updateProducts = async (products: Product[]): Promise<any[]> => {
+    
     const newProducts = products.map(product => {
       const {
         PRECIO_AL_PUBLICO: ProPrice,
@@ -24,7 +53,8 @@ export const useUpdateMultipleProducts = ({
         CANTIDAD: stock = 0,
         'IMPUESTO (%)': vat,
         CODIGO_DE_BARRAS: ProBarCode
-      } = product
+      } = product;
+
       return {
         idStore: '',
         ProPrice,
@@ -45,36 +75,41 @@ export const useUpdateMultipleProducts = ({
         ProWeight: '',
         ProOutstanding: 0,
         ProDelivery: 0
-      }
-    }
-    )
+      };
+    });
+
     try {
-      const response = await updateMultipleProducts({ variables: { input: newProducts } })
-      // sendNotification
+      const response = await updateMultipleProducts({ variables: { input: newProducts } });
+      
       for (const { errors } of response.data.updateMultipleProducts) {
-        if (errors) {
-          sendNotification({
-            backgroundColor: 'error',
-            description: errors[0].message,
-            title: 'Error'
-          })
-        }
+        
+          if (errors) {
+            sendNotification({
+              backgroundColor:'error',
+              description : errors[0].message ,
+              title : 'Error'
+            });
+          }
       }
-      return response.data.updateMultipleProducts
+      
+      return response.data.updateMultipleProducts;
+
     } catch (e) {
       sendNotification({
-        backgroundColor: 'error',
-        description: 'Ocurrió un error al actualizar los productos',
-        title: 'Error'
-      })
-      return []
+          backgroundColor:'error',
+          description :'Ocurrió un error al actualizar los productos',
+          title :'Error'
+      });
+      
+      return [];
     }
-  }
+    
+   };
 
-  return {
-    updateProducts,
-    data,
-    loading,
-    error
-  }
-}
+   return {
+     updateProducts, 
+     data, 
+     loading, 
+     error
+   };
+};

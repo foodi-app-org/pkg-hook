@@ -2,10 +2,10 @@ import { useState } from 'react'
 
 export const useTokenCards = () => {
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [responseData, setResponseData] = useState(null)
 
-  const handleTokenCardsSubmit = async (postData) => {
+  const handleTokenCardsSubmit = async (postData: any) => {
     setLoading(true)
     setError(null)
     try {
@@ -28,7 +28,11 @@ export const useTokenCards = () => {
       setResponseData(responseData)
       return responseData
     } catch (error) {
-      setError(error.message)
+      if (error instanceof Error) {
+        setError(String(error.message))
+      } else {
+        setError(String(error))
+      }
       return {
 
       }

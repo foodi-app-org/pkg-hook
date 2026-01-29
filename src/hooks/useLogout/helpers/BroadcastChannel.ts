@@ -1,28 +1,69 @@
-function BroadcastChannel (name = 'nextauth.message') {
+/**
+ * Broadcast message shape
+ */
+export interface BroadcastMessage {
+  event?: string
+  data?: unknown
+  [key: string]: unknown
+}
+
+/**
+ * Receive callback type
+ */
+export type BroadcastReceiver = (message: BroadcastMessage) => void
+
+/**
+ * BroadcastChannel utility based on localStorage events.
+ * Keeps original behavior intact.
+ *
+ * @param {string} name - Channel name
+ * @returns {{
+ *   receive: (onReceive: BroadcastReceiver) => () => void
+ *   post: (message: BroadcastMessage) => void
+ * }}
+ */
+function BroadcastChannel(name: string = 'nextauth.message') {
   return {
-    receive: function (onReceive) {
-      const handler = function (event) {
+    /**
+     * Listen for broadcast messages
+     */
+    receive: function (onReceive: BroadcastReceiver): () => void {
+      const handler = function (event: StorageEvent): void {
         if (event.key !== name) return
-        const message = JSON.parse(event.newValue ?? '{}')
+
+        const message: BroadcastMessage = JSON.parse(
+          event.newValue ?? '{}'
+        )
+
         if (message?.event !== 'session' || !message?.data) return
+
         onReceive(message)
       }
+
       window.addEventListener('storage', handler)
-      return function () {
+
+      return function (): void {
         window.removeEventListener('storage', handler)
       }
     },
-    post: function (message) {
+
+    /**
+     * Post a broadcast message
+     */
+    post: function (message: BroadcastMessage): void {
       if (typeof window === 'undefined') return
+
       try {
         localStorage.setItem(
           name,
-          JSON.stringify({ ...message, timestamp: Date.now() })
+          JSON.stringify({
+            ...message,
+            timestamp: Date.now()
+          })
         )
       } catch {
-        // The localStorage API isn't always available.
-        // It won't work in private mode prior to Safari 11 for example.
-        // Notifications are simply dropped if an error is encountered.
+        // localStorage may be unavailable (private mode, Safari < 11, etc.)
+        // Messages are silently dropped to preserve original behavior.
       }
     }
   }

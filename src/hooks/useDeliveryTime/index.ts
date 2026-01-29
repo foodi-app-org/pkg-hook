@@ -16,7 +16,7 @@ export const useDeliveryTime = ({ initialTime = '' }) => {
    * Handles changes to the delivery time input.
    * @param {String} value - The input change value.
    */
-  const handleDeliveryTimeChange = (value) => {
+  const handleDeliveryTimeChange = (value: string) => {
     setDeliveryTime(value)
   }
 

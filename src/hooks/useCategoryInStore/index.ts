@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, ApolloError } from '@apollo/client'
 import { useState } from 'react'
 import {
   DELETE_ONE_CAT_PRODUCTS,
@@ -7,91 +7,150 @@ import {
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE_IN_CATEGORY } from './queries'
 
-export const useCategoryInStore = ({ catStoreId, setAlertBox = () => {} } = {}) => {
-  // STATES
-  const [categories, setOneCategoryInStore] = useState([])
+/**
+ * Generic alert box handler
+ */
+interface AlertBoxPayload {
+  title?: string
+  message: string
+  color: 'error' | 'success' | 'warning' | 'info'
+}
+
+type SetAlertBox = (payload: AlertBoxPayload) => void
+
+/**
+ * Category entity
+ */
+interface Category {
+  idPc: string
+  pState: string
+  [key: string]: unknown
+}
+
+/**
+ * Hook params
+ */
+interface UseCategoryInStoreParams {
+  catStoreId?: string
+  setAlertBox?: SetAlertBox
+}
+
+/**
+ * Hook return shape
+ */
+interface UseCategoryInStoreResult {
+  categories: Category[]
+  data: Category[]
+  loading: boolean
+  error?: ApolloError
+  handlerDeleteCategoryInStore: (category?: Category) => Promise<unknown> | void
+  handleUpdateCatInProduct: (params: { data?: Array<{ pId: string }> }) => Promise<void>
+}
+
+/**
+ * Custom hook to manage categories in store
+ */
+export const useCategoryInStore = ({
+  catStoreId,
+  setAlertBox = () => {}
+}: UseCategoryInStoreParams = {}): UseCategoryInStoreResult => {
+  const [categories, setOneCategoryInStore] = useState<Category[]>([])
+
   const [deleteCatOfProducts] = useMutation(DELETE_ONE_CAT_PRODUCTS, {
-    onError: (e) => {
+    onError: (e: ApolloError) => {
       setAlertBox({
-        message: e.graphQLErrors[0].message,
+        title: '',
+        message: e.graphQLErrors?.[0]?.message || 'Unexpected error',
         color: 'error'
       })
     },
-    update (cache) {
+    update: (cache) => {
       cache.modify({
         fields: {
           catProductsAll (dataOld = []) {
-            return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
+            return cache.writeQuery({
+              query: GET_ULTIMATE_CATEGORY_PRODUCTS,
+              data: dataOld
+            })
           }
         }
       })
     }
   })
+
   const [updatedCatWithProducts] = useMutation(UPDATE_CAT_IN_PRODUCT, {
-    onError: (e) => {
-      console.log({
-        message: e.graphQLErrors[0].message,
+    onError: (e: ApolloError) => {
+      console.error({
+        message: e.graphQLErrors?.[0]?.message || 'Unexpected error',
         color: 'error'
       })
     },
-    update (cache) {
+    update: (cache) => {
       cache.modify({
         fields: {
           catProductsAll (dataOld = []) {
-            return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
+            return cache.writeQuery({
+              query: GET_ULTIMATE_CATEGORY_PRODUCTS,
+              data: dataOld
+            })
           }
         }
       })
     }
   })
-  // QUERIES
+
   const { data } = useQuery(GET_ULTIMATE_CATEGORY_PRODUCTS)
-  const {
-    loading,
-    error
-  } = useQuery(GET_ONE_STORE_IN_CATEGORY, {
+
+  const { loading, error } = useQuery(GET_ONE_STORE_IN_CATEGORY, {
     variables: {
       catStore: catStoreId
     },
+    skip: !catStoreId,
     onError: () => {
-      console.log({ message: '', duration: 5000 })
+      console.warn({ message: 'Failed loading category store', duration: 5000 })
     },
-    onCompleted: () => {
-      if (data?.getOneCatStore) {
-        setOneCategoryInStore(data?.getOneCatStore)
+    onCompleted: (response) => {
+      if (response?.getOneCatStore) {
+        setOneCategoryInStore(response.getOneCatStore)
       }
     }
   })
-  // HANDLESS
-  const handlerDeleteCategoryInStore = (category) => {
+
+  /**
+   * Delete category from products
+   */
+  const handlerDeleteCategoryInStore = (category?: Category) => {
     const { pState, idPc } = category || {}
     if (!idPc || !pState) return
+
     return deleteCatOfProducts({
-      variables: { idPc, pState },
-      update (cache) {
-        cache.modify({
-          fields: {
-            catProductsAll (dataOld = []) {
-              return cache.writeQuery({ query: GET_ULTIMATE_CATEGORY_PRODUCTS, data: dataOld })
-            }
-          }
-        })
-      }
+      variables: { idPc, pState }
     })
   }
-  const handleUpdateCatInProduct = async ({ data }) => {
+
+  /**
+   * Update category in products
+   */
+  const handleUpdateCatInProduct = async ({
+    data
+  }: {
+    data?: Array<{ pId: string }>
+  }): Promise<void> => {
+    if (!data?.length) return
+
     await updatedCatWithProducts({
       variables: {
         input: {
-          setData: data?.map(x => { return { idProduct: x.pId } }),
+          setData: data.map(({ pId }) => ({ idProduct: pId })),
           idCat: ''
         }
       }
     })
   }
+
   return {
     categories,
-    data: data?.catProductsAll || [],
+    data: data?.catProductsAll ?? [],
     loading,
     error,
     handlerDeleteCategoryInStore,

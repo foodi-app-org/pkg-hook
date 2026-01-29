@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { gql, useQuery } from '@apollo/client'
 
+/**
+ * GraphQL query to validate free subscription
+ */
 const VALIDATE_SUBSCRIPTION_QUERY = gql`
   query validateFreeSubscription($idStore: ID) {
     validateFreeSubscription(idStore: $idStore) {
@@ -13,29 +16,97 @@ const VALIDATE_SUBSCRIPTION_QUERY = gql`
   }
 `
 
-export const useSubscriptionValidation = (idStore) => {
-  const { loading, error, data } = useQuery(VALIDATE_SUBSCRIPTION_QUERY, {
-    variables: { idStore }
-  })
-  const [daysRemaining, setDaysRemaining] = useState(null)
-  const [daysElapsed, setDaysElapsed] = useState(null)
+/**
+ * Subscription entity returned by the API
+ */
+export interface SubscriptionData {
+  subscriptionId: string
+  status: string
+  businessName: string
+  currentPeriodEnd: string
+  currentPeriodStart: string
+}
+
+/**
+ * GraphQL query response shape
+ */
+interface ValidateSubscriptionResponse {
+  validateFreeSubscription: SubscriptionData
+}
+
+/**
+ * Hook return type
+ */
+export interface UseSubscriptionValidationResult {
+  loading: boolean
+  error?: Error
+  subscriptionData?: SubscriptionData
+  daysRemaining: number | null
+  daysElapsed: number | null
+}
+
+/**
+ * Hook to validate store subscription and calculate elapsed/remaining days.
+ * Keeps original behavior and calculations intact.
+ *
+ * @param {string} idStore - Store identifier
+ * @returns {UseSubscriptionValidationResult}
+ */
+export const useSubscriptionValidation = (
+  idStore: string
+): UseSubscriptionValidationResult => {
+  const { loading, error, data } = useQuery<ValidateSubscriptionResponse>(
+    VALIDATE_SUBSCRIPTION_QUERY,
+    {
+      variables: { idStore }
+    }
+  )
+
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null)
+  const [daysElapsed, setDaysElapsed] = useState<number | null>(null)
 
   useEffect(() => {
-    if (data && data.validateFreeSubscription) {
-      const { currentPeriodEnd, currentPeriodStart } = data.validateFreeSubscription
+    if (data?.validateFreeSubscription) {
+      const { currentPeriodEnd, currentPeriodStart } =
+        data.validateFreeSubscription
+
       const currentDate = new Date()
-      const endOfPeriod = new Date(parseInt(currentPeriodEnd))
-      const startOfPeriod = new Date(parseInt(currentPeriodStart))
+      const endOfPeriod = new Date(parseInt(currentPeriodEnd, 10))
+      const startOfPeriod = new Date(parseInt(currentPeriodStart, 10))
 
-      const differenceInTimeUntilEnd = endOfPeriod.getTime() - currentDate.getTime()
-      const differenceInDaysUntilEnd = Math.ceil(differenceInTimeUntilEnd / (1000 * 3600 * 24))
-      setDaysRemaining(isNaN(differenceInDaysUntilEnd) ? 0 : differenceInDaysUntilEnd)
+      const differenceInTimeUntilEnd =
+        endOfPeriod.getTime() - currentDate.getTime()
 
-      const differenceInTimeSinceStart = currentDate.getTime() - startOfPeriod.getTime()
-      const differenceInDaysSinceStart = Math.ceil(differenceInTimeSinceStart / (1000 * 3600 * 24))
-      setDaysElapsed(isNaN(differenceInDaysSinceStart) ? 0 : differenceInDaysSinceStart)
+      const differenceInDaysUntilEnd = Math.ceil(
+        differenceInTimeUntilEnd / (1000 * 3600 * 24)
+      )
+
+      setDaysRemaining(
+        isNaN(differenceInDaysUntilEnd)
+          ? 0
+          : differenceInDaysUntilEnd
+      )
+
+      const differenceInTimeSinceStart =
+        currentDate.getTime() - startOfPeriod.getTime()
+
+      const differenceInDaysSinceStart = Math.ceil(
+        differenceInTimeSinceStart / (1000 * 3600 * 24)
+      )
+
+      setDaysElapsed(
+        isNaN(differenceInDaysSinceStart)
+          ? 0
+          : differenceInDaysSinceStart
+      )
     }
   }, [data])
 
-  return { loading, error, subscriptionData: data?.validateFreeSubscription, daysRemaining, daysElapsed }
+  return {
+    loading,
+    error: error ?? undefined,
+    subscriptionData: data?.validateFreeSubscription,
+    daysRemaining,
+    daysElapsed
+  }
 }

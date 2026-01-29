@@ -12,6 +12,13 @@ export const useUpdateExtProductFoodsOptional = () => {
     OptionalProName,
     required,
     numbersOptionalOnly
+  }: {
+    pId: string
+    code: string
+    opExPid: string
+    OptionalProName?: string
+    required?: boolean
+    numbersOptionalOnly?: number | string
   }) => {
     return await updateExtProductOptional({
       variables: {
@@ -25,11 +32,12 @@ export const useUpdateExtProductFoodsOptional = () => {
         }
       },
       update: (cache, { data: { ExtProductFoodsOptionalAll } }) => {
-        return updateCacheMod({
+        updateCacheMod({
           cache,
           query: GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
           nameFun: 'ExtProductFoodsOptionalAll',
-          dataNew: ExtProductFoodsOptionalAll
+          dataNew: ExtProductFoodsOptionalAll,
+          type: 1
         })
       }
     })
