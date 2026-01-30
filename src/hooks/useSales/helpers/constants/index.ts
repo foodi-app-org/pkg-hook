@@ -1,5 +1,5 @@
-import { SalesState } from "../../types";
-import { TypeDiscount } from "../apply-discount-to-cart.utils";
+import { SalesState } from '../../types'
+import { TypeDiscount } from '../apply-discount-to-cart.utils'
 
 export enum SalesActionTypes {
     ADD_TO_CART = 'ADD_TO_CART',
@@ -22,17 +22,17 @@ export enum SalesActionTypes {
     APPLY_DISCOUNT = 'APPLY_DISCOUNT'
 }
 export const initialStateSales: SalesState = {
-    animateType: '',
-    counter: 0,
-    discountAmount: 0,
-    discountPercent: 0,
-    discountType: TypeDiscount.PERCENT,
-    itemsInCart: 0,
-    payId: '',
-    priceRange: 0,
-    PRODUCT: [],
-    sortBy: null,
-    startAnimateUp: '',
-    totalAmount: 0,
-    totalPrice: 0,
+  animateType: '',
+  counter: 0,
+  discountAmount: 0,
+  discountPercent: 0,
+  discountType: TypeDiscount.PERCENT,
+  itemsInCart: 0,
+  payId: '',
+  priceRange: 0,
+  PRODUCT: [],
+  sortBy: null,
+  startAnimateUp: '',
+  totalAmount: 0,
+  totalPrice: 0
 }

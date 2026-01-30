@@ -204,7 +204,7 @@ export const GET_MIN_PEDIDO = gql`
   }
 `
 
-// eslint-disable-next-line camelcase
+ 
 export const GET_All_RATING_STORE = gql`
   query getAllRating($idStore: ID) {
     getAllRating(idStore: $idStore) {

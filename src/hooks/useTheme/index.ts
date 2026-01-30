@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import { Cookies } from '../../cookies'
 
 enum Theme {
@@ -16,6 +17,7 @@ export const useTheme = () => {
   const [theme, setTheme] = useState<Theme>(Theme.LIGHT)
   /**
    * Applies theme to DOM and persists it.
+   * @param theme
    */
   const applyTheme = (theme: Theme): void => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -58,6 +60,6 @@ export const useTheme = () => {
     setTheme: applyTheme,
     toggleTheme,
     initTheme,
-    theme,
+    theme
   }
 }

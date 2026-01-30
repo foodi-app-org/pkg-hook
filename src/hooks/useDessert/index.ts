@@ -2,15 +2,18 @@ import {
   useState,
   useEffect
 } from 'react'
+
 import { MockData } from '../../mock'
 import { RandomCode, updateCacheMod } from '../../utils'
 import { useUpdateExtProductFoodsOptional } from '../updateExtProductFoodsOptional'
-import { useUpdateExtProductFoodsSubOptional } from '../useUpdateExtProductFoodsSubOptional'
-import { useRemoveExtraProductFoodsOptional } from '../useRemoveExtraProductFoodsOptional'
-import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useRemoveExtraProductFoodsOptional/queries'
-import { transformDataToDessert } from './helpers'
 import { useDeleteSubProductOptional } from '../useDeleteSubProductOptional'
 import { useEditSubProductOptional } from '../useEditSubProductOptional'
+import { useRemoveExtraProductFoodsOptional } from '../useRemoveExtraProductFoodsOptional'
+import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useRemoveExtraProductFoodsOptional/queries'
+import { useUpdateExtProductFoodsSubOptional } from '../useUpdateExtProductFoodsSubOptional'
+
+import { transformDataToDessert } from './helpers'
+
 
 export const useDessert = ({
   pId = null,
@@ -32,13 +35,13 @@ export const useDessert = ({
   const handleCleanData = () => {
     setData(MockData)
   }
-  const dataListIds = data?.listIds?.filter(x => x !== '01list')
+  const dataListIds = data?.listIds?.filter(x => {return x !== '01list'})
 
   /**
- * Checks if all required lists have the maximum number of cards.
- *
- * @return {boolean} Returns true if all required lists have the maximum number of cards, otherwise false.
- */
+   * Checks if all required lists have the maximum number of cards.
+   *
+   * @return {boolean} Returns true if all required lists have the maximum number of cards, otherwise false.
+   */
   const isCompleteRequired = dataListIds?.every(listID => {
     try {
       if (!Array.isArray(dataListIds) || data === null) {
@@ -95,13 +98,13 @@ export const useDessert = ({
   }
 
   /**
-  * Handles the removal of a list from the data state and performs additional operations if needed.
-  * @param {number} i - The index of the list to be removed.
-  * @param {string} listID - The ID of the list to be removed (optional).
-  * @throws {Error} Will throw an error if the provided index (i) is not a non-negative number.
-  * @throws {Error} Will throw an error if the provided index (i) is out of range.
-  * @throws {Error} Will throw an error if the provided listID is invalid (optional validation).
-  */
+   * Handles the removal of a list from the data state and performs additional operations if needed.
+   * @param {number} i - The index of the list to be removed.
+   * @param {string} listID - The ID of the list to be removed (optional).
+   * @throws {Error} Will throw an error if the provided index (i) is not a non-negative number.
+   * @throws {Error} Will throw an error if the provided index (i) is out of range.
+   * @throws {Error} Will throw an error if the provided listID is invalid (optional validation).
+   */
   const handleRemoveList = (i, listID) => {
     // Validate that the provided index (i) is a non-negative number
     if (typeof i !== 'number' || i < 0) {
@@ -117,7 +120,7 @@ export const useDessert = ({
     }
 
     // Remove the list with the specified index from the listIdsCopy array
-    const Lines = data?.listIds.filter((_, index) => index !== i)?.filter(x => x !== '01list')
+    const Lines = data?.listIds.filter((_, index) => {return index !== i})?.filter(x => {return x !== '01list'})
     // Update the data state with the modified listIdsCopy array
     setData({
       listIds: listID ? Lines.filter((subItem) => { return subItem !== listID }) : Lines,
@@ -158,6 +161,7 @@ export const useDessert = ({
    * @param {Object} params - The parameters for removing the item.
    * @param {string} params.listID - The ID of the list from which the item will be removed.
    * @param {string} params.id - The ID of the item to be removed.
+   * @param params.isCustomSubOpExPid
    * @throws {Error} Will throw an error if the provided listID does not exist in the data state.
    * @throws {Error} Will throw an error if the provided listID exists but the corresponding list does not have a cards array.
    */
@@ -191,7 +195,7 @@ export const useDessert = ({
       const currentList = data.lists[listID]
 
       // Filter out the item with the specified ID from the current list's cards array
-      const filteredCart = currentList?.cards?.filter((cart) => cart.id !== id)
+      const filteredCart = currentList?.cards?.filter((cart) => {return cart.id !== id})
 
       // Update the current list's cards with the filtered array to remove the specified item
       setData({
@@ -210,22 +214,22 @@ export const useDessert = ({
   }
 
   /**
- * Edits a single item within a list.
- *
- * The `editOneItem` function is responsible for editing the title of a specific item in a list.
- * It first updates the state of the selected item, then searches for the item in the current list
- * using its ID, and compares the existing title with the new title provided. If the title is
- * different and not null, it makes an API call (`editExtFoodSubsOptional`) to update the
- * title in the database. If the update is successful, a success notification is sent, and
- * the local state is updated to reflect the changes in the item. The function handles errors
- * internally and logs them to the console.
- *
- * @param {Object} params - Parameters for editing an item.
- * @param {string} params.listID - The ID of the list containing the item to be edited.
- * @param {string} params.id - The ID of the specific item to be edited.
- * @param {string|null} [params.title=null] - The new title for the item. If null, no
- *                                            update is performed.
- */
+   * Edits a single item within a list.
+   *
+   * The `editOneItem` function is responsible for editing the title of a specific item in a list.
+   * It first updates the state of the selected item, then searches for the item in the current list
+   * using its ID, and compares the existing title with the new title provided. If the title is
+   * different and not null, it makes an API call (`editExtFoodSubsOptional`) to update the
+   * title in the database. If the update is successful, a success notification is sent, and
+   * the local state is updated to reflect the changes in the item. The function handles errors
+   * internally and logs them to the console.
+   *
+   * @param {Object} params - Parameters for editing an item.
+   * @param {string} params.listID - The ID of the list containing the item to be edited.
+   * @param {string} params.id - The ID of the specific item to be edited.
+   * @param {string|null} [params.title=null] - The new title for the item. If null, no
+   *                                            update is performed.
+   */
   const editOneItem = ({
     listID = '',
     id = '',
@@ -299,16 +303,16 @@ export const useDessert = ({
     })
   }
   /**
- * Edit a extra.
- * @async
- * @param {Object} options - Opciones para la edición del extra.
- * @param {string} options.id - ID del extra.
- * @param {number|null} options.numberLimit - Límite de número para el extra.
- * @param {string} options.title - Título del extra.
- * @param {boolean} options.required - Indica si el extra es requerido.
- * @throws {Error} Se lanza un error si no se proporciona un ID válido.
- * @returns {Promise<void>}
- */
+   * Edit a extra.
+   * @async
+   * @param {Object} options - Opciones para la edición del extra.
+   * @param {string} options.id - ID del extra.
+   * @param {number|null} options.numberLimit - Límite de número para el extra.
+   * @param {string} options.title - Título del extra.
+   * @param {boolean} options.required - Indica si el extra es requerido.
+   * @throws {Error} Se lanza un error si no se proporciona un ID válido.
+   * @returns {Promise<void>}
+   */
   const editOneExtra = async ({
     id = '',
     numberLimit = null,
@@ -440,7 +444,7 @@ export const useDessert = ({
     const required = setCheck.exState ? 1 : 0
 
     // Add the new list to the beginning of the data state
-    setData(prevData => ({
+    setData(prevData => {return {
       listIds: [newListId, ...prevData.listIds], // Agrega el nuevo ID al principio del array
       lists: {
         ...prevData.lists,
@@ -453,7 +457,7 @@ export const useDessert = ({
           cards: []
         }
       }
-    }))
+    }})
 
     // Update the external product with the information of the new list
     handleUpdateExtProduct({
@@ -469,11 +473,11 @@ export const useDessert = ({
   }
 
   /**
-  * Handles the change of items in a specific list.
-  * @param {Object} params - The parameters for handling the change.
-  * @param {string} params.listID - The ID of the list where the change is happening.
-  * @param {Object} params.value - The event object containing the new value for the list items.
-  */
+   * Handles the change of items in a specific list.
+   * @param {Object} params - The parameters for handling the change.
+   * @param {string} params.listID - The ID of the list where the change is happening.
+   * @param {Object} params.value - The event object containing the new value for the list items.
+   */
   const handleChangeItems = ({ listID, value: e }) => {
     const value = e.target.value
     setValueItems(value)

@@ -55,12 +55,12 @@ export const useRegisterDeviceUser = () => {
 
       if (result.data?.newRegisterDeviceUser?.success) {
         return { success: true, data: result.data.newRegisterDeviceUser.data }
-      } else {
-        return {
-          success: false,
-          errors: result.data?.newRegisterDeviceUser?.errors || []
-        }
+      } 
+      return {
+        success: false,
+        errors: result.data?.newRegisterDeviceUser?.errors || []
       }
+      
     } catch (err) {
       console.error('Error while registering device user:', err)
       return { success: false, errors: [{ message: err.message }] }

@@ -1,16 +1,17 @@
 import { useQuery } from '@apollo/client'
 import { useState } from 'react'
+
 import { SPANISH_MONTHS } from '../../../utils/index'
 import { GET_ALL_SALES } from '../../useReport/queries'
 
 // Función para calcular el total de ventas por mes
 const calculateSalesByMonth = (salesData) => {
   try {
-    const result = Array.from({ length: 12 }, (_, mes) => ({
+    const result = Array.from({ length: 12 }, (_, mes) => {return {
       Mes: mes,
       Year: new Date().getFullYear(),
       totalProductsPrice: 0
-    }))
+    }})
 
     salesData?.forEach((value) => {
       const mes = new Date(value.pDatCre).getMonth()
@@ -26,15 +27,15 @@ const calculateSalesByMonth = (salesData) => {
 // Función para llenar los meses faltantes
 const fillMissingMonths = (data) => {
   try {
-    const allMonths = Array.from({ length: 12 }, (_, i) => i)
-    const missingMonths = allMonths.filter(month => !data.some(data => data.Mes === month))
+    const allMonths = Array.from({ length: 12 }, (_, i) => {return i})
+    const missingMonths = allMonths.filter(month => {return !data.some(data => {return data.Mes === month})})
     return data.concat(
-      missingMonths.map(element => ({
+      missingMonths.map(element => {return {
         Mes: element,
         totalProductsPrice: 0,
         Year: ''
-      }))
-    ).sort((a, b) => a.Mes - b.Mes)
+      }})
+    ).sort((a, b) => {return a.Mes - b.Mes})
   } catch (error) {
     return []
   }
@@ -42,16 +43,16 @@ const fillMissingMonths = (data) => {
 // eslint-disable-next-line prefer-const
 let chartTypeYear = ''
 // Función para obtener los datos del gráfico
-const getChartData = (asFilter, newResult, result, chartType) => ({
+const getChartData = (asFilter, newResult, result, chartType) => {return {
   labels: asFilter
-    ? newResult.map(data => SPANISH_MONTHS[data.Mes])
-    : result.map(data => SPANISH_MONTHS[data.Mes]),
+    ? newResult.map(data => {return SPANISH_MONTHS[data.Mes]})
+    : result.map(data => {return SPANISH_MONTHS[data.Mes]}),
   datasets: [
     {
       label: `Ventas por meses del año ${asFilter ? chartTypeYear : ''}`,
       data: asFilter
-        ? newResult.map(data => data.totalProductsPrice)
-        : result.map(data => data.totalProductsPrice),
+        ? newResult.map(data => {return data.totalProductsPrice})
+        : result.map(data => {return data.totalProductsPrice}),
       backgroundColor: [
         'rgba(255, 99, 132, 0.2)',
         'rgba(54, 162, 235, 0.2)',
@@ -62,13 +63,13 @@ const getChartData = (asFilter, newResult, result, chartType) => ({
       ],
       borderColor: chartType === 'bar'
         ? [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)'
-          ]
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+        ]
         : 'rgb(255 0 0)',
       tension: 0.6,
       fill: false,
@@ -78,7 +79,7 @@ const getChartData = (asFilter, newResult, result, chartType) => ({
       minBarLength: 3
     }
   ]
-})
+}}
 
 // Función para agrupar los datos por año
 const groupSalesByYear = (salesData = []) => {
@@ -107,7 +108,7 @@ const getUniqueYears = (salesData = []) => {
         years.push(y)
       }
     })
-    return years.sort((a, b) => b - a)
+    return years.sort((a, b) => {return b - a})
   } catch (error) {
     return []
   }
@@ -126,7 +127,7 @@ export const useChartData = ({ year }) => {
 
   const dataChart = getChartData(asFilter, newResult, filledResult, chartType)
 
-  // eslint-disable-next-line no-unused-vars
+   
   const groupedData = groupSalesByYear(data?.getAllSalesStore)
   const years = getUniqueYears(data?.getAllSalesStore)
 
@@ -136,17 +137,17 @@ export const useChartData = ({ year }) => {
     setChartTypeYear(currentYear || '')
 
     if (filledResult?.length > 0) {
-      const filterToYear = filledResult.filter((elem) => elem?.Year === currentYear)
-      // eslint-disable-next-line no-undef
-      const missingNewMonths = allMonths?.filter(month => !filterToYear.some(data => data.Mes === month))
+      const filterToYear = filledResult.filter((elem) => {return elem?.Year === currentYear})
+       
+      const missingNewMonths = allMonths?.filter(month => {return !filterToYear.some(data => {return data.Mes === month})})
 
       const newFilteredResult = filterToYear.concat(
-        missingNewMonths.map(element => ({
+        missingNewMonths.map(element => {return {
           Mes: element,
           totalProductsPrice: 0,
           Year: ''
-        }))
-      ).sort((a, b) => a.Mes - b.Mes)
+        }})
+      ).sort((a, b) => {return a.Mes - b.Mes})
 
       setNewResult(newFilteredResult)
       return newFilteredResult
@@ -158,7 +159,7 @@ export const useChartData = ({ year }) => {
     setChartTypeYear(new Date().getFullYear())
   }
 
-  const sortYear = () => years.sort((a, b) => b - a)
+  const sortYear = () => {return years.sort((a, b) => {return b - a})}
   const labelTitle = `Ventas por meses del año ${asFilter ? chartTypeYear : ''}`
   const organiceYears = sortYear()
   const options = {

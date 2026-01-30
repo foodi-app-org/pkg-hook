@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
 import { useApolloClient, useQuery } from '@apollo/client'
-import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con la importación correcta de tu consulta
+import { useState, useEffect } from 'react'
+
+
 import { errorHandler } from '../../config/client'
 import { useLogout } from '../useLogout'
+
+import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con la importación correcta de tu consulta
 
 export const useStore = ({
   isClient = false,
@@ -31,7 +34,7 @@ export const useStore = ({
     callback(store)
   }, [cachedData, store])
 
-  if (isClient && !!idStore) {
+  if (isClient && Boolean(idStore)) {
     const {
       data,
       refetch,
@@ -51,30 +54,30 @@ export const useStore = ({
       loading: loadingClient,
       error: errorStoreClient
     }]
-  } else {
-    const { loading: loadingServer } = useQuery(GET_ONE_STORE, {
-      skip: isClient && !idStore,
-      variables: {
-        idStore
-      },
-      fetchPolicy: 'cache-first',
-      onCompleted: (data) => {
-        const { getStore } = data || {}
-        setStore(getStore)
-        setLoading(false)
-      },
-      onError: (err) => {
-        if (err.networkError && err.networkError.result) {
-          const response = errorHandler(err.networkError.result)
-          if (response) {
-            onClickLogout()
-          }
+  } 
+  const { loading: loadingServer } = useQuery(GET_ONE_STORE, {
+    skip: isClient && !idStore,
+    variables: {
+      idStore
+    },
+    fetchPolicy: 'cache-first',
+    onCompleted: (data) => {
+      const { getStore } = data || {}
+      setStore(getStore)
+      setLoading(false)
+    },
+    onError: (err) => {
+      if (err.networkError && err.networkError.result) {
+        const response = errorHandler(err.networkError.result)
+        if (response) {
+          onClickLogout()
         }
-        setError(err)
-        setLoading(false)
       }
-    })
+      setError(err)
+      setLoading(false)
+    }
+  })
 
-    return [store, { loading: load || loadingServer || loading, error }]
-  }
+  return [store, { loading: load || loadingServer || loading, error }]
+  
 }

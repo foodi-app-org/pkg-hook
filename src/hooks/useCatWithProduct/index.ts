@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_ALL_CATEGORIES_WITH_PRODUCT } from './queries'
 import { GetCatProductsWithProductResponse, ICatWithProduct } from './types'
 

@@ -1,11 +1,11 @@
 export const transformData = (dataExtra) => {
-  const transformedData = dataExtra?.map(item => ({
+  const transformedData = dataExtra?.map(item => {return {
     extraName: item.extraName || '',
     extraPrice: item?.extraPrice?.toString() || '',
-    exState: !!item.exState,
+    exState: Boolean(item.exState),
     forEdit: true,
     ...item
-  }))
+  }})
 
   return transformedData
 }
@@ -54,7 +54,7 @@ export const updateErrorFieldByIndex = ({
     // Utiliza map para iterar sobre cada elemento en checkNumberRange
     const updatedLines = updatedLineItems.Lines.map((line, index) => {
       // Verifica si el índice está dentro del rango de LineItems.Lines
-      if (checkNumberRange.some(item => item.index === index)) {
+      if (checkNumberRange.some(item => {return item.index === index})) {
         // Crea una copia del elemento actual
         const updatedLine = { ...line }
 

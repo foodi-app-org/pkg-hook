@@ -1,4 +1,4 @@
-import { gql, useMutation } from '@apollo/client';
+import { gql, useMutation } from '@apollo/client'
 
 /**
  * GraphQL mutation for updating a dashboard component.
@@ -24,7 +24,7 @@ const UPDATE_DASHBOARD_COMPONENT = gql`
       }
     }
   }
-`;
+`
 
 /**
  * Types for the mutation response and input.
@@ -66,7 +66,7 @@ export const useUpdateDashboardComponent = () => {
   const [mutate, { loading, error, data }] = useMutation<
     UpdateDashboardComponentResponse,
     { input: UpdateDashboardComponentInput[] }
-  >(UPDATE_DASHBOARD_COMPONENT);
+  >(UPDATE_DASHBOARD_COMPONENT)
 
   /**
    * Calls the mutation with the provided input.
@@ -74,18 +74,18 @@ export const useUpdateDashboardComponent = () => {
    */
   const updateComponent = async (input: UpdateDashboardComponentInput[]) => {
     try {
-      const response = await mutate({ variables: { input } });
-      return response.data?.updateDashboardComponent;
+      const response = await mutate({ variables: { input } })
+      return response.data?.updateDashboardComponent
     } catch (err) {
-      console.error('UpdateDashboardComponent Error:', err);
-      throw err;
+      console.error('UpdateDashboardComponent Error:', err)
+      throw err
     }
-  };
+  }
 
   return {
     updateComponent,
     loading,
     error,
-    data: data?.updateDashboardComponent,
-  };
-};
+    data: data?.updateDashboardComponent
+  }
+}

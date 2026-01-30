@@ -1,13 +1,11 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
-const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8')) as { version: string }
-
+import pkg from '../package.json';
 export * from './hooks/index'
 export * from './utils'
 export * from './utils/generateCode'
 export * from './cookies'
 export * from './security'
+export * from './config/client'
 
-// version
-export const version = packageJson.version
+// Export the version from package.json
+export const version = pkg.version;
+

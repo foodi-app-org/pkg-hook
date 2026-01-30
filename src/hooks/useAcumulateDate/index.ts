@@ -5,6 +5,10 @@ export const getDateParts = (isString: string) => {
   const [year, month, day, hr, min, sec] = isString.split(/\D/g)
   return { year, month, day, hr, min, sec }
 }
+/**
+ *
+ * @param arr
+ */
 export function groupDates(arr: Array<{ x: string; y: number }>) {
   const total = arr.reduce((a: number, b: { x: string; y: number }) => {
     const { hr } = getDateParts(b.x)

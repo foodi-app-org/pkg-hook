@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_ALL_PRODUCT_STORE_RECOMENDED } from './queries'
 
 export const useGetFoodRecomended = ({

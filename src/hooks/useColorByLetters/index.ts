@@ -1,14 +1,11 @@
 import { randomNumber } from './helpers'
 import { BACKGROUND_COLORS, TEXT_COLORS } from './helpers/colors'
 
-export const useColorByLetters = ({
-  value = ''
-} = {
-  value: ''
-}) => {
+export const useColorByLetters = (params?: { value?: string }) => {
+  const value = params?.value ?? '';
   const key = randomNumber({ value, min: 0, max: 19 })
 
-  const getCustomColors = (text) => {
+  const getCustomColors = (text: string) => {
     const key = randomNumber({ text, min: 0, max: 19 })
     return {
       key,

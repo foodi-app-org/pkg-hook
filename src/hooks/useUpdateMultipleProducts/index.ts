@@ -1,7 +1,9 @@
-import { useMutation } from '@apollo/client';
-import { UPDATE_MULTIPLE_PRODUCTS } from './queries';
-import { CATEGORY_EMPTY } from '../../utils/index';
-import { useCategoriesProduct } from '../useCategoriesProduct';
+import { useMutation } from '@apollo/client'
+
+import { CATEGORY_EMPTY } from '../../utils/index'
+import { useCategoriesProduct } from '../useCategoriesProduct'
+
+import { UPDATE_MULTIPLE_PRODUCTS } from './queries'
 
 interface UpdateMultipleProductsProps {
   sendNotification?: (notification: Notification) => void;
@@ -36,11 +38,11 @@ export const useUpdateMultipleProducts = ({
     data,
     loading,
     error
-  }] = useMutation(UPDATE_MULTIPLE_PRODUCTS);
+  }] = useMutation(UPDATE_MULTIPLE_PRODUCTS)
 
-  const [dataCategoriesProducts] = useCategoriesProduct();
+  const [dataCategoriesProducts] = useCategoriesProduct()
   
-  const findEmptyCategory = dataCategoriesProducts?.find(({ pName }: { pName: string }) => pName === CATEGORY_EMPTY);
+  const findEmptyCategory = dataCategoriesProducts?.find(({ pName }: { pName: string }) => {return pName === CATEGORY_EMPTY})
   
   const updateProducts = async (products: Product[]): Promise<any[]> => {
     
@@ -53,7 +55,7 @@ export const useUpdateMultipleProducts = ({
         CANTIDAD: stock = 0,
         'IMPUESTO (%)': vat,
         CODIGO_DE_BARRAS: ProBarCode
-      } = product;
+      } = product
 
       return {
         idStore: '',
@@ -75,41 +77,41 @@ export const useUpdateMultipleProducts = ({
         ProWeight: '',
         ProOutstanding: 0,
         ProDelivery: 0
-      };
-    });
+      }
+    })
 
     try {
-      const response = await updateMultipleProducts({ variables: { input: newProducts } });
+      const response = await updateMultipleProducts({ variables: { input: newProducts } })
       
       for (const { errors } of response.data.updateMultipleProducts) {
         
-          if (errors) {
-            sendNotification({
-              backgroundColor:'error',
-              description : errors[0].message ,
-              title : 'Error'
-            });
-          }
+        if (errors) {
+          sendNotification({
+            backgroundColor:'error',
+            description : errors[0].message ,
+            title : 'Error'
+          })
+        }
       }
       
-      return response.data.updateMultipleProducts;
+      return response.data.updateMultipleProducts
 
     } catch (e) {
       sendNotification({
-          backgroundColor:'error',
-          description :'Ocurrió un error al actualizar los productos',
-          title :'Error'
-      });
+        backgroundColor:'error',
+        description :'Ocurrió un error al actualizar los productos',
+        title :'Error'
+      })
       
-      return [];
+      return []
     }
     
-   };
+  }
 
-   return {
-     updateProducts, 
-     data, 
-     loading, 
-     error
-   };
-};
+  return {
+    updateProducts, 
+    data, 
+    loading, 
+    error
+  }
+}

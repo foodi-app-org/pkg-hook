@@ -1,18 +1,25 @@
 export const createImage = (url) =>
-  new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues on CodeSandbox
-    image.src = url
-  })
+{return new Promise((resolve, reject) => {
+  const image = new Image()
+  image.addEventListener('load', () => {return resolve(image)})
+  image.addEventListener('error', (error) => {return reject(error)})
+  image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues on CodeSandbox
+  image.src = url
+})}
 
+/**
+ *
+ * @param degreeValue
+ */
 export function getRadianAngle(degreeValue) {
   return (degreeValue * Math.PI) / 180
 }
 
 /**
  * Returns the new bounding area of a rotated rectangle.
+ * @param width
+ * @param height
+ * @param rotation
  */
 export function rotateSize(width, height, rotation) {
   const rotRad = getRadianAngle(rotation)
@@ -21,7 +28,7 @@ export function rotateSize(width, height, rotation) {
     width:
       Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
     height:
-      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height)
   }
 }
 
@@ -30,6 +37,10 @@ export function rotateSize(width, height, rotation) {
  */
 /**
  * This function was adapted from the one in the ReadMe of https://github.com/DominicTobias/react-image-crop
+ * @param imageSrc
+ * @param pixelCrop
+ * @param rotation
+ * @param flip
  */
 export async function getCroppedImg(
   imageSrc,
@@ -103,6 +114,11 @@ export async function getCroppedImg(
   })
 }
 
+/**
+ *
+ * @param imageSrc
+ * @param rotation
+ */
 export async function getRotatedImage(imageSrc, rotation = 0) {
   const image = await createImage(imageSrc)
   const canvas = document.createElement('canvas')

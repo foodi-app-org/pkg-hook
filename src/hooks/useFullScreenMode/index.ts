@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import styled from 'styled-components'
 
 export const useFullscreenMode = () => {
   const [isFullscreen, setFullscreen] = useState(false)
@@ -56,10 +55,7 @@ export const useFullscreenMode = () => {
   }
 
   const ToggleIcon = (
-    <Button onDoubleClick={() => { return (!isFullscreen ? goFullscreen() : exitFullScreen()) }}>{!isFullscreen ? 'FullScreen' : 'Normal'}</Button>
+    <button onDoubleClick={() => { return (!isFullscreen ? goFullscreen() : exitFullScreen()) }}>{!isFullscreen ? 'FullScreen' : 'Normal'}</button>
   )
   return [elementRef, ToggleIcon] // Icon, ref
 }
-const Button = styled.button`
-
-`

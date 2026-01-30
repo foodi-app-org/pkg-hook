@@ -1,6 +1,7 @@
 /**
  * Reads EXIF orientation from a JPEG file (native, no dependencies)
  * @param {File} file
+ * @param validTypes
  * @returns {Promise<number>} Orientation value from 1 to 8
  */
 export const getOrientation = (file: File, validTypes: string[]): Promise<number> => {
@@ -9,9 +10,9 @@ export const getOrientation = (file: File, validTypes: string[]): Promise<number
     reader.onload = (event) => {
       const view = new DataView(event.target?.result as ArrayBuffer)
 
-    if (!validTypes.includes(file.type)) {
-      return reject(new Error(`Archivo no soportado: ${file.type}`))
-    }
+      if (!validTypes.includes(file.type)) {
+        return reject(new Error(`Archivo no soportado: ${file.type}`))
+      }
 
       let offset = 2
       const length = view.byteLength
@@ -47,7 +48,7 @@ export const getOrientation = (file: File, validTypes: string[]): Promise<number
       resolve(1) // por defecto
     }
 
-    reader.onerror = () => reject(new Error('Error leyendo archivo'))
+    reader.onerror = () => {return reject(new Error('Error leyendo archivo'))}
     reader.readAsArrayBuffer(file)
   })
 }

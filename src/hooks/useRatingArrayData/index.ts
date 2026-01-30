@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
 import { useQuery } from '@apollo/client'
-// eslint-disable-next-line camelcase
+import { useState, useEffect } from 'react'
+ 
 import { GET_All_RATING_STORE } from './queries'
 
 export const useRatingArrayData = () => {
@@ -8,12 +8,12 @@ export const useRatingArrayData = () => {
 
   const calculateTotalRatings = (ratings = []) => {
     return ratings.reduce(
-      (total, rating) => ({
+      (total, rating) => {return {
         rAppearance: total?.rAppearance + rating?.rAppearance,
         rTasty: total?.rTasty + rating?.rTasty,
         rGoodCondition: total?.rGoodCondition + rating?.rGoodCondition,
         rGoodTemperature: total?.rGoodTemperature + rating?.rGoodTemperature
-      }),
+      }},
       {
         rAppearance: 0,
         rTasty: 0,

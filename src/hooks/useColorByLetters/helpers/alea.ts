@@ -1,4 +1,11 @@
+/**
+ *
+ */
 class AleaGen {
+  /**
+   *
+   * @param seed
+   */
   constructor (seed) {
     if (seed == null) { seed = +(new Date()) }
     let n = 0xefc8249d
@@ -19,6 +26,10 @@ class AleaGen {
     if (this.s2 < 0) {
       this.s2 += 1
     }
+    /**
+     *
+     * @param data
+     */
     function mash (data) {
       data = String(data)
       for (let i = 0; i < data.length; i++) {
@@ -35,6 +46,9 @@ class AleaGen {
     }
   }
 
+  /**
+   *
+   */
   next () {
     const { c, s0, s1, s2 } = this
     const t = 2091639 * s0 + c * 2.3283064365386963e-10 // 2^-32
@@ -43,6 +57,11 @@ class AleaGen {
     return this.s2 = t - (this.c = t | 0)
   }
 
+  /**
+   *
+   * @param f
+   * @param t
+   */
   copy (f, t) {
     t.c = f.c
     t.s0 = f.s0

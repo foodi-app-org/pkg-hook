@@ -22,5 +22,5 @@ export const getStatusForStores = (stores = []) => {
       min: min ?? '',
       open: status?.open ? 1 : 0
     }
-  }).sort((a, b) => b.open - a.open)
+  }).sort((a, b) => {return b.open - a.open})
 }

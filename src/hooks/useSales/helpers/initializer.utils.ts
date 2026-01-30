@@ -1,9 +1,11 @@
 import { Cookies } from '../../../cookies'
 import { SalesState } from '../types'
+
 import { initialStateSales } from './constants'
 
 /**
  * Initializes sales state from cookies or fallback state
+ * @param initialValue
  */
 export const initializer = (
   initialValue: SalesState = initialStateSales

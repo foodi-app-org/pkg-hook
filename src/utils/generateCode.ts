@@ -41,38 +41,42 @@ export type IsUniqueFn = (code: string) => Promise<boolean>;
 
 /**
  * Secure random integer in [0, max)
+ * @param max
+ * @returns random integer in [0, max)
  */
 const secureRandomInt = (max: number): number => {
-    if (typeof crypto !== 'undefined' && typeof (crypto as any).getRandomValues === 'function') {
-        // browser
-        const arr = new Uint32Array(1);
-        (crypto as any).getRandomValues(arr);
-        return arr[0] % max;
-    }
-    try {
-        // node
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const nodeCrypto = require('crypto');
-        const buf = nodeCrypto.randomBytes(4);
-        const val = buf.readUInt32BE(0);
-        return val % max;
-    } catch {
-        // fallback (less secure)
-        return Math.floor(Math.random() * max);
-    }
-};
+  if (typeof crypto !== 'undefined' && typeof (crypto as any).getRandomValues === 'function') {
+    // browser
+    const arr = new Uint32Array(1);
+    (crypto as any).getRandomValues(arr)
+    return arr[0] % max
+  }
+  try {
+    // node
+     
+    const nodeCrypto = require('crypto')
+    const buf = nodeCrypto.randomBytes(4)
+    const val = buf.readUInt32BE(0)
+    return val % max
+  } catch {
+    // fallback (less secure)
+    return Math.floor(Math.random() * max)
+  }
+}
 
 /**
  * Build a random string from charset.
+ * @param length
+ * @param charset
  */
 const randomFromCharset = (length: number, charset: string): string => {
-    const out: string[] = [];
-    const m = charset.length;
-    for (let i = 0; i < length; i += 1) {
-        out.push(charset[secureRandomInt(m)]);
-    }
-    return out.join('');
-};
+  const out: string[] = []
+  const m = charset.length
+  for (let i = 0; i < length; i += 1) {
+    out.push(charset[secureRandomInt(m)])
+  }
+  return out.join('')
+}
 
 /**
  * Short fixed-size timestamp chunk that respects strategy.
@@ -84,55 +88,56 @@ const randomFromCharset = (length: number, charset: string): string => {
  * @returns timestamp chunk string of length `size`
  */
 const timestampChunk = (strategy: Strategy, size = 4): string => {
-    const now = Date.now();
-    if (strategy === 'numeric') {
-        const mod = Math.pow(10, size);
-        const n = (now % mod).toString().padStart(size, '0');
-        return n;
-    }
-    // alphanumeric: compact base36 slice (keeps letters & digits)
-    return now.toString(36).slice(-size).padStart(size, '0');
-};
+  const now = Date.now()
+  if (strategy === 'numeric') {
+    const mod = Math.pow(10, size)
+    const n = (now % mod).toString().padStart(size, '0')
+    return n
+  }
+  // alphanumeric: compact base36 slice (keeps letters & digits)
+  return now.toString(36).slice(-size).padStart(size, '0')
+}
 
 /**
  * Validate config and return normalized defaults or error string.
+ * @param cfg
  */
 const normalizeConfig = (cfg?: TicketConfig): { cfg?: Required<TicketConfig>; error?: string } => {
-    const defaultCfg: Required<TicketConfig> = {
-        length: 10,
-        strategy: 'alphanumeric',
-        prefix: '',
-        timestamp: false,
-        maxAttempts: 5,
-        padChar: '0',
-    };
+  const defaultCfg: Required<TicketConfig> = {
+    length: 10,
+    strategy: 'alphanumeric',
+    prefix: '',
+    timestamp: false,
+    maxAttempts: 5,
+    padChar: '0'
+  }
 
-    if (!cfg) return { cfg: defaultCfg };
+  if (!cfg) return { cfg: defaultCfg }
 
-    const merged = { ...defaultCfg, ...cfg };
+  const merged = { ...defaultCfg, ...cfg }
 
-    if (!Number.isInteger(merged.length) || merged.length < 4) {
-        return { error: 'length must be an integer >= 4' };
-    }
+  if (!Number.isInteger(merged.length) || merged.length < 4) {
+    return { error: 'length must be an integer >= 4' }
+  }
 
-    if (!['alphanumeric', 'numeric'].includes(merged.strategy)) {
-        return { error: "strategy must be 'alphanumeric' or 'numeric'" };
-    }
+  if (!['alphanumeric', 'numeric'].includes(merged.strategy)) {
+    return { error: "strategy must be 'alphanumeric' or 'numeric'" }
+  }
 
-    if (typeof merged.prefix !== 'string' || /[^A-Za-z0-9-_]/.test(merged.prefix)) {
-        return { error: 'prefix must be alphanumeric, dash or underscore only' };
-    }
+  if (typeof merged.prefix !== 'string' || /[^A-Za-z0-9-_]/.test(merged.prefix)) {
+    return { error: 'prefix must be alphanumeric, dash or underscore only' }
+  }
 
-    if (typeof merged.maxAttempts !== 'number' || merged.maxAttempts < 1) {
-        merged.maxAttempts = defaultCfg.maxAttempts;
-    }
+  if (typeof merged.maxAttempts !== 'number' || merged.maxAttempts < 1) {
+    merged.maxAttempts = defaultCfg.maxAttempts
+  }
 
-    if (typeof merged.padChar !== 'string' || merged.padChar.length !== 1) {
-        merged.padChar = defaultCfg.padChar;
-    }
+  if (typeof merged.padChar !== 'string' || merged.padChar.length !== 1) {
+    merged.padChar = defaultCfg.padChar
+  }
 
-    return { cfg: merged };
-};
+  return { cfg: merged }
+}
 
 /**
  * Generate a ticket code (synchronous, no uniqueness guarantee).
@@ -142,31 +147,31 @@ const normalizeConfig = (cfg?: TicketConfig): { cfg?: Required<TicketConfig>; er
  * @returns TicketResult with code or error
  */
 export const generateTicket = (config?: TicketConfig): TicketResult => {
-    const normalized = normalizeConfig(config);
-    if (normalized.error) return { success: false, error: normalized.error };
-    const cfg = normalized.cfg!;
+  const normalized = normalizeConfig(config)
+  if (normalized.error) return { success: false, error: normalized.error }
+  const cfg = normalized.cfg!
 
-    const payloadLen = cfg.length;
-    const prefix = cfg.prefix || '';
+  const payloadLen = cfg.length
+  const prefix = cfg.prefix || ''
 
-    // decide charset
-    const numericCharset = '0123456789';
-    const alphaNumCharset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789'; // removed O/0/l for readability
-    const charset = cfg.strategy === 'numeric' ? numericCharset : alphaNumCharset;
+  // decide charset
+  const numericCharset = '0123456789'
+  const alphaNumCharset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789' // removed O/0/l for readability
+  const charset = cfg.strategy === 'numeric' ? numericCharset : alphaNumCharset
 
-    // prepare timestamp chunk if requested (keep it short and strategy-aware)
-    const ts = cfg.timestamp ? timestampChunk(cfg.strategy, 4) : '';
+  // prepare timestamp chunk if requested (keep it short and strategy-aware)
+  const ts = cfg.timestamp ? timestampChunk(cfg.strategy, 4) : ''
 
 
-    // calc remaining length for random part
-    const remaining = payloadLen - ts.length;
-    if (remaining < 1) return { success: false, error: 'length too small for timestamp embedding' };
+  // calc remaining length for random part
+  const remaining = payloadLen - ts.length
+  if (remaining < 1) return { success: false, error: 'length too small for timestamp embedding' }
 
-    const randomPart = randomFromCharset(remaining, charset);
+  const randomPart = randomFromCharset(remaining, charset)
 
-    const code = `${prefix}${ts}${randomPart}`;
-    return { success: true, code };
-};
+  const code = `${prefix}${ts}${randomPart}`
+  return { success: true, code }
+}
 
 /**
  * Generate a ticket code with uniqueness guarantee using an async uniqueness checker.
@@ -177,26 +182,26 @@ export const generateTicket = (config?: TicketConfig): TicketResult => {
  * @returns TicketResult with unique code or error
  */
 export const generateUniqueAsync = async (isUnique: IsUniqueFn, config?: TicketConfig): Promise<TicketResult> => {
-    const normalized = normalizeConfig(config);
-    if (normalized.error) return { success: false, error: normalized.error };
-    const cfg = normalized.cfg!;
+  const normalized = normalizeConfig(config)
+  if (normalized.error) return { success: false, error: normalized.error }
+  const cfg = normalized.cfg!
 
-    for (let attempt = 1; attempt <= cfg.maxAttempts; attempt += 1) {
-        const candidateRes = generateTicket(cfg);
-        if (!candidateRes.success) return candidateRes;
+  for (let attempt = 1; attempt <= cfg.maxAttempts; attempt += 1) {
+    const candidateRes = generateTicket(cfg)
+    if (!candidateRes.success) return candidateRes
 
-        const candidate = candidateRes.code;
-        try {
-            const unique = await isUnique(candidate);
-            if (unique) return { success: true, code: candidate };
-            // else collision -> retry
-        } catch (err) {
-            return { success: false, error: `isUnique function threw: ${(err as Error).message}` };
-        }
+    const candidate = candidateRes.code
+    try {
+      const unique = await isUnique(candidate)
+      if (unique) return { success: true, code: candidate }
+      // else collision -> retry
+    } catch (err) {
+      return { success: false, error: `isUnique function threw: ${(err as Error).message}` }
     }
+  }
 
-    return { success: false, error: 'unable to generate unique ticket after max attempts' };
-};
+  return { success: false, error: 'unable to generate unique ticket after max attempts' }
+}
 
 /* -------------------- Example usage -------------------- */
 

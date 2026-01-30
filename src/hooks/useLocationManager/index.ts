@@ -15,11 +15,11 @@ export function useLocationManager (getDepartments, getCities) {
   const [showLocation, setShowLocation] = useState(true)
 
   const handleUpdateValues = (name, value) => {
-    setValues(prevValues => ({ ...prevValues, [name]: value }))
+    setValues(prevValues => {return { ...prevValues, [name]: value }})
   }
 
   const handleUpdateErrors = (name, error) => {
-    setErrors(prevErrors => ({ ...prevErrors, [name]: error }))
+    setErrors(prevErrors => {return { ...prevErrors, [name]: error }})
   }
 
   const handleCountrySearch = (value) => {
@@ -27,7 +27,7 @@ export function useLocationManager (getDepartments, getCities) {
   }
 
   const handleDepartmentSearch = (value) => {
-    setValues(prevValues => ({ ...prevValues, ctId: '' }))
+    setValues(prevValues => {return { ...prevValues, ctId: '' }})
     getCities({ variables: { dId: value } })
   }
 

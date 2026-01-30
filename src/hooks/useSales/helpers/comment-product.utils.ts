@@ -23,19 +23,19 @@ export const commentProduct = ({
   comment?: string;
   deleteValue?: boolean;
 }) => {
-  if (!productId) return state;
+  if (!productId) return state
 
   const PRODUCT = state.PRODUCT.map((item: any) =>
-    item.pId === productId
-      ? {
-          ...item,
-          comment: deleteValue ? '' : comment
-        }
-      : item
-  );
+  {return item.pId === productId
+    ? {
+      ...item,
+      comment: deleteValue ? '' : comment
+    }
+    : item}
+  )
 
   return {
     ...state,
     PRODUCT
-  };
-};
+  }
+}

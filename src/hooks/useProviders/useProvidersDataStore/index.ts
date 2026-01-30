@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_ALL_PROVIDERS } from '../queries'
 
 export const useProvidersStore = () => {

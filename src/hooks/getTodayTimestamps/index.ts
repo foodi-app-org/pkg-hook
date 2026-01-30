@@ -1,7 +1,7 @@
 /**
-     * Get the start timestamp for the current day.
-     * @returns {string} The start timestamp for the current day.
-     */
+ * Get the start timestamp for the current day.
+ * @returns {string} The start timestamp for the current day.
+ */
 export const getStartOfDayTimestamp = () => {
   const start = new Date()
   start.setHours(0, 0, 0, 0)
@@ -9,9 +9,9 @@ export const getStartOfDayTimestamp = () => {
 }
 
 /**
-     * Get the end timestamp for the current day.
-     * @returns {string} The end timestamp for the current day.
-     */
+ * Get the end timestamp for the current day.
+ * @returns {string} The end timestamp for the current day.
+ */
 export const getEndOfDayTimestamp = () => {
   const end = new Date()
   end.setHours(23, 59, 59, 999)
@@ -46,6 +46,12 @@ export const getStartTimestampDaysAgo = (daysAgo) => {
   return start.toISOString()
 }
 
+/**
+ *
+ * @param root0
+ * @param root0.dateString
+ * @param root0.start
+ */
 export function convertDateFormat ({ dateString, start }) {
   const parsedDate = dateString ? new Date(dateString) : new Date()
   const year = parsedDate.getFullYear()
@@ -55,10 +61,10 @@ export function convertDateFormat ({ dateString, start }) {
   if (start) {
     // Inicio del día (00:00:00)
     return `${year}-${month}-${day}T00:00:00.000Z`
-  } else {
-    // Final del día (23:59:59.999)
-    const endOfDay = new Date(parsedDate)
-    endOfDay.setHours(23, 59, 59, 999)
-    return endOfDay.toISOString()
-  }
+  } 
+  // Final del día (23:59:59.999)
+  const endOfDay = new Date(parsedDate)
+  endOfDay.setHours(23, 59, 59, 999)
+  return endOfDay.toISOString()
+  
 }

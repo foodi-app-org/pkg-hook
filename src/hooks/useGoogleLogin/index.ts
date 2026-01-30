@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+
 import loadScript from './loadScript'
 import removeScript from './removeScript'
 
@@ -26,6 +27,10 @@ export const useGoogleLogin = ({
 }) => {
   const [loaded, setLoaded] = useState(false)
 
+  /**
+   *
+   * @param res
+   */
   function handleSigninSuccess (res) {
     /*
       offer renamed response keys to names that match use
@@ -47,6 +52,10 @@ export const useGoogleLogin = ({
     onSuccess(res)
   }
 
+  /**
+   *
+   * @param e
+   */
   function signIn (e) {
     if (e) {
       e.preventDefault() // to prevent submit if used within form
@@ -59,13 +68,13 @@ export const useGoogleLogin = ({
       onRequest()
       if (responseType === 'code') {
         GoogleAuth.grantOfflineAccess(options).then(
-          res => onSuccess(res),
-          err => onFailure(err)
+          res => {return onSuccess(res)},
+          err => {return onFailure(err)}
         )
       } else {
         GoogleAuth.signIn(options).then(
-          res => handleSigninSuccess(res),
-          err => onFailure(err)
+          res => {return handleSigninSuccess(res)},
+          err => {return onFailure(err)}
         )
       }
     }

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, ApolloError } from '@apollo/client'
 import { useState } from 'react'
+
 import {
   DELETE_ONE_CAT_PRODUCTS,
   GET_ULTIMATE_CATEGORY_PRODUCTS,
   UPDATE_CAT_IN_PRODUCT
 } from '../useProductsFood/queriesStore'
+
 import { GET_ONE_STORE_IN_CATEGORY } from './queries'
 
 /**
@@ -49,6 +51,9 @@ interface UseCategoryInStoreResult {
 
 /**
  * Custom hook to manage categories in store
+ * @param root0
+ * @param root0.catStoreId
+ * @param root0.setAlertBox
  */
 export const useCategoryInStore = ({
   catStoreId,
@@ -118,6 +123,7 @@ export const useCategoryInStore = ({
 
   /**
    * Delete category from products
+   * @param category
    */
   const handlerDeleteCategoryInStore = (category?: Category) => {
     const { pState, idPc } = category || {}
@@ -130,6 +136,8 @@ export const useCategoryInStore = ({
 
   /**
    * Update category in products
+   * @param root0
+   * @param root0.data
    */
   const handleUpdateCatInProduct = async ({
     data
@@ -141,7 +149,7 @@ export const useCategoryInStore = ({
     await updatedCatWithProducts({
       variables: {
         input: {
-          setData: data.map(({ pId }) => ({ idProduct: pId })),
+          setData: data.map(({ pId }) => {return { idProduct: pId }}),
           idCat: ''
         }
       }

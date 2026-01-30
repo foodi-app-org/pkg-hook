@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+
 import { validateModules } from './helpers/validateModules'
 
 /**

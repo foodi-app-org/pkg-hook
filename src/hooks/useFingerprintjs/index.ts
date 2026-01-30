@@ -1,5 +1,8 @@
 // import md5 from 'md5'
 
+/**
+ *
+ */
 async function getCPUInfo () {
   if (navigator.hardwareConcurrency) {
     try {
@@ -25,6 +28,9 @@ async function getCPUInfo () {
   }
 }
 
+/**
+ *
+ */
 async function generateFingerprint () {
   const canvas = document.createElement('canvas')
   const audioContext = new (window.AudioContext || window.webkitAudioContext)()
@@ -50,7 +56,7 @@ async function generateFingerprint () {
       language,
       colorDepth,
       availableScreenHeight,
-      plugins: Array.from(navigator.plugins).map(plugin => plugin.name).join(','),
+      plugins: Array.from(navigator.plugins).map(plugin => {return plugin.name}).join(','),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       hardwareConcurrency: cpuInfo.logicalCores || 'unknown',
       platformVersion: navigator.platformVersion || 'unknown'
@@ -73,6 +79,10 @@ async function generateFingerprint () {
 }
 
 // Función para generar huella digital del audio
+/**
+ *
+ * @param audioContext
+ */
 async function generateAudioFingerprint (audioContext) {
   if (audioContext) {
     try {
@@ -94,6 +104,10 @@ async function generateAudioFingerprint (audioContext) {
 }
 
 // Función para generar huella digital del canvas
+/**
+ *
+ * @param canvas
+ */
 async function generateCanvasFingerprint (canvas) {
   if (canvas) {
     try {
@@ -123,6 +137,9 @@ async function generateCanvasFingerprint (canvas) {
   return { width: 0, height: 0 }
 }
 
+/**
+ *
+ */
 async function getWebGLInfo () {
   if ('WebGLRenderingContext' in window) {
     const canvas = document.createElement('canvas')
@@ -141,6 +158,9 @@ async function getWebGLInfo () {
   return 'webgl-info-not-supported'
 }
 
+/**
+ *
+ */
 function getInstalledFonts () {
   const fonts = []
 
@@ -153,6 +173,9 @@ function getInstalledFonts () {
   return fonts.join(',')
 }
 
+/**
+ *
+ */
 function getTouchscreenInfo () {
   if ('maxTouchPoints' in navigator) {
     const maxTouchPoints = navigator.maxTouchPoints
@@ -164,6 +187,9 @@ function getTouchscreenInfo () {
   return 'touchscreen-info-not-supported'
 }
 
+/**
+ *
+ */
 export async function fingerprintJs () {
   const fingerprint = await generateFingerprint()
   // const uniqueID = md5(fingerprint)

@@ -1,5 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 
+/**
+ *
+ */
 export function useHover () {
   const [value, setValue] = useState(false)
 

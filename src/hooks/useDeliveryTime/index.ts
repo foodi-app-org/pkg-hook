@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 
 /**
  * Custom hook to handle delivery time input validation and formatting.
+ * @param root0
+ * @param root0.initialTime
  * @returns {Object} An object containing state and functions for handling delivery time.
  */
 export const useDeliveryTime = ({ initialTime = '' }) => {

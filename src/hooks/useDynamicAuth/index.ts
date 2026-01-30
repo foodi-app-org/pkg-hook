@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { useState } from 'react'
+
 import { GET_ONE_DYNAMIC_PASS } from './queries'
 
 export const useDynamicAuth = () => {

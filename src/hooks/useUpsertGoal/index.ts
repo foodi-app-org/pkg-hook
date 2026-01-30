@@ -19,6 +19,7 @@ const UPSERT_GOAL = gql`
 /**
  * Custom hook to handle the upsert of the daily goal.
  * @param {Object} input - The goal data (e.g. dailyGoal).
+ * @param input.sendNotification
  * @returns {{
  *   upsertGoal: (input: { dailyGoal: number }) => void,
  *   data: { success: boolean, message: string, dailyGoal: number } | undefined,

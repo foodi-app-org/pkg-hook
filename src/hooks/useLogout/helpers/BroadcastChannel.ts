@@ -26,6 +26,7 @@ function BroadcastChannel(name: string = 'nextauth.message') {
   return {
     /**
      * Listen for broadcast messages
+     * @param onReceive
      */
     receive: function (onReceive: BroadcastReceiver): () => void {
       const handler = function (event: StorageEvent): void {
@@ -49,6 +50,7 @@ function BroadcastChannel(name: string = 'nextauth.message') {
 
     /**
      * Post a broadcast message
+     * @param message
      */
     post: function (message: BroadcastMessage): void {
       if (typeof window === 'undefined') return

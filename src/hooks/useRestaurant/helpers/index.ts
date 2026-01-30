@@ -1,3 +1,7 @@
+/**
+ *
+ * @param array
+ */
 export function filterAndSortByDate (array = []) {
   const isError = !Array.isArray(array) || !array.length
   try {

@@ -1,21 +1,21 @@
 import { useState } from 'react'
 
 const formatCurrency = (
-  prefix,
-  amountValue,
-  number,
-  groupSeparator,
-  decimalSeparator,
-  allowDecimals = false,
-  decimalsLimit = 0
-) => {
-  if (isNaN(number)) {
+  prefix: string,
+  amountValue: string,
+  number: number,
+  groupSeparator: string,
+  decimalSeparator: string,
+  allowDecimals: boolean = false,
+  decimalsLimit: number = 0
+): string => {
+  if (Number.isNaN(number)) {
     return prefix + '0'
   }
 
-  const amountWithoutDecimals = parseInt(number.toString())
+  const amountWithoutDecimals = Number.parseInt(number.toString())
   const decimalIdx = amountValue.indexOf(decimalSeparator)
-  const notAllowedChars = new RegExp('[^' + decimalSeparator + '\\d]', 'g')
+  const notAllowedChars = new RegExp(String.raw`[^${decimalSeparator}\d]`, 'g')
   const decimalsWithSeparator =
     decimalIdx >= 0
       ? amountValue
@@ -28,52 +28,62 @@ const formatCurrency = (
     prefix +
     amountWithoutDecimals
       .toString()
-      .replace(/\B(?=(\d{3}){1,5}(?!\d))/g, groupSeparator) +
+      .replaceAll(/\B(?=(\d{3}){1,5}(?!\d))/g, groupSeparator) +
     decimalsWithSeparator
   )
 }
 
-const processInputValue = (input, decimalSeparator) => {
+const processInputValue = (input: string, decimalSeparator: string): number => {
   const decimalRegex = new RegExp('[' + decimalSeparator + ']', 'g')
-  const notAllowedChars = new RegExp('[^' + decimalSeparator + '\\d¬]', 'g')
+  const notAllowedChars = new RegExp(String.raw`[^${decimalSeparator}\d¬]`, 'g')
 
-  return parseFloat(
+  return Number.parseFloat(
     input
-      .replace(decimalRegex, '¬')
-      .replace(notAllowedChars, '')
-      .replace('¬', '.')
+      .replaceAll(decimalRegex, '¬')
+      .replaceAll(notAllowedChars, '')
+      .replaceAll('¬', '.')
   )
 }
 /**
  * Truncate excess decimals from a number based on a limit.
  *
- * @param {number} number The number to truncate.
- * @param {number} decimalsLimit The maximum number of decimal places allowed.
- * @returns {number} The number with truncated decimals.
+ * @param number The number to truncate.
+ * @param decimalsLimit The maximum number of decimal places allowed.
+ * @returns The number with truncated decimals.
  */
-const truncateDecimals = (number, decimalsLimit) => {
-  if (isNaN(number)) {
-    return 0;
+const truncateDecimals = (number: number, decimalsLimit: number): number => {
+  if (Number.isNaN(number)) {
+    return 0
   }
 
-  const multiplier = Math.pow(10, decimalsLimit);
-  return Math.floor(number * multiplier) / multiplier;
-};
-export const useAmountInput = props => {
+  const multiplier = Math.pow(10, decimalsLimit)
+  return Math.floor(number * multiplier) / multiplier
+}
+export interface UseAmountInputProps {
+  onChange?: (value: number) => void
+  prefix?: string
+  groupSeparator?: string
+  decimalSeparator?: string
+  allowDecimals?: boolean
+  decimalsLimit?: number
+  defaultValue?: string
+}
+
+export const useAmountInput = (props: UseAmountInputProps) => {
   const {
     onChange = () => {},
     prefix = '$',
     groupSeparator = '.',
     decimalSeparator = ',',
-    allowDecimals,
-    decimalsLimit,
+    allowDecimals = false,
+    decimalsLimit = 0,
     defaultValue
   } = props
 
   const inputVal = defaultValue ?? ''
   const [inputValue, setInputValue] = useState(inputVal)
 
-  const preProcess = amount => {
+  const preProcess = (amount: string) => {
     const amountValue = amount.trim()
     const oldInputValue = inputValue
 
@@ -104,7 +114,7 @@ export const useAmountInput = props => {
       }
       setInputValue(inputValue)
 
-      const callbackValue = isNaN(amountFloatValue) ? 0 : amountFloatValue
+      const callbackValue = Number.isNaN(amountFloatValue) ? 0 : amountFloatValue
       if (typeof onChange === 'function') {
         onChange(truncateDecimals(callbackValue, decimalsLimit))
       }

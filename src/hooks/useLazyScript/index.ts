@@ -32,6 +32,9 @@ export const useLazyScript = (src, delay = null) => {
     }
 
     // code to inject script
+    /**
+     *
+     */
     function injectScript () {
       script = document.createElement('script')
       script.src = src

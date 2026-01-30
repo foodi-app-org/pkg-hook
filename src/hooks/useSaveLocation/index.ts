@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+
 import { SAVE_LOCATION_USER } from './queries'
 
 export const useSaveLocation = () => {

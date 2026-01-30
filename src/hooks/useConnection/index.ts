@@ -1,4 +1,7 @@
 export const useConnection = ({ setConnectionStatus }) => {
+  /**
+   *
+   */
   async function updateConnectionStatus () {
     if (navigator.onLine) {
       setConnectionStatus(navigator.onLine)

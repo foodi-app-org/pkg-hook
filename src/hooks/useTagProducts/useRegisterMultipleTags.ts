@@ -1,4 +1,5 @@
 import { useMutation, gql, useApolloClient } from '@apollo/client'
+
 import { GET_ALL_TAGS } from './useGetAllTags'
 
 /**
@@ -98,7 +99,7 @@ export const useRegisterMultipleTags = (
    * @returns {Promise<IResponseTag>} - Mutation response.
    */
   const handleRegisterTags = async (tags: string[]): Promise<IResponseTag> => {
-    if (!Array.isArray(tags) || tags.length === 0 || tags.some(tag => typeof tag !== 'string')) {
+    if (!Array.isArray(tags) || tags.length === 0 || tags.some(tag => {return typeof tag !== 'string'})) {
       throw new Error('Tag list must be a non-empty array of strings.')
     }
 
@@ -106,36 +107,36 @@ export const useRegisterMultipleTags = (
       variables: {
         input: tags
       },
-       update: (cache, { data }) => {
-      if (!data?.registerMultipleTags?.data?.length) return;
+      update: (cache, { data }) => {
+        if (!data?.registerMultipleTags?.data?.length) return
 
-      const newTags = data.registerMultipleTags.data;
+        const newTags = data.registerMultipleTags.data
 
-      try {
-        const existing = client.readQuery({ query: GET_ALL_TAGS });
+        try {
+          const existing = client.readQuery({ query: GET_ALL_TAGS })
 
-        const updatedTags = [
-          ...newTags,
-          ...(existing?.getAllTags?.data || [])
-        ];
+          const updatedTags = [
+            ...newTags,
+            ...(existing?.getAllTags?.data || [])
+          ]
 
-        cache.writeQuery({
-          query: GET_ALL_TAGS,
-          data: {
-            getAllTags: {
-              ...existing.getAllTags,
-              data: updatedTags,
-              pagination: {
-                ...existing.getAllTags.pagination,
-                totalRecords: updatedTags.length,
-              },
+          cache.writeQuery({
+            query: GET_ALL_TAGS,
+            data: {
+              getAllTags: {
+                ...existing.getAllTags,
+                data: updatedTags,
+                pagination: {
+                  ...existing.getAllTags.pagination,
+                  totalRecords: updatedTags.length
+                }
+              }
             }
-          }
-        });
-      } catch (error) {
-        console.warn('Failed to update cache for GET_ALL_TAGS:', error);
+          })
+        } catch (error) {
+          console.warn('Failed to update cache for GET_ALL_TAGS:', error)
+        }
       }
-    },
     })
     return response.data?.registerMultipleTags ?? {
       success: false,

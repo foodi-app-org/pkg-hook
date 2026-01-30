@@ -64,7 +64,7 @@ MersenneTwister.prototype.init_by_array = function (init_key, key_length) {
 /* generates a random number on [0,0xffffffff]-interval */
 MersenneTwister.prototype.genrand_int32 = function () {
   let y
-  const mag01 = new Array(0x0, this.MATRIX_A)
+  const mag01 = [0x0, this.MATRIX_A]
   /* mag01[x] = x * MATRIX_A  for x=0,1 */
   if (this.mti >= this.N) { /* generate N words at one time */
     let kk

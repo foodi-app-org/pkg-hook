@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
 import { useState } from 'react'
+
 import {
   GET_ALL_CONTACTS,
   EDIT_ONE_CONTACT,
@@ -7,22 +8,27 @@ import {
   GET_ONE_CONTACT
 } from './queries'
 
+interface UseStoreContactsParams {
+  sendNotification?: (message: string, type?: 'error' | 'success') => void
+  max?: number
+  search?: string
+}
 export const useGetStoreContacts = ({
   sendNotification = () => { },
   max,
   search = ''
-} = {}) => {
-  const [clientes, setUseStoreContacts] = useState([])
+}: UseStoreContactsParams = {}) => {
+  const [clientes, setClientes] = useState<{ getAllContacts?: any[] } | undefined>(undefined)
   const { loading, error, fetchMore, called } = useQuery(GET_ALL_CONTACTS, {
     variables: {
       max,
       search
     },
     onCompleted: (data) => {
-      setUseStoreContacts(data)
+      setClientes(data)
     }
   })
-  return [clientes?.getAllContacts || [], { loading: called ? false : loading, error, fetchMore }]
+  return [clientes?.getAllContacts ?? [], { loading: called ? false : loading, error, fetchMore }]
 }
 
 export const useDeleteUseStoreContacts = ({ sendNotification = () => { } } = {}) => {

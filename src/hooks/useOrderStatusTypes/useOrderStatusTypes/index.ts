@@ -110,7 +110,7 @@ export interface UseOrderStatusTypesOptions {
 }
 
 export const useOrderStatusTypes = ({
-  callback = () => undefined
+  callback = () => {return undefined}
 }: UseOrderStatusTypesOptions = {}) => {
   const {
     data,

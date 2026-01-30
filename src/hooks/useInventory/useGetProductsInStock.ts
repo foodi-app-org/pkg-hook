@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_PRODUCTS_IN_STOCK } from './queries'
 
 export const useGetProductsInStock = (storeId) => {

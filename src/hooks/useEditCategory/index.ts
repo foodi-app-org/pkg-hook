@@ -23,12 +23,12 @@ export const useEditCategoryProduct = ({ sendNotification = () => { } } = {}) =>
           success: true,
           message: 'Categoría de producto editada correctamente'
         }
-      } else {
-        return {
-          success: false,
-          message: data.editOneCategoryProduct.message || 'Error al editar la categoría de producto'
-        }
+      } 
+      return {
+        success: false,
+        message: data.editOneCategoryProduct.message || 'Error al editar la categoría de producto'
       }
+      
     } catch (error) {
       return {
         success: false,

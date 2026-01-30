@@ -1,4 +1,5 @@
 import { useLazyQuery } from '@apollo/client'
+
 import { GET_ONE_COUNTRY, GET_ONE_DEPARTMENT, GET_ONE_CITY } from './queries'
 
 const useGetOneCountry = () => {

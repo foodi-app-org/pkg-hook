@@ -1,17 +1,20 @@
-/* eslint-disable no-unused-vars */
+ 
 import { useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
+
 import { RandomCode } from '../../utils'
 import { useLocalStorage } from '../useLocalSorage'
 import {
   UPDATE_PRODUCT_FOOD
 } from '../useProductsFood/queriesStore'
-import { useStore } from '../useStore'
 import { useTagsProducts } from '../useProductsFood/usetagsProducts'
-import { useEditImageProduct } from './helpers/useEditImageProduct'
-import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
-import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
 import { useSetImageProducts } from '../useSetImageProducts'
+import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
+import { useStore } from '../useStore'
+
+import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
+import { useEditImageProduct } from './helpers/useEditImageProduct'
+
 
 export const useCreateProduct = ({
   router,
@@ -63,11 +66,11 @@ export const useCreateProduct = ({
   const [checkStock, setCheckStock] = useState(false)
 
   const handleIncreaseStock = () => {
-    setStock(prevStock => prevStock + 1)
+    setStock(prevStock => {return prevStock + 1})
   }
 
   const handleDecreaseStock = () => {
-    setStock(prevStock => (prevStock > 1 ? prevStock - 1 : 1))
+    setStock(prevStock => {return (prevStock > 1 ? prevStock - 1 : 1)})
   }
 
   const handleCheckStock = () => {
@@ -98,7 +101,7 @@ export const useCreateProduct = ({
 
   const handleCheck = (e) => {
     const { name, checked } = e.target
-    return setCheck((prev) => ({ ...prev, [name]: checked }))
+    return setCheck((prev) => {return { ...prev, [name]: checked }})
   }
 
   const handleUpdateBanner = event => {
@@ -106,23 +109,23 @@ export const useCreateProduct = ({
     setPreviewImg(
       files.length
         ? {
-            src: URL.createObjectURL(files[0]),
-            alt: files[0].name
-          }
+          src: URL.createObjectURL(files[0]),
+          alt: files[0].name
+        }
         : initialState
     )
   }
   const handleChange = (e, error) => {
     const { name, value } = e.target
-    setValues((prev) => ({
+    setValues((prev) => {return {
       ...prev,
       [name]: value
-    }))
+    }})
 
-    setErrors((prev) => ({
+    setErrors((prev) => {return {
       ...prev,
       [name]: error
-    }))
+    }})
   }
   const handleChangeFilter = e => {
     setSearch(e.target.value)
@@ -165,7 +168,7 @@ export const useCreateProduct = ({
       fileInputRef.current.click()
     }
   }
-  // eslint-disable-next-line no-unused-vars
+   
   const { img } = useEditImageProduct({ sendNotification, initialState })
 
   const handleRegister = async () => {

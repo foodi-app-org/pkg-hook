@@ -1,18 +1,35 @@
 import { useEffect, useReducer } from 'react'
+
 import { Cookies } from '../../cookies'
 import { getCurrentDomain } from '../../utils'
-import { initializer } from '../useSales/helpers/initializer.utils'
+
+type Product = {
+  pId: string;
+  ProQuantity: number;
+  [key: string]: any;
+};
+
+type State = {
+  PRODUCT: Product[];
+  counter: number;
+};
+
+type Action =
+  | { type: 'REMOVE_PRODUCT_TO_CART'; payload: Product }
+  | { type: 'ADD_PRODUCT_TO_CART'; payload: Product }
+  | { type: 'UPDATE_PRODUCT_IN_CART'; payload: Product }
+  | { type: string; payload?: any };
 
 export const useUpdateCartCookie = () => {
   const keyToSaveData = process.env.NEXT_LOCAL_SALES_STORE
   const domain = getCurrentDomain()
 
-  const PRODUCT = (state, action) => {
+  const PRODUCT = (state: State, action: Action): State => {
     switch (action.type) {
       case 'REMOVE_PRODUCT_TO_CART':
         return {
           ...state,
-          PRODUCT: state?.PRODUCT?.filter((t) => {
+          PRODUCT: state?.PRODUCT?.filter((t: Product) => {
             return t.pId !== action?.payload.pId
           }),
           counter: state.counter - action.payload.ProQuantity
@@ -27,9 +44,9 @@ export const useUpdateCartCookie = () => {
         return state
     }
   }
-  const [data, dispatch] = useReducer(PRODUCT, { PRODUCT: [], counter: 0 }, initializer)
+  const [data, dispatch] = useReducer(PRODUCT, { PRODUCT: [], counter: 0 })
 
-  const handleRemoveProductToCookieCart = (product) => {
+  const handleRemoveProductToCookieCart = (product: Product) => {
     dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: product })
   }
   useEffect(() => {

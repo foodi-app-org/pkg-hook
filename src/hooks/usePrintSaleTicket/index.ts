@@ -38,6 +38,10 @@ const PRINT_SALE_TICKET = gql`
    HOOK
 ------------------------------ */
 
+/**
+ *
+ * @param options
+ */
 export function usePrintSaleTicket(
   options?: MutationHookOptions<PrintSaleTicketResponse, PrintSaleTicketVars>
 ) {

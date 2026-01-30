@@ -1,7 +1,10 @@
-import { useState } from 'react'
 import { useMutation } from '@apollo/client'
-import { REGISTER_TAGS_PRODUCT } from './queriesStore'
+import { useState } from 'react'
+
 import { useDeleteOneTag, useGetAllTags } from '../useTagProducts'
+
+import { REGISTER_TAGS_PRODUCT } from './queriesStore'
+
 
 export const useTagsProducts = ({
   sendNotification = () => { }

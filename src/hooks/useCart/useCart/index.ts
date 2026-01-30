@@ -1,17 +1,20 @@
-import { useState, useCallback, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { CREATE_SHOPPING_CARD, GET_ALL_SHOPPING_CARD } from '../queries'
+import { useState, useCallback, useEffect } from 'react'
+
 import { RandomCode, updateCacheMod, numberFormat } from '../../../utils'
-import { useExtProductFoodsAll, useGetOneProductsFood } from '../../useProductsFood'
 import { useGetExtProductFoodsSubOptionalAll } from '../../useGetExtProductFoodsSubOptionalAll'
+import { useManageQueryParams } from '../../useManageQueryParams'
+import { useExtProductFoodsAll, useGetOneProductsFood } from '../../useProductsFood'
+import { CREATE_SHOPPING_CARD, GET_ALL_SHOPPING_CARD } from '../queries'
 import { useGetCart } from '../useGetCart'
+
 import {
   filterDataOptional,
   filterExtra,
   validateExtraProducts,
   validateRequirements
 } from './helpers'
-import { useManageQueryParams } from '../../useManageQueryParams'
+
 
 export const useCart = ({
   location = {
@@ -91,7 +94,7 @@ export const useCart = ({
       const filteredDataOptional = optionalFetch
         .map((obj) => {
           const filteredSubOptions = (obj.ExtProductFoodsSubOptionalAll || []).filter(
-            (subObj) => subObj.check !== false
+            (subObj) => {return subObj.check !== false}
           )
 
           if (filteredSubOptions.length === 0) {
@@ -103,7 +106,7 @@ export const useCart = ({
             ExtProductFoodsSubOptionalAll: filteredSubOptions
           }
         })
-        .filter((obj) => obj !== null)
+        .filter((obj) => {return obj !== null})
 
       if (matchingItemInShoppingCartOptional?.length === 0) {
         setDataOptional(filteredDataOptional || [])
@@ -113,7 +116,7 @@ export const useCart = ({
         // Actualiza los objetos de filteredDataOptional con información de matchingItemInShoppingCartOptional
         const updateOption = filteredDataOptional?.map((obj) => {
           const matchingArray = matchingItemInShoppingCartOptional?.find(
-            (o) => o && o.opExPid === obj.opExPid
+            (o) => {return o && o.opExPid === obj.opExPid}
           )
 
           if (!matchingArray) {
@@ -122,7 +125,7 @@ export const useCart = ({
 
           // Actualiza las propiedades específicas
           const updatedExtProductFoodsSubOptionalAll = (obj.ExtProductFoodsSubOptionalAll || []).map((subObj) => {
-            const newItem = matchingArray.saleExtProductFoodsSubOptionalAll?.find((newItem) => newItem && newItem.opSubExPid === subObj.opSubExPid)
+            const newItem = matchingArray.saleExtProductFoodsSubOptionalAll?.find((newItem) => {return newItem && newItem.opSubExPid === subObj.opSubExPid})
 
             if (newItem) {
               return {
@@ -138,7 +141,7 @@ export const useCart = ({
             ...obj,
             ExtProductFoodsSubOptionalAll: updatedExtProductFoodsSubOptionalAll
           }
-        }).filter((obj) => obj)
+        }).filter((obj) => {return obj})
 
         setDataOptional(updateOption || [])
       }
@@ -149,7 +152,7 @@ export const useCart = ({
 
     if (Array.isArray(originalArray) && originalArray?.length) {
       const fetchedDataExtra = originalArray?.map(extra => {
-        const updatedExtra = shoppingCartOptionalAll?.find(updatedItem => updatedItem.exPid === extra.exPid)
+        const updatedExtra = shoppingCartOptionalAll?.find(updatedItem => {return updatedItem.exPid === extra.exPid})
         if (updatedExtra) {
           return {
             ...extra,
@@ -170,6 +173,9 @@ export const useCart = ({
   /**
    * The function `handleIncrementExtra` updates the quantity and price of a specific extra product in
    * an array based on the provided index and product ID.
+   * @param root0
+   * @param root0.extra
+   * @param root0.index
    */
   function handleIncrementExtra ({ extra, index }) {
     // Desestructura las propiedades necesarias de dataOneProduct
@@ -202,6 +208,12 @@ export const useCart = ({
     }
   }
 
+  /**
+   *
+   * @param root0
+   * @param root0.extra
+   * @param root0.index
+   */
   function handleDecrementExtra ({ extra, index }) {
     // Desestructura las propiedades necesarias de dataOneProduct
     const { pId } = dataOneProduct || {}
@@ -210,7 +222,7 @@ export const useCart = ({
     const { exPid = null } = extra
 
     // Encuentra el índice del objeto extra en dataExtra
-    const extraIndex = dataExtra.findIndex((item) => item.exPid === exPid)
+    const extraIndex = dataExtra.findIndex((item) => {return item.exPid === exPid})
 
     if (pId && exPid && extraIndex !== -1) {
       const newExtra = dataExtra.map((producto, i) => {
@@ -268,10 +280,10 @@ export const useCart = ({
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
-    const item = dataOptional.find((item) => item.code === codeCategory)
+    const item = dataOptional.find((item) => {return item.code === codeCategory})
     if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el) => el.opSubExPid === exOptional
+      (el) => {return el.opSubExPid === exOptional}
     )
     if (item && idx !== -1) {
       const updatedItem = {
@@ -286,9 +298,9 @@ export const useCart = ({
         ]
       }
       const newData = dataOptional.map((el) =>
-        el.code === codeCategory ? updatedItem : el
+      {return el.code === codeCategory ? updatedItem : el}
       )
-      setDataOptional((prevData) => [...newData])
+      setDataOptional((prevData) => {return [...newData]})
     }
   }
 

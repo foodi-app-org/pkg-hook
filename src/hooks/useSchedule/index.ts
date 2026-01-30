@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
+
 import { GET_ONE_SCHEDULE_STORE, GET_SCHEDULE_STORE } from '../useProductsFood/queriesStore'
 import { CREATE_STORE_CALENDAR } from '../useSchedule/queries'
-
+export * from './schedule'
 
 export const useSchedule = ({ day = null, idStore = '' }) => {
   const {

@@ -43,12 +43,12 @@ export const useDropzone = (
     },
     dragleave: e => {
       return handle.body.dragLeave(e, () => {
-      // eslint-disable-next-line
+       
               if (isDragging) setDragging(false)
       })
     },
     dragend: () => {
-      // eslint-disable-next-line
+       
           },
     drop: e => {
       return handle.body.drop(e, () => {

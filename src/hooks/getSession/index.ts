@@ -1,4 +1,4 @@
-import { Cookies } from "../../cookies"
+import { Cookies } from '../../cookies'
 
 /**
  * Decodes a JWT safely without verifying signature.
@@ -58,6 +58,12 @@ export const getSession = async () => {
       })
     })
   } catch (error) {
+    if (error instanceof Error) {
+      return {
+        isSession: false,
+        error: String(error.message)
+      }
+    }
     return {
       isSession: false,
       error: 'Unexpected session error'

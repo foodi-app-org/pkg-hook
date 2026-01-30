@@ -1,12 +1,16 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
+
 import { CREATE_ONE_EMPLOYEE_STORE_AND_USER } from './queries'
 
 /**
  * Custom hook to handle the createOneEmployeeStoreAndUser mutation.
  *
- * @param
+ * @param root0
  * @param {Object}
+ * @param root0.sendNotification
+ * @param root0.onCompleted
+ * @param root0.onError
  * @returns {{
  *   createEmployeeStoreAndUser: (input: IEmployeeStore) => Promise<void>,
  *   loading: boolean,

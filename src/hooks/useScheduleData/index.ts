@@ -1,3 +1,7 @@
+/**
+ *
+ * @param data
+ */
 export function useScheduleData (data) {
   const days = {
     1: 'Lunes',
@@ -20,7 +24,7 @@ export function useScheduleData (data) {
   ]
 
   const combinedArray = daysArray.map((dayObj) => {
-    const originalObj = data?.find((item) => item.schDay === dayObj.day)
+    const originalObj = data?.find((item) => {return item.schDay === dayObj.day})
     return originalObj || { ...dayObj }
   })
 
@@ -39,13 +43,18 @@ export function useScheduleData (data) {
   }
 
   /**
-     * Calcula la duración en horas entre dos horas de inicio y final.
-     * @param {string} startTime - Hora de inicio en formato 'HH:mm'.
-     * @param {string} endTime - Hora de fin en formato 'HH:mm'.
-     * @returns {number|string} Duración en horas con dos decimales.
-     */
+   * Calcula la duración en horas entre dos horas de inicio y final.
+   * @param {string} startTime - Hora de inicio en formato 'HH:mm'.
+   * @param {string} endTime - Hora de fin en formato 'HH:mm'.
+   * @returns {number|string} Duración en horas con dos decimales.
+   */
 
   // Función para calcular la duración en horas de un horario
+  /**
+   *
+   * @param startTime
+   * @param endTime
+   */
   function calculateDurationInHours (startTime, endTime) {
     const startHour = new Date(`2000-01-01T${startTime}`)
     const endHour = new Date(`2000-01-01T${endTime}`)
@@ -57,8 +66,8 @@ export function useScheduleData (data) {
   const columnIndex = 0
   const lastDay = -1
   const uniqueHoursSet = new Set([
-    ...combinedArray.map((item) => item.schHoSta),
-    ...combinedArray.map((item) => item.schHoEnd)
+    ...combinedArray.map((item) => {return item.schHoSta}),
+    ...combinedArray.map((item) => {return item.schHoEnd})
   ])
 
   const uniqueHours = []
@@ -88,7 +97,7 @@ export function useScheduleData (data) {
   }
 
   const dayWidth = 120
-  const daysWithHours = Array.from(new Set(combinedArray.map((item) => (item.schDay !== undefined ? item.schDay : item.day))))
+  const daysWithHours = Array.from(new Set(combinedArray.map((item) => {return (item.schDay !== undefined ? item.schDay : item.day)})))
   const totalDays = daysWithHours.length
   const totalWidth = totalDays * dayWidth
 
@@ -101,6 +110,9 @@ export function useScheduleData (data) {
 
   const formattedHours = sortedUniqueHours
 
+  /**
+   *
+   */
   function calculateTimeLinesHeight () {
     const totalHours = uniqueHours.length
     return totalHours * 60 // Cada hora ocupa 60 píxeles de altura

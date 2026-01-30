@@ -1,3 +1,9 @@
+/**
+ *
+ * @param state
+ * @param action
+ * @param productsFood
+ */
 export function handleRemoveProduct(state: any, action: any, productsFood: any) {
   const productExist = state?.PRODUCT.find((items: any) => {
     return items.pId === action.payload.pId
@@ -14,11 +20,11 @@ export function handleRemoveProduct(state: any, action: any, productsFood: any) 
         ? state.PRODUCT.map((items: any) => {
           return items.pId === action.payload.pId
             ? {
-                ...items,
-                pId: action.payload.pId,
-                ProQuantity: items.ProQuantity - 1,
-                ProPrice: productExist.ProPrice - OurProduct?.ProPrice
-              }
+              ...items,
+              pId: action.payload.pId,
+              ProQuantity: items.ProQuantity - 1,
+              ProPrice: productExist.ProPrice - OurProduct?.ProPrice
+            }
             : items
         })
         : state.PRODUCT.filter((items: any) => {

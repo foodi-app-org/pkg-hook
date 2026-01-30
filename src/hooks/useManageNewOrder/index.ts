@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+
 import {
   useGetSale,
   // updateExistingOrders,
   convertDateFormat,
   useOrdersFromStore
 } from '..'
+
 import { findOrderByCodeRef, isDateInRange } from './helpers'
 
 export const useManageNewOrder = ({
@@ -39,7 +41,7 @@ export const useManageNewOrder = ({
       const dataOrder = data[KEY_STATUS_ORDER]
       if (Array.isArray(dataOrder) && dataOrder) {
         const filteredOrders = dataOrder.filter(order =>
-          isDateInRange(order?.pDatCre) && order?.pSState === 1
+        {return isDateInRange(order?.pDatCre) && order?.pSState === 1}
         ) ?? []
         setOrders(filteredOrders)
         setCountOrders(filteredOrders.length)

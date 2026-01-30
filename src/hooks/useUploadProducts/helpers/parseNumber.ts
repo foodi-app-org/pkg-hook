@@ -4,12 +4,12 @@
  * @returns {string} Parsed number as a string in the format "1500.00".
  * @throws Will throw an error if the input is not a valid formatted number.
  */
-export const parseNumber = (value) => {
+export const parseNumber = (value: string | number) => {
   // Convert value to string if it's a number
   const stringValue = typeof value === 'number' ? value.toString() : value
 
   if (typeof stringValue !== 'string') {
-    throw new Error('Input must be a string or number')
+    throw new TypeError('Input must be a string or number')
   }
 
   // Remove thousands separators and adjust decimal separator
@@ -20,7 +20,7 @@ export const parseNumber = (value) => {
   // Parse the sanitized value as a float
   const parsedNumber = parseFloat(sanitizedValue)
   if (isNaN(parsedNumber)) {
-    throw new Error('Invalid number format')
+    throw new TypeError('Invalid number format')
   }
 
   // Format the number with two decimal places

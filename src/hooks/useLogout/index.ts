@@ -1,8 +1,10 @@
 import { useApolloClient } from '@apollo/client'
 import { useState } from 'react'
+
 import { Cookies } from '../../cookies/index'
 import { getCurrentDomain } from '../../utils'
 import { signOutAuth } from './helpers'
+
 
 interface UseLogoutOptions {
   setAlertBox?: (options: { message: string }) => { message: string }
@@ -18,19 +20,19 @@ export const useLogout = ({
 
   const eliminarCookie = async (nombreCookie: string) => {
     try {
-      let domain = getCurrentDomain()
+      let domain = getCurrentDomain() as string | undefined
 
       // Si estás en entorno local, usa 'localhost' como dominio
       if (domain === 'localhost') {
-        domain = false // Esto permitirá la cookie en 'localhost'
+        domain = undefined // Esto permitirá la cookie en 'localhost'
       }
 
       const expirationTime = new Date()
       expirationTime.setTime(expirationTime.getTime() - 1000) // Establece una fecha de expiración en el pasado
 
-      const formattedDomain = domain || getCurrentDomain()
+      const formattedDomain: string | undefined = typeof domain === 'string' ? domain : undefined
 
-      await Cookies.remove(nombreCookie, { domain: formattedDomain, path: '/', secure: process.env.NODE_ENV === 'production' })
+      Cookies.remove(nombreCookie, { domain: formattedDomain, path: '/', secure: process.env.NODE_ENV === 'production' })
 
       console.log('Cookie eliminada correctamente.')
     } catch (error) {

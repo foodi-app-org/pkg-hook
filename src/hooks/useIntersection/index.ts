@@ -70,7 +70,7 @@ export const useIntersectionObserver = ({
     }
     return () => {
       if (disconnect) {
-        // eslint-disable-next-line no-void
+         
         observer === null || observer === void 0 ? void 0 : observer.disconnect(refEl)
       }
       if (!disconnect) {

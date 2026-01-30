@@ -8,11 +8,16 @@ import {
   useEffect,
   useReducer,
   useMemo,
-  useState,
+  useState
 } from 'react'
+
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
+import { generateTicket } from '../../utils/generateCode'
+import { useCatWithProduct } from '../useCatWithProduct'
+import { CatProductWithProduct, GetCatProductsWithProductResponse } from '../useCatWithProduct/types'
 import { useFormatDate } from '../useFormatDate'
+import { useLogout } from '../useLogout'
 import { useGetOneProductsFood, useProductsFood } from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
@@ -20,26 +25,25 @@ import {
   GET_ONE_PRODUCTS_FOOD
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
+
+// import { updateExistingOrders } from '../useUpdateExistingOrders'
+
+import { addToCartFunc } from './helpers/add-product.utils'
+import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
+import { initialStateSales, SalesActionTypes } from './helpers/constants'
+import { decrementExtra } from './helpers/extras.utils'
+import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
+import { handleRemoveProduct } from './helpers/remove-product.utils'
+import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_COUNT_SALES
 } from './queries'
-// import { updateExistingOrders } from '../useUpdateExistingOrders'
-import { useGetSale } from './useGetSale'
-import { useCatWithProduct } from '../useCatWithProduct'
-import { useLogout } from '../useLogout'
-import { generateTicket } from '../../utils/generateCode'
-import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
-import { decrementExtra } from './helpers/extras.utils'
-import { handleRemoveProduct } from './helpers/remove-product.utils'
-import { addToCartFunc } from './helpers/add-product.utils'
-import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
-import { initialStateSales, SalesActionTypes } from './helpers/constants'
-import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
 import { SalesReducerAction, SalesState, ValuesState } from './types'
 import { UseSalesProps } from './types/use-sales.types'
 import { initializer } from './helpers/initializer.utils'
-import { CatProductWithProduct, GetCatProductsWithProductResponse } from '../useCatWithProduct/types'
+import { useGetSale } from './useGetSale'
+
 
 export const useSales = ({
   disabled = false,
@@ -68,7 +72,7 @@ export const useSales = ({
   const [totalProductPrice, setTotalProductPrice] = useState<number>(0)
   const [showMore, setShowMore] = useState<number>(100)
   const [inputValue, setInputValue] = useState<string>('')
-  // eslint-disable-next-line no-unused-vars
+   
   const [_, setFilteredList] = useState([])
   const [delivery, setDelivery] = useState<boolean>(false)
   const [print, setPrint] = useState<boolean>(false)
@@ -185,24 +189,24 @@ export const useSales = ({
    */
   const handleChangeCheck = (caId: string) => {
     setCategories((prev) => {
-      if (!prev || prev.length === 0) return prev;
+      if (!prev || prev.length === 0) return prev
 
-      const index = prev.findIndex((item) => item.carProId === caId);
-      if (index === -1) return prev; // nothing to update → no rerender
+      const index = prev.findIndex((item) => {return item.carProId === caId})
+      if (index === -1) return prev // nothing to update → no rerender
 
-      const target = prev[index];
+      const target = prev[index]
 
       const updatedItem = {
         ...target,
-        checked: !target.checked,
-      };
+        checked: !target.checked
+      }
 
-      const newList = [...prev]; // clone array ONCE
-      newList[index] = updatedItem;
+      const newList = [...prev] // clone array ONCE
+      newList[index] = updatedItem
 
-      return newList;
-    });
-  };
+      return newList
+    })
+  }
 
 
   // HANDLESS
@@ -230,10 +234,10 @@ export const useSales = ({
     const target: any = (e as any).target
     const { name, value } = target
     setErrors({ ...errors, [name]: error })
-    setValues((prevValues) => ({
+    setValues((prevValues) => {return {
       ...prevValues,
       [name]: value
-    }))
+    }})
   }
 
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,30 +251,30 @@ export const useSales = ({
    * @returns {any} New updated state.
    */
   const handleToggleEditingStatus = (state: any, action: any) => {
-    const pId = action?.payload?.pId;
-    if (!pId) return state;
+    const pId = action?.payload?.pId
+    if (!pId) return state
 
-    const list = state.PRODUCT;
-    const index = list.findIndex((item: any) => item.pId === pId);
+    const list = state.PRODUCT
+    const index = list.findIndex((item: any) => {return item.pId === pId})
 
     // If no match, nothing changes → no re-render
-    if (index === -1) return state;
+    if (index === -1) return state
 
-    const target = list[index];
+    const target = list[index]
 
     const updatedItem = {
       ...target,
       editing: !target.editing,
-      oldQuantity: target.ProQuantity ?? 0,
-    };
+      oldQuantity: target.ProQuantity ?? 0
+    }
 
     // Clone the array only once
-    const newList = [...list];
-    newList[index] = updatedItem;
+    const newList = [...list]
+    newList[index] = updatedItem
 
     return {
       ...state,
-      PRODUCT: newList,
+      PRODUCT: newList
     }
   }
 
@@ -303,10 +307,10 @@ export const useSales = ({
    */
   const handleSuccessUpdateQuantity = (state: any, payload: any) => {
     const pId = payload?.payload?.pId
-    if (!pId) return state;
+    if (!pId) return state
 
     const list = state.PRODUCT
-    const index = list.findIndex((item: any) => item.pId === pId)
+    const index = list.findIndex((item: any) => {return item.pId === pId})
 
     // If no match → no state changes → no rerender
     if (index === -1) return state
@@ -328,17 +332,17 @@ export const useSales = ({
     })
     return {
       ...state,
-      PRODUCT: newList,
-    };
-  };
+      PRODUCT: newList
+    }
+  }
 
 
   /**
- * Cancels the update of a product's quantity, resetting it to the previous value.
- * @param {Object} state - The current state.
- * @param {Object} payload - The payload containing the product ID.
- * @returns {Object} - The new state with the updated product quantity and editing status.
- */
+   * Cancels the update of a product's quantity, resetting it to the previous value.
+   * @param {Object} state - The current state.
+   * @param {Object} payload - The payload containing the product ID.
+   * @returns {Object} - The new state with the updated product quantity and editing status.
+   */
   const handleCancelUpdateQuantity = (state: any, payload: any) => {
     // Validación de `state`
     if (!state || typeof state !== 'object') {
@@ -408,14 +412,14 @@ export const useSales = ({
 
   const handleAddProduct = async (product: any) => {
     const pId = String(product?.pId)
-    const memo = productsFood.find((item: any) => String(item.pId) === pId)
+    const memo = productsFood.find((item: any) => {return String(item.pId) === pId})
     if (!memo) {
       const response = await handleGetOneProduct({ pId })
-      if (response.data?.productFoodsOne == null) return sendNotification({
+      if (response.data?.productFoodsOne == null) {return sendNotification({
         title: 'Error',
         backgroundColor: 'error',
         description: 'No se pudo obtener el producto'
-      })
+      })}
       const productData = response.data?.productFoodsOne ?? { pId: null }
       return dispatch({
         type: SalesActionTypes.ADD_TO_CART,
@@ -494,7 +498,7 @@ export const useSales = ({
           productId: action.id,
           productsFood,
           sendNotification
-        });
+        })
       }
 
       case SalesActionTypes.PUT_COMMENT:
@@ -548,10 +552,10 @@ export const useSales = ({
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
-    const item = dataOptional.find((item) => item.code === codeCategory)
+    const item = dataOptional.find((item) => {return item.code === codeCategory})
     if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el: any) => el.opSubExPid === exOptional
+      (el: any) => {return el.opSubExPid === exOptional}
     )
     if (item && idx !== -1) {
       const updatedItem = {
@@ -571,14 +575,19 @@ export const useSales = ({
         ]
       }
       const newData = dataOptional.map((el) =>
-        // @ts-ignore
-        el.code === codeCategory ? updatedItem : el
+      // @ts-ignore
+      {return el.code === codeCategory ? updatedItem : el}
       )
       // @ts-ignore
-      setDataOptional(() => [...newData])
+      setDataOptional(() => {return [...newData]})
     }
   }
 
+  /**
+   *
+   * @param state
+   * @param action
+   */
   function handleUpdateAllExtraAndOptional(state: any, action: any) {
     return {
       ...state,
@@ -606,10 +615,13 @@ export const useSales = ({
           return p.quantity !== 0
         })
         : []
-    const val = arr.findIndex((item: any) => item.quantity !== 0)
+    const val = arr.findIndex((item: any) => {return item.quantity !== 0})
     if (val === -1) {
       setSumExtraProducts(0)
     }
+    /**
+     *
+     */
     function sumNewExtraPrice() {
       let sum = 0
       arr.forEach((obj: any) => {
@@ -626,6 +638,9 @@ export const useSales = ({
     }
   }, [dataExtra])
 
+  /**
+   *
+   */
   function handleUpdateAllExtra() {
     try {
       if (!product?.PRODUCT?.pId) {
@@ -639,7 +654,7 @@ export const useSales = ({
         .map((obj) => {
           // @ts-ignore
           const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
-            (subObj: any) => subObj?.check === true
+            (subObj: any) => {return subObj?.check === true}
           )
           // Excluya todo el objeto padre si filteredSubOptions está vacío
           if (filteredSubOptions?.length === 0) {
@@ -648,9 +663,9 @@ export const useSales = ({
           // @ts-ignore
           return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
-        .filter((obj) => obj !== null) // Elimine todos los objetos nulos del arreglo
+        .filter((obj) => {return obj !== null}) // Elimine todos los objetos nulos del arreglo
       // @ts-ignore
-      const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0)
+      const filteredDataExtra = dataExtra?.filter((p) => {return p?.quantity !== undefined && p?.quantity !== 0})
       if (product?.PRODUCT?.pId) {
         // @ts-ignore
         dispatch({
@@ -680,6 +695,12 @@ export const useSales = ({
   }
 
   // @ts-ignore
+  /**
+   *
+   * @param root0
+   * @param root0.Adicionales
+   * @param root0.index
+   */
   function handleIncrementExtra({ Adicionales, index }) {
     const { pId } = product?.PRODUCT || {}
     const exPid = Adicionales?.exPid || null
@@ -711,10 +732,14 @@ export const useSales = ({
   const handleDecrementExtra = ({ Adicionales }: { Adicionales: any }) => {
     const exPid = Adicionales?.exPid
     if (!exPid) return
-    setDataExtra((prev) => decrementExtra(prev as any, exPid))
+    setDataExtra((prev) => {return decrementExtra(prev as any, exPid)})
   }
 
 
+  /**
+   *
+   * @param stock
+   */
   function sendAlertStock(stock: number) {
     return sendNotification({
       title: 'Stock insuficiente',
@@ -731,22 +756,22 @@ export const useSales = ({
    * @returns {any} Updated state.
    */
   function toggleFreeProducts(state: any, action: any) {
-    const pId = action?.payload?.pId;
-    if (!pId) return state;
+    const pId = action?.payload?.pId
+    if (!pId) return state
 
     // Find the reference product price only once
-    const referenceProduct = productsFood.find((item: any) => item.pId === pId);
-    if (!referenceProduct) return state;
+    const referenceProduct = productsFood.find((item: any) => {return item.pId === pId})
+    if (!referenceProduct) return state
 
-    const list = state.PRODUCT;
-    const index = list.findIndex((item: any) => item.pId === pId);
+    const list = state.PRODUCT
+    const index = list.findIndex((item: any) => {return item.pId === pId})
 
     // If no match, skip re-render
-    if (index === -1) return state;
+    if (index === -1) return state
 
-    const target = list[index];
+    const target = list[index]
 
-    const newFreeState = !target.free;
+    const newFreeState = !target.free
 
     const updatedItem = {
       ...target,
@@ -754,20 +779,26 @@ export const useSales = ({
       ProPrice: newFreeState
         ? 0
         : (target.ProQuantity ?? 1) * (referenceProduct.ProPrice ?? 0)
-    };
+    }
 
     // Clone array ONCE
-    const newList = [...list];
-    newList[index] = updatedItem;
+    const newList = [...list]
+    newList[index] = updatedItem
 
     return {
       ...state,
-      PRODUCT: newList,
-    };
+      PRODUCT: newList
+    }
   }
 
 
   // COMMENT_FREE_PRODUCT
+  /**
+   *
+   * @param state
+   * @param action
+   * @param deleteValue
+   */
   function commentProducts(state: any, action: any, deleteValue = false) {
     if (values.comment) {
       sendNotification({
@@ -841,14 +872,14 @@ export const useSales = ({
   }
 
   const arrayProduct = useMemo(() => {
-    if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return [];
+    if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return []
     return data.PRODUCT.map((product: any) => {
-      const filteredDataExtra = (product?.dataExtra ?? []).map(({ __typename, ...rest }) => rest);
+      const filteredDataExtra = (product?.dataExtra ?? []).map(({ __typename, ...rest }) => {return rest})
       const dataOptional = (product?.dataOptional ?? []).map(({ __typename, ...rest }) => {
-        const { ExtProductFoodsSubOptionalAll, ...r } = rest;
-        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ __typename, ...s }) => s);
-        return { ...r, ExtProductFoodsSubOptionalAll: adjusted };
-      });
+        const { ExtProductFoodsSubOptionalAll, ...r } = rest
+        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ __typename, ...s }) => {return s})
+        return { ...r, ExtProductFoodsSubOptionalAll: adjusted }
+      })
       return {
         pId: product.pId,
         refCodePid: RandomCode(20),
@@ -858,18 +889,22 @@ export const useSales = ({
         dataOptional: dataOptional ?? [],
         dataExtra: filteredDataExtra,
         ProPrice: product.ProPrice
-      };
+      }
     })
-  }, [data.PRODUCT, values?.cliId]);
+  }, [data.PRODUCT, values?.cliId])
 
   const finalArrayProduct = useMemo(() => {
     return arrayProduct.map((item: any) => {
-      const totalExtra = (item.dataExtra ?? []).reduce((acc: number, ex: any) => acc + (Number(ex.newExtraPrice) || 0), 0);
+      const totalExtra = (item.dataExtra ?? []).reduce((acc: number, ex: any) => {return acc + (Number(ex.newExtraPrice) || 0)}, 0)
       return { ...item, totalExtra }
-    });
+    })
   }, [arrayProduct])
 
   let totalSale = 0
+  /**
+   *
+   * @param data
+   */
   function sumProPriceAndTotalExtra(data) {
     return data.map((item) => {
       const totalExtra = item.dataExtra.reduce((acc, curr) => {
@@ -936,6 +971,10 @@ export const useSales = ({
     }
     // @ts-ignore
     setCode(code)
+    /**
+     *
+     * @param cadena
+     */
     function convertInteger(cadena: string | number) {
       if (typeof cadena === 'string') {
         const numeroEntero = parseInt(cadena?.replace('.', ''))
@@ -1079,7 +1118,7 @@ export const useSales = ({
           ?.map((obj: any) => {
             const filteredSubOptions =
               obj.ExtProductFoodsSubOptionalAll.filter(
-                (subObj: any) => subObj.check === true
+                (subObj: any) => {return subObj.check === true}
               )
             // Excluya todo el objeto padre si filteredSubOptions está vacío
             if (filteredSubOptions.length === 0) {
@@ -1090,7 +1129,7 @@ export const useSales = ({
               ExtProductFoodsSubOptionalAll: filteredSubOptions
             }
           })
-          .filter((obj: any) => obj !== null)
+          .filter((obj: any) => {return obj !== null})
         : []
 
       // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
@@ -1098,7 +1137,7 @@ export const useSales = ({
         const updateOption = optionalFetch
           .map((obj: any) => {
             const matchingArray = filteredDataOptional.find(
-              (o: any) => o && o.opExPid === obj.opExPid
+              (o: any) => {return o && o.opExPid === obj.opExPid}
             )
             if (!matchingArray) {
               return obj
@@ -1110,7 +1149,7 @@ export const useSales = ({
                 const newItem =
                   matchingArray.ExtProductFoodsSubOptionalAll.find(
                     (newItem: any) =>
-                      newItem && newItem.opSubExPid === subObj.opSubExPid
+                    {return newItem && newItem.opSubExPid === subObj.opSubExPid}
                   )
                 if (newItem) {
                   return {
@@ -1126,7 +1165,7 @@ export const useSales = ({
                 updateExtProductSubOptionalAll
             }
           })
-          .filter((obj: any) => obj)
+          .filter((obj: any) => {return obj})
         if (existOptionalCookies) {
           setDataOptional(updateOption || [])
         } else {
@@ -1140,16 +1179,16 @@ export const useSales = ({
         finalData = extProduct?.data?.ExtProductFoodsAll
       } else {
         const filteredData = originalArray.dataExtra.filter((item: any) =>
-          extProduct?.data?.ExtProductFoodsAll.some(
-            (newItem: any) => newItem.exPid === item.exPid
-          )
+        {return extProduct?.data?.ExtProductFoodsAll.some(
+          (newItem: any) => {return newItem.exPid === item.exPid}
+        )}
         )
         finalData = originalArray?.dataExtra?.concat(
           extProduct?.data?.ExtProductFoodsAll?.filter(
             (item: any) =>
-              !filteredData?.some(
-                (filteredItem: any) => filteredItem.exPid === item.exPid
-              )
+            {return !filteredData?.some(
+              (filteredItem: any) => {return filteredItem.exPid === item.exPid}
+            )}
           )
         )
       }
@@ -1181,16 +1220,16 @@ export const useSales = ({
   const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
 
   /**
-* Filter objects with checked property equal to true.
-* @param {Array} products - Array of objects.
-* @returns {Array} - Array of objects with checked property equal to true.
-*/
+   * Filter objects with checked property equal to true.
+   * @param {Array} products - Array of objects.
+   * @returns {Array} - Array of objects with checked property equal to true.
+   */
   function filterChecked(products: any[]) {
     if (!Array.isArray(products)) {
       return []
     }
 
-    return products.filter(product => product?.checked === true)?.map(product => product?.carProId)
+    return products.filter(product => {return product?.checked === true})?.map(product => {return product?.carProId})
   }
 
   // Obtener los carProIds de productos con checked en true
@@ -1200,20 +1239,20 @@ export const useSales = ({
   const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
 
   const allProducts = useMemo(() => {
-    const productMap = new Map(data?.PRODUCT?.map((item: any) => [String(item.pId), item.ProQuantity || 0]))
+    const productMap = new Map(data?.PRODUCT?.map((item: any) => {return [String(item.pId), item.ProQuantity || 0]}))
 
-    return filteredProducts.map(product => ({
+    return filteredProducts.map(product => {return {
       ...product,
       existsInSale: productMap.has(String(product.pId)),
       ProQuantity: productMap.get(String(product.pId)) || 0
-    }))
+    }})
   }, [data.PRODUCT, filteredProducts])
 
-  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: any) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0) }, [finalArrayProduct])
+  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: any) => {return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0)}, 0) }, [finalArrayProduct])
 
   const handleAddAllProductsToCart = () => {
     for (const product of allProducts) {
-      const existsInCart = data.PRODUCT.some((item: any) => item.pId === product.pId)
+      const existsInCart = data.PRODUCT.some((item: any) => {return item.pId === product.pId})
       if (!existsInCart) {
         dispatch({ type: SalesActionTypes.ADD_TO_CART, payload: product })
       } else {
@@ -1223,15 +1262,15 @@ export const useSales = ({
   }
 
   /**
- * handleChangeNumber
- * Updates product quantity from input change with full validations.
- * @param {any} state - Current reducer state
- * @param {any} action - Action with payload { value, index, id }
- * @param {any[]} productsFood - Products memory source
- * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
- * @param {(a:any)=>void} dispatch
- * @returns {any} Updated state
- */
+   * handleChangeNumber
+   * Updates product quantity from input change with full validations.
+   * @param {any} state - Current reducer state
+   * @param {any} action - Action with payload { value, index, id }
+   * @param {any[]} productsFood - Products memory source
+   * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
+   * @param {(a:any)=>void} dispatch
+   * @returns {any} Updated state
+   */
   function handleChangeNumber(
     state: any,
     action: any,
@@ -1243,8 +1282,8 @@ export const useSales = ({
 
     if (!id || index === undefined) return state
 
-    const productExist = productsFood.find((item: any) => item.pId === id)
-    const oneProduct = state?.PRODUCT?.find((item: any) => item.pId === id)
+    const productExist = productsFood.find((item: any) => {return item.pId === id})
+    const oneProduct = state?.PRODUCT?.find((item: any) => {return item.pId === id})
 
     // Product not found
     if (!productExist || !oneProduct) return state
@@ -1268,7 +1307,7 @@ export const useSales = ({
       })
       return {
         ...state,
-        PRODUCT: state.PRODUCT.filter((t: any) => t.pId !== id),
+        PRODUCT: state.PRODUCT.filter((t: any) => {return t.pId !== id}),
         counter: (state.counter ?? 0) - (oneProduct.ProQuantity || 0)
       }
     }
@@ -1287,13 +1326,13 @@ export const useSales = ({
     }
 
     const updatedProducts = state.PRODUCT.map((item: any, i: number) =>
-      i === index
-        ? {
-          ...item,
-          ProQuantity: finalQuantity,
-          ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
-        }
-        : item
+    {return i === index
+      ? {
+        ...item,
+        ProQuantity: finalQuantity,
+        ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
+      }
+      : item}
     )
 
     return {

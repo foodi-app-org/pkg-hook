@@ -3,6 +3,7 @@ import {
   useRef,
   useState
 } from 'react'
+
 import {
   CREATE_BANNER_STORE,
   CREATE_LOGO,
@@ -11,6 +12,7 @@ import {
   GET_ONE_BANNER_STORE
 } from '../useProductsFood/queriesStore'
 import { GET_ONE_STORE } from '../useStore/queries'
+
 import { color } from './utils'
 export * from './queries'
 
@@ -107,9 +109,9 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       setPreviewImg(
         files.length
           ? {
-              src: URL.createObjectURL(files[0]),
-              alt: files[0].name
-            }
+            src: URL.createObjectURL(files[0]),
+            alt: files[0].name
+          }
           : initialState
       )
       registerBanner({

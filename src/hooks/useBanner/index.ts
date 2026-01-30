@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_ONE_BANNER_STORE } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
 

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
 import { useLazyQuery } from '@apollo/client'
-import { GET_ALL_RESTAURANT } from './queries'
-import { filterAndSortByDate } from './helpers'
+import { useEffect, useState } from 'react'
+
 import { useManageQueryParams } from '../useManageQueryParams'
+
+import { filterAndSortByDate } from './helpers'
 import { getStatusForStores } from './helpers/manageStatusOpen'
+import { GET_ALL_RESTAURANT } from './queries'
 
 export const useRestaurant = ({
   location = {

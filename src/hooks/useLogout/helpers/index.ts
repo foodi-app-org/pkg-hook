@@ -1,7 +1,7 @@
 import { apiBaseUrl } from './apiBaseUrl'
+import { BroadcastChannel } from './BroadcastChannel'
 import { getCsrfToken } from './getCsrfToken'
 import { parseUrl } from './parseUrl'
-import { BroadcastChannel } from './BroadcastChannel'
 
 const broadcast = BroadcastChannel()
 
@@ -21,6 +21,10 @@ export const __NEXTAUTH = {
   _getSession: ({ ...args }) => { }
 }
 
+/**
+ *
+ * @param options
+ */
 export async function signOutAuth(options: {
   callbackUrl?: string
   redirect?: boolean

@@ -1,4 +1,5 @@
 import { useQuery, useLazyQuery } from '@apollo/client'
+
 import { GET_ALL_SALES, GET_ALL_TOTAL_SALES } from './queries'
 
 export const useReport = ({

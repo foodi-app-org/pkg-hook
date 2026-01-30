@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
+
 import { GET_PAYMENT_METHOD } from '../paymentMethod.gql'
 import { PaymentMethod } from '../paymentMethod.types'
 

@@ -1,6 +1,8 @@
 import { useMutation, useApolloClient } from '@apollo/client'
-import { UPDATE_IMAGE_PRODUCT_FOOD } from './queries'
+
 import { GET_ONE_PRODUCTS_FOOD } from '../useProductsFood/queriesStore'
+
+import { UPDATE_IMAGE_PRODUCT_FOOD } from './queries'
 
 /**
  * Hook to update product image and sync Apollo cache.

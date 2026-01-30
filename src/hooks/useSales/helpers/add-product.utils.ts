@@ -1,4 +1,5 @@
 import { NotificationPayload } from '../types'
+
 import { isStockInsufficient } from './isStockInsufficient'
 
 interface AddToCartProps {
@@ -46,7 +47,7 @@ export const addToCartFunc = ({
   }
 
   // PRE-FETCH product references (only ONCE)
-  const productExistIndex = state.PRODUCT.findIndex((item: any) => item.pId === pId)
+  const productExistIndex = state.PRODUCT.findIndex((item: any) => {return item.pId === pId})
   const productExist = productExistIndex !== -1 ? state.PRODUCT[productExistIndex] : null
   if (!product) return state
 

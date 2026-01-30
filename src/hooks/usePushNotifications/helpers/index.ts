@@ -75,6 +75,11 @@ function getUserSubscription () {
 
 const host = process.env.NODE_ENV === 'production' ? 'http://localhost:4000' : 'http://localhost:4000'
 
+/**
+ *
+ * @param path
+ * @param body
+ */
 function post (path, body) {
   return fetch(`${host}${path}`, {
     body: JSON.stringify(body),
@@ -89,6 +94,10 @@ function post (path, body) {
     })
 }
 
+/**
+ *
+ * @param path
+ */
 function get (path) {
   return fetch(`${host}${path}`, {
     method: 'GET',

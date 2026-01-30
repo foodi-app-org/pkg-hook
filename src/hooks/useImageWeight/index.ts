@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 
+/**
+ *
+ * @param imageUrl
+ */
 export function useImageWeight (imageUrl) {
   const [weight, setWeight] = useState(null)
 

@@ -1,14 +1,17 @@
+import { useMutation } from '@apollo/client'
 import {
   useState,
   useEffect,
   useMemo
 } from 'react'
-import { useMutation } from '@apollo/client'
-import { DELETE_ONE_ITEM_SHOPPING_PRODUCT } from './queries'
+
+import { statusOpenStores } from '../statusOpenStores'
 import { useCart, useGetCart } from '../useCart'
 import { useManageQueryParams } from '../useManageQueryParams'
+
 import { calculateTotalPrice } from './helpers'
-import { statusOpenStores } from '../statusOpenStores'
+import { DELETE_ONE_ITEM_SHOPPING_PRODUCT } from './queries'
+
 
 export const useAsideCart = ({
   openModalProduct = false,
@@ -101,9 +104,9 @@ export const useAsideCart = ({
     }
   }
   /**
- * Handle the deletion of a shopping cart item.
- * @param {Object} item - The item to be deleted from the shopping cart.
- */
+   * Handle the deletion of a shopping cart item.
+   * @param {Object} item - The item to be deleted from the shopping cart.
+   */
   const handleDeleteItemShopping = async (item) => {
     if (!item) {
       return setAlertBox({
@@ -123,7 +126,7 @@ export const useAsideCart = ({
                 if (!Array.isArray(existingCart)) return []
 
                 const filteredCart = existingCart.filter(product =>
-                  readField('ShoppingCard', product) !== ShoppingCard
+                {return readField('ShoppingCard', product) !== ShoppingCard}
                 )
 
                 // Actualizar el contador de productos
@@ -167,11 +170,11 @@ export const useAsideCart = ({
   console.log(dataShoppingCard)
 
   /**
- * Verifica el estado de apertura de la tienda.
- *
- * @returns {Object|null} Objeto con el estado de apertura de la tienda o null en caso de error.
- * @throws {Error} Si ocurre un error durante la verificación del estado de la tienda.
- */
+   * Verifica el estado de apertura de la tienda.
+   *
+   * @returns {Object|null} Objeto con el estado de apertura de la tienda o null en caso de error.
+   * @throws {Error} Si ocurre un error durante la verificación del estado de la tienda.
+   */
   const handleVerifyStoreOpenStatus = () => {
   /**
    * @type {Array} dataShoppingCard - El array de la tarjeta de compras.
@@ -181,17 +184,17 @@ export const useAsideCart = ({
     }
 
     /**
-   * @type {Object} store - La primera tienda en el array de la tarjeta de compras.
-   */
+     * @type {Object} store - La primera tienda en el array de la tarjeta de compras.
+     */
     const store = dataShoppingCard[0] || {}
     /**
      * @type {Object} getStore - El objeto que contiene información de la tienda.
-    */
+     */
     const { getStore } = store
 
     /**
      * @type {Array} storeSchedules - El array de horarios de la tienda.
-    */
+     */
     const storeSchedules = Array.isArray(getStore?.getStoreSchedules) ? getStore?.getStoreSchedules : []
     try {
       const status = getStore?.scheduleOpenAll ? { open: true } : statusOpenStores({ dataSchedules: storeSchedules })

@@ -8,7 +8,7 @@ const MAX_PRICE = 999999999999.99
  * @returns {boolean} - Retorna `true` si todos los valores están en rango, `false` si alguno excede el máximo.
  */
 export const verifyPriceInRange = ({ values = [], sendNotification }) => {
-  const isAnyValueOutOfRange = values.some(value => value > MAX_PRICE)
+  const isAnyValueOutOfRange = values.some(value => {return value > MAX_PRICE})
   // Si algún valor está fuera del rango, envía una notificación y retorna false
   if (isAnyValueOutOfRange) {
     sendNotification({

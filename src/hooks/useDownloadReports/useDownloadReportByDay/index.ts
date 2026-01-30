@@ -1,8 +1,8 @@
 import { useLazyQuery } from '@apollo/client'
 import { gql } from '@apollo/client'
 import { useState } from 'react'
-import { downloadFileFromResponse } from '../helpers/downloadFileFromResponse'
 
+import { downloadFileFromResponse } from '../helpers/downloadFileFromResponse'
 
 
 /**
@@ -32,6 +32,8 @@ const GET_REPORT_DAY_NUMBER = gql`
 /**
  * Custom hook to trigger the report download when the GraphQL query resolves.
  *
+ * @param root0
+ * @param root0.sendNotification
  * @returns {{
  *   downloadReport: (day: number) => void,
  *   loading: boolean,

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 
-const DATE_UNITS = [
+const DATE_UNITS: [unit: Intl.RelativeTimeFormatUnit, secondsInUnit: number][] = [
   ['day', 86400],
   ['hour', 3600],
   ['minute', 60],
   ['second', 1]
 ]
 
-const getDateDiffs = (timestamp) => {
+type DateDiff = { value: number; unit: Intl.RelativeTimeFormatUnit }
+
+const getDateDiffs = (timestamp: number): DateDiff | undefined => {
   const now = Date.now()
   const elapsed = (timestamp - now) / 1000
 
@@ -19,8 +21,8 @@ const getDateDiffs = (timestamp) => {
   }
 }
 
-export const useTimeAgo = (timestamp) => {
-  const [timeAgo, setTimeAgo] = useState(() => { return getDateDiffs(timestamp) })
+export const useTimeAgo = (timestamp: number) => {
+  const [timeAgo, setTimeAgo] = useState<DateDiff | undefined>(() => getDateDiffs(timestamp))
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,7 +35,5 @@ export const useTimeAgo = (timestamp) => {
 
   const rtf = new Intl.RelativeTimeFormat('es', { style: 'short' })
 
-  const { value, unit } = timeAgo
-
-  return rtf && rtf?.format(value, unit)
+  return rtf?.format(timeAgo?.value ?? 0, (timeAgo?.unit ?? 'second'))
 }

@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
 import { useQuery } from '@apollo/client'
+import { useMemo } from 'react'
+
 import { GET_ALL_CATEGORIES_WITH_PRODUCT_CLIENTS } from './queries'
 
 /**
@@ -44,7 +45,7 @@ export const useCatWithProductClient = (idStore) => {
   // Utiliza useMemo para memorizar el resultado filtrado
   const filteredData = useMemo(() => {
     return data?.getCatProductsWithProductClient?.filter(
-      (category) => category?.productFoodsAll?.length > 0
+      (category) => {return category?.productFoodsAll?.length > 0}
     ) || []
   }, [data])
 

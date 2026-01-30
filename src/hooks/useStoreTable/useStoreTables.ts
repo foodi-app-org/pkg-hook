@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { STORE_TABLES_QUERY } from './queries' // Ajusta la ruta a tu archivo de queries
 
 /**

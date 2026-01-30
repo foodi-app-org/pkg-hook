@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_EMPLOYEES } from './queries'
 
 export const useEmployee = () => {

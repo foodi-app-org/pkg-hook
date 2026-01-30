@@ -1,4 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client'
+
 import { GET_ALL_COUNT_SALES } from './queries'
 
 export const useTotalSales = () => {

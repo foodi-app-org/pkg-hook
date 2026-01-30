@@ -14,6 +14,9 @@ export const GET_ALL_STORES_PENDING_TO_REGISTER = gql`
   }
 `
 
+/**
+ *
+ */
 export function useAllStoresPendingToRegister () {
   const { loading, error, data } = useQuery(GET_ALL_STORES_PENDING_TO_REGISTER)
 

@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client'
+
 import { CREATE_ROLE_MUTATION } from './queries'
 /**
  * Custom hook para crear un nuevo rol
+ * @param root0
+ * @param root0.sendNotification
  * @returns {Object} - Estado de la mutación, incluyendo loading, error, data y la función createRoleMutation
  */
 export const useCreateRole = ({

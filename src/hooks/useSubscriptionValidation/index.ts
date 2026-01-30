@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { gql, useQuery } from '@apollo/client'
+import { useEffect, useState } from 'react'
 
 /**
  * GraphQL query to validate free subscription

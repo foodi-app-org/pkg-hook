@@ -21,7 +21,7 @@ export function findOrderByCodeRef (data, pCodeRef) {
       if (Array.isArray(column)) {
         // Buscar el objeto por pCodeRef dentro de la columna actual
         const foundOrder = column.find(
-          (order) => order && order.pCodeRef === pCodeRef
+          (order) => {return order && order.pCodeRef === pCodeRef}
         )
         // Si se encuentra el objeto, devolverlo
         if (foundOrder) {

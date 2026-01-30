@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
 import { gql, useMutation } from '@apollo/client'
+import { useCallback } from 'react'
 
 const UPDATE_MODULE_ORDER = gql`
   mutation UpdateModuleOrder($input: [UpdateModuleOrderInput]!) {
@@ -25,7 +25,7 @@ export const useUpdateModuleOrder = () => {
     // Enviar la actualización a la API (GraphQL)
     try {
       await updateModuleOrderMutation({
-        variables: { input: newOrder.map(({ mId, mPriority }) => ({ mId, mPriority })) }
+        variables: { input: newOrder.map(({ mId, mPriority }) => {return { mId, mPriority }}) }
       })
     } catch (error) {
       console.error('Error updating module order:', error)

@@ -7,7 +7,7 @@ export const fillMissingDates = (data, days = 7) => {
     date.setDate(today.getDate() - i)
 
     const formattedDate = date.toISOString().split('T')[0] // "YYYY-MM-DD"
-    const existingData = data.find(item => item.date === formattedDate)
+    const existingData = data.find(item => {return item.date === formattedDate})
 
     filledData.push(existingData || { date: formattedDate, TotalIn: 0, TotalOut: 0, TotalAdjustment: 0 })
   }

@@ -1,5 +1,6 @@
-import { useState } from 'react'
 import { useMutation } from '@apollo/client'
+import { useState } from 'react'
+
 import { CREATE_TABLE_MUTATION } from './queries'
 
 /**

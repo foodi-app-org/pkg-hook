@@ -9,7 +9,7 @@ export const filterDataOptional = (dataOptional) => {
 
   try {
     const filteredDataOptional = dataOptional.map(item => {
-      const checkedSubOptions = item?.ExtProductFoodsSubOptionalAll?.filter(subItem => subItem.check === true)
+      const checkedSubOptions = item?.ExtProductFoodsSubOptionalAll?.filter(subItem => {return subItem.check === true})
       const ExtProductFoodsSubOptionalAll = checkedSubOptions?.map(subItemsOptional => {
         return {
           ...filterKeyObject(subItemsOptional, filters)
@@ -19,7 +19,7 @@ export const filterDataOptional = (dataOptional) => {
         ...filterKeyObject(item, filters),
         ExtProductFoodsSubOptionalAll
       }
-    }).filter(item => item?.ExtProductFoodsSubOptionalAll.length > 0)
+    }).filter(item => {return item?.ExtProductFoodsSubOptionalAll.length > 0})
     return filteredDataOptional
   } catch (error) {
     console.error('An error occurred while filtering data:', error.message)
@@ -36,7 +36,7 @@ export function validateRequirements (filteredDataOptional) {
   if (Array.isArray(filteredDataOptional)) {
     for (const item of filteredDataOptional) {
       if (item.required === 1) {
-        const checkedSubOptions = item?.ExtProductFoodsSubOptionalAll.filter(subItem => subItem.check === true)
+        const checkedSubOptions = item?.ExtProductFoodsSubOptionalAll.filter(subItem => {return subItem.check === true})
         if (checkedSubOptions.length !== item.numbersOptionalOnly) {
           return true
         }
@@ -46,11 +46,15 @@ export function validateRequirements (filteredDataOptional) {
   return false
 }
 
+/**
+ *
+ * @param dataExtra
+ */
 export function validateExtraProducts (dataExtra) {
-  const requiredItems = dataExtra.filter(item => item.exState === 1)
+  const requiredItems = dataExtra.filter(item => {return item.exState === 1})
 
   if (requiredItems.length > 0) {
-    const hasSelectedRequiredProduct = requiredItems.some(item => item.quantity > 0)
+    const hasSelectedRequiredProduct = requiredItems.some(item => {return item.quantity > 0})
     return hasSelectedRequiredProduct
   }
 
@@ -62,7 +66,7 @@ export const filterExtra = (dataExtra) => {
     throw new Error('Input data is not an array')
   }
   try {
-    const dataExtraFiltered = dataExtra.filter(extra => extra.quantity !== 0)
+    const dataExtraFiltered = dataExtra.filter(extra => {return extra.quantity !== 0})
       .map(extra => {
         return {
           ...filterKeyObject(extra, filters)

@@ -1,9 +1,9 @@
-/* eslint-disable no-unused-vars */
+ 
 import { useRef, useState } from 'react'
 
 export const useEditImageProduct = ({ sendNotification = () => { }, initialState }) => {
   const [openEditImage, setopenEditImage] = useState(false)
-  // eslint-disable-next-line no-unused-vars
+   
   const [tags, setTags] = useState([])
   const [{ src, alt }, setPreviewImg] = useState([])
   const [errors, setErrors] = useState({})
@@ -77,9 +77,9 @@ export const useEditImageProduct = ({ sendNotification = () => { }, initialState
         setPreviewImg(
           file
             ? {
-                src: URL.createObjectURL(file),
-                alt: ''
-              }
+              src: URL.createObjectURL(file),
+              alt: ''
+            }
             : initialState
         )
         // You can use the file object to send it to a server or to download it
@@ -100,6 +100,12 @@ export const useEditImageProduct = ({ sendNotification = () => { }, initialState
       })
     // You can use the file object to send it to a server or to download it
   }
+  /**
+   *
+   * @param image
+   * @param crop
+   * @param zoom
+   */
   function getPixelCrop (image, crop, zoom) {
     const imgWidth = image.naturalWidth
     const imgHeight = image.naturalHeight
@@ -150,9 +156,9 @@ export const useEditImageProduct = ({ sendNotification = () => { }, initialState
           setPreviewImg(
             file
               ? {
-                  src: URL.createObjectURL(file),
-                  alt: ''
-                }
+                src: URL.createObjectURL(file),
+                alt: ''
+              }
               : initialState
           )
           // You can use the file object to send it to a server or to download it

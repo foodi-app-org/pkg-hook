@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
+
+import { days as NameDays } from '../../utils'
+import { convertToMilitaryTime } from '../convertToMilitaryTime'
+import { useSchedules, useCreateSchedules } from '../useSchedule'
+import { GET_ONE_SCHEDULE_STORE, GET_SCHEDULE_STORE } from '../useSchedule/queries'
+
 import {
   dateEnum,
   initialDays,
   timeSuggestions
 } from './helpers'
-import { useSchedules, useCreateSchedules } from '../useSchedule'
-import { days as NameDays } from '../../utils'
-import { convertToMilitaryTime } from '../convertToMilitaryTime'
-import { GET_ONE_SCHEDULE_STORE, GET_SCHEDULE_STORE } from '../useSchedule/queries'
 export * from './helpers/index'
 
 export const useSetupSchedule = ({
@@ -18,24 +20,24 @@ export const useSetupSchedule = ({
   const [days, setDays] = useState(initialDays === null ? [] : initialDays)
   const [alertModal, setAlertModal] = useState(false)
   const [selectedDay, setSelectedDay] = useState({})
-  const [setStoreSchedule, { loading }] = useCreateSchedules()
+  const [setStoreSchedule] = useCreateSchedules()
 
-  const onCompleted = (data) => {
+  const onCompleted = (data: any) => {
     if (Array.isArray(data) && data?.length > 0) {
       // Mapeamos los datos recibidos y los convertimos en un objeto con la estructura deseada
-      const newSchedules = data.map((day) => ({
+      const newSchedules = data.map((day) => {return {
         day: day.schDay,
         name: NameDays[day.schDay],
         selected: day.schHoEnd !== '00:00' || day.schHoSta !== '00:00',
         ...day
-      }))
+      }})
 
       // Actualizamos el estado days
       setDays(prevDays => {
         // Creamos un nuevo array combinando los elementos existentes en days con los nuevos datos
         const updatedDays = prevDays?.map(existingDay => {
           // Buscamos si hay un elemento con el mismo día en los nuevos datos
-          const newData = newSchedules.find(newDay => newDay.day === existingDay.day)
+          const newData = newSchedules.find(newDay => {return newDay.day === existingDay.day})
           // Si encontramos el día en los nuevos datos, lo fusionamos con el día existente
           if (newData) {
             return { ...existingDay, ...newData }
@@ -46,7 +48,7 @@ export const useSetupSchedule = ({
 
         // Ahora, buscamos los nuevos días que no están en days y los agregamos al array
         newSchedules.forEach(newDay => {
-          if (!updatedDays.some(existingDay => existingDay.day === newDay.day)) {
+          if (!updatedDays.some(existingDay => {return existingDay.day === newDay.day})) {
             updatedDays.push(newDay)
           }
         })
@@ -68,7 +70,7 @@ export const useSetupSchedule = ({
   const duplicateDay = (index) => {
     const selectedDay = days[index]
     // Lógica para desplegar el modal y seleccionar los días donde se replicará
-    const selectedDaysToDuplicate = days.filter((day) => day.checked)
+    const selectedDaysToDuplicate = days.filter((day) => {return day.checked})
     const updatedDays = [...days]
     selectedDaysToDuplicate.forEach((dayToDuplicate) => {
       const duplicatedDay = { ...selectedDay, checked: false }
@@ -88,15 +90,20 @@ export const useSetupSchedule = ({
     const updatedDays = days?.map((d) => {
       if (d.day === day) {
         return { ...d, selected: !d.selected }
-      } else {
-        return { ...d }
-      }
+      } 
+      return { ...d }
+      
     })
     setDays(updatedDays)
   }
-  const selectedDays = days?.filter((day) => Boolean(day.selected)).map((day) => {
+  const selectedDays = days?.filter((day) => {return Boolean(day.selected)}).map((day) => {
     return day.day
   })
+  /**
+   *
+   * @param hora1
+   * @param hora2
+   */
   function sumHours (hora1, hora2) {
     const [hora1Horas, hora1Minutos] = hora1.split(':').map(Number)
     const [hora2Horas, hora2Minutos] = hora2.split(':').map(Number)
@@ -116,6 +123,11 @@ export const useSetupSchedule = ({
     const horaSumada = `${String(sumaHour).padStart(2, '0')}:${String(sumMinutes).padStart(2, '0')}`
     return horaSumada
   }
+  /**
+   *
+   * @param hora1
+   * @param hora2
+   */
   function isLessThanOneHour (hora1, hora2) {
     const suma = sumHours(hora1, hora2)
     const [sumaHour, sumMinutes] = suma.split(':').map(Number)
@@ -131,9 +143,9 @@ export const useSetupSchedule = ({
       const updatedDays = prevDays?.map((d) => {
         if (d.day === day) {
           return { ...d, [name]: time, loading: Boolean(name === dateEnum.schHoEnd) }
-        } else {
-          return { ...d }
-        }
+        } 
+        return { ...d }
+        
       })
 
       if (name === dateEnum.schHoEnd) {
@@ -145,7 +157,7 @@ export const useSetupSchedule = ({
         const startHour = convertToMilitaryTime(schHoSta)
         const endHour = convertToMilitaryTime(schHoEnd)
         if (isLessThanOneHour(startHour, endHour)) {
-          // eslint-disable-next-line consistent-return
+           
           sendNotification({
             description: 'Error, el horario debe ser mayor a una hora',
             title: 'Error',
@@ -154,7 +166,7 @@ export const useSetupSchedule = ({
         }
         // Comparar solo las horas y minutos
         if (startHour === endHour) {
-          // eslint-disable-next-line consistent-return
+           
           sendNotification({
             description: 'Error, la hora de salida no debe ser igual a la hora final',
             title: 'Error',
@@ -162,7 +174,7 @@ export const useSetupSchedule = ({
           })
         }
         if (startHour > endHour) {
-          // eslint-disable-next-line consistent-return
+           
           sendNotification({
             description: 'Error, la hora de salida debe ser mayor que la de entrada',
             title: 'Error',
@@ -197,9 +209,9 @@ export const useSetupSchedule = ({
         const newUpdatedDays = updatedDays.map((d) => {
           if (d.day === day) {
             return { ...d, loading: false }
-          } else {
-            return { ...d }
-          }
+          } 
+          return { ...d }
+          
         })
         // Devolver el nuevo estado actualizado
         return newUpdatedDays
@@ -243,9 +255,9 @@ export const useSetupSchedule = ({
             [dateEnum.schHoSta]: dateEnum?.schHoSta,
             selected: false
           }
-        } else {
-          return { ...d }
-        }
+        } 
+        return { ...d }
+        
       })
       return updatedDays
     })
@@ -266,7 +278,7 @@ export const useSetupSchedule = ({
     selectedDays,
     selectedDay,
     alertModal,
-    loading: lsc || loading,
+    loading: lsc,
     times: timeSuggestions
   }
 }

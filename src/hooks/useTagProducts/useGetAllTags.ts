@@ -51,7 +51,7 @@ query getAllTags {
  */
 export const useGetAllTags = () => {
   const { data, loading, error } = useQuery(GET_ALL_TAGS, {
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'network-only'
   })
 
   const result = data?.getAllTags ?? {}
@@ -63,6 +63,6 @@ export const useGetAllTags = () => {
     message: result?.message ?? '',
     success: result?.success ?? false,
     pagination: result?.pagination ?? null,
-    errors: result?.errors ?? null,
+    errors: result?.errors ?? null
   }
 }

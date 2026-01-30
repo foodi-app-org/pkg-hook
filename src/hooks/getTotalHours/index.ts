@@ -45,7 +45,7 @@ export const getTotalHours = (days: ScheduleDay[] = []): string => {
 
   // Sum all minutes
   const totalMinutes: number = totalMinutesArray.reduce(
-    (acc, curr) => acc + curr,
+    (acc, curr) => {return acc + curr},
     0
   )
 

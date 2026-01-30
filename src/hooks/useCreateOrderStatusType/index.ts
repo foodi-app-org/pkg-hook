@@ -56,6 +56,8 @@ interface ResponseOrderStatusType {
 
 /**
  * 🧩 Hook personalizado para crear un OrderStatusType
+ * @param root0
+ * @param root0.sendNotification
  */
 export const useCreateOrderStatusType = ({
   sendNotification
@@ -71,14 +73,14 @@ export const useCreateOrderStatusType = ({
       CREATE_ORDER_STATUS_TYPE,
       {
         update(cache, { data }) {
-          console.log("🚀 ~ useCreateOrderStatusType ~ data:", data, cache)
+          console.log('🚀 ~ useCreateOrderStatusType ~ data:', data, cache)
           const newItem = data?.createOrderStatusType?.data
           if (!newItem) return
 
           cache.modify({
             fields: {
               getAllOrderStatusTypes(existing = {}) {
-              console.log("🚀 ~ useCreateOrderStatusType ~ existing:", existing)
+                console.log('🚀 ~ useCreateOrderStatusType ~ existing:', existing)
               
               }
             }
@@ -97,7 +99,7 @@ export const useCreateOrderStatusType = ({
               ? 'Estado de orden creado'
               : 'Error al crear el estado de orden',
             description: message,
-            backgroundColor: success ? 'success' : 'error',
+            backgroundColor: success ? 'success' : 'error'
           })
         }
       }
@@ -106,7 +108,7 @@ export const useCreateOrderStatusType = ({
   const handleCreateStatus = async (input: OrderStatusTypeInput) => {
     try {
       const response = await createOrderStatusType({
-        variables: { data: input },
+        variables: { data: input }
       })
 
       return response.data?.createOrderStatusType
@@ -114,7 +116,7 @@ export const useCreateOrderStatusType = ({
       sendNotification({
         title: 'Error al crear el estado de orden',
         description: 'Ha ocurrido un error inesperado al crear el estado de orden.',
-        backgroundColor: 'error',
+        backgroundColor: 'error'
       })
       throw err
     }
@@ -125,7 +127,7 @@ export const useCreateOrderStatusType = ({
     {
       data: data?.createOrderStatusType,
       loading,
-      error,
+      error
     }
   ]
 }

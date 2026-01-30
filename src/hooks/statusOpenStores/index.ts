@@ -49,10 +49,10 @@ export const statusOpenStores = (
     })
   }
 
-  const handleState = (message: string, open: boolean): OpeningStatus => ({
+  const handleState = (message: string, open: boolean): OpeningStatus => {return {
     message,
     open
-  })
+  }}
 
   const getNextDaySchedule = (
     schedules: StoreSchedule[],
@@ -66,13 +66,13 @@ export const statusOpenStores = (
 
     const findNextDay = schedules?.length
       ? schedules.some(
-          (schedule) => schedule?.schDay === dayOfWeekTomorrow
-        )
+        (schedule) => {return schedule?.schDay === dayOfWeekTomorrow}
+      )
       : false
 
     const findDataNextDay =
       schedules?.find(
-        (schedule) => schedule?.schDay === dayOfWeekTomorrow
+        (schedule) => {return schedule?.schDay === dayOfWeekTomorrow}
       ) ?? { schDay: dayOfWeekTomorrow }
 
     return { findNextDay, findDataNextDay, dayOfWeekTomorrow }
@@ -103,10 +103,10 @@ export const statusOpenStores = (
 
       const timeSpans = opening
         ?.split(';')
-        .map((item) => item.trim())
+        .map((item) => {return item.trim()})
 
       for (const span of timeSpans ?? []) {
-        const hours = span.split('-').map((item) => item.trim())
+        const hours = span.split('-').map((item) => {return item.trim()})
         const openTime = timeToInt(hours[0])
         const closeTime = timeToInt(hours[1])
 
@@ -163,7 +163,7 @@ export const statusOpenStores = (
 
         const nextHours = nextOpening
           ?.split(';')
-          ?.map((item) => item.trim())
+          ?.map((item) => {return item.trim()})
 
         if (nextHours?.[0] !== ceroHours) {
           return handleState(

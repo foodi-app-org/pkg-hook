@@ -12,10 +12,17 @@ export const getDayFromOpeningKey = (key) => {
 }
 
 // Función para convertir el objeto de tiempo en una cadena de tiempo
+/**
+ *
+ * @param timeStr
+ */
 export function getTimeString (timeStr) {
   return timeStr || '00:00' // Return '00:00' for empty time strings
 }
 
+/**
+ *
+ */
 export function getCurrentDayAndTime () {
   try {
     const date = new Date()
@@ -29,18 +36,26 @@ export function getCurrentDayAndTime () {
   }
 }
 
+/**
+ *
+ * @param timeStr
+ */
 export function getTimeObject (timeStr) {
   try {
     if (!timeStr || !/\d{2}:\d{2}/.test(timeStr)) {
       return { hours: 0, minutes: 0 } // Return default values for invalid input
     }
-    const [hours, minutes] = timeStr.split(':').map(str => parseInt(str))
+    const [hours, minutes] = timeStr.split(':').map(str => {return parseInt(str)})
     return { hours, minutes }
   } catch (e) {
     return { hours: 0, minutes: 0 } // Return default values on error
   }
 }
 
+/**
+ *
+ * @param openings
+ */
 export function sortOpeningsByDay (openings) {
   const days = [
     'openingSun',
@@ -61,6 +76,10 @@ export function sortOpeningsByDay (openings) {
 }
 
 // Función para obtener la clave de openings a partir del día de la semana
+/**
+ *
+ * @param day
+ */
 export function getOpeningKeyFromDay (day) {
   const days = {
     0: 'openingSun',
@@ -84,6 +103,10 @@ export const weekDays = [
   'Sábado'
 ]
 
+/**
+ *
+ * @param text
+ */
 export function timeToInt (text) {
   const hour = parseInt(text.substring(0, 2))
   const minute = parseInt(text.substring(3))

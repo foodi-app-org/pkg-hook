@@ -1,4 +1,4 @@
-export const getCardType = (cardNum) => {
+export const getCardType = (cardNum: string) => {
   let payCardType = ''
 
   if (cardNum.startsWith('4')) {

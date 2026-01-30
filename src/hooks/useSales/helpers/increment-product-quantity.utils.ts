@@ -24,22 +24,22 @@ export const incrementProductQuantity = ({
   sendNotification?: Function;
 }) => {
   const sourceProduct = productsFood.find(
-    (product) => product.pId === productId
-  );
+    (product) => {return product.pId === productId}
+  )
 
-  if (!sourceProduct) return state;
+  if (!sourceProduct) return state
 
   const PRODUCT = state.PRODUCT.map((item: any) => {
-    if (item.pId !== productId) return item;
+    if (item.pId !== productId) return item
 
     const {
       stock = 0,
       manageStock,
       ProPrice: unitPrice = 0
-    } = sourceProduct;
+    } = sourceProduct
 
-    const isFree = Boolean(item.free);
-    const newQuantity = item.ProQuantity + 1;
+    const isFree = Boolean(item.free)
+    const newQuantity = item.ProQuantity + 1
 
     // Stock = 0
     if (stock === 0) {
@@ -47,8 +47,8 @@ export const incrementProductQuantity = ({
         title: 'Sin stock',
         backgroundColor: 'warning',
         description: `El producto ${item.pName} está agotado y no puede ser añadido al carrito.`
-      });
-      return item;
+      })
+      return item
     }
 
     // Stock exceeded
@@ -57,20 +57,20 @@ export const incrementProductQuantity = ({
         title: 'Stock insuficiente',
         backgroundColor: 'warning',
         description: `No puedes agregar más unidades de ${item.pName}, stock disponible: ${stock}`
-      });
-      return item;
+      })
+      return item
     }
 
     return {
       ...item,
       ProQuantity: newQuantity,
       ProPrice: isFree ? 0 : newQuantity * unitPrice
-    };
-  });
+    }
+  })
 
   return {
     ...state,
     counter: state.counter + 1,
     PRODUCT
-  };
-};
+  }
+}

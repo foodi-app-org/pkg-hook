@@ -1,15 +1,26 @@
-function deg2rad (deg) {
+/**
+ *
+ * @param deg
+ */
+function deg2rad(deg: number): number {
   return deg * (Math.PI / 180)
 }
 
 // Función para calcular la distancia entre un punto fijo y un punto dado utilizando la fórmula de Haversine
-export function calculateLogLatHaversine (lat1, lon1, lat2, lon2) {
+/**
+ *
+ * @param lat1
+ * @param lon1
+ * @param lat2
+ * @param lon2
+ */
+export function calculateLogLatHaversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const radioTierra = 6371 // Radio de la Tierra en kilómetros
   const dLat = deg2rad(lat2 - lat1)
   const dLon = deg2rad(lon2 - lon1)
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   const distancia = radioTierra * c
   return distancia

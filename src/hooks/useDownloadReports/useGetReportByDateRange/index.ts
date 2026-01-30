@@ -1,7 +1,8 @@
 import { useLazyQuery } from '@apollo/client'
 import { gql } from '@apollo/client'
-import { downloadFileFromResponse } from '../helpers/downloadFileFromResponse'
 import { useState } from 'react'
+
+import { downloadFileFromResponse } from '../helpers/downloadFileFromResponse'
 
 /**
  * GraphQL query to get report by date range

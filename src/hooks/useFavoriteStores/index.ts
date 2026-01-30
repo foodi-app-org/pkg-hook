@@ -1,7 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GET_ALL_FAV_STORE } from './queries'
+
 import { filterAndSortByDate } from '../useRestaurant/helpers'
 import { getStatusForStores } from '../useRestaurant/helpers/manageStatusOpen'
+
+import { GET_ALL_FAV_STORE } from './queries'
 
 export const useFavoriteStores = () => {
   const {

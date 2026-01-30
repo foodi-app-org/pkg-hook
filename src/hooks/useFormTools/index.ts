@@ -3,6 +3,7 @@ import {
   useEffect,
   useState
 } from 'react'
+
 import { validationSubmitHooks } from '../../utils'
 
 
@@ -20,6 +21,9 @@ interface UseFormToolsProps {
 }
 
 /**
+ * @param root0
+ * @param root0.initialValues
+ * @param root0.sendNotification
  * @version 0.0.1
  * @description Hook con herramientas de validación y eventos de cambio
  * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input

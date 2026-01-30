@@ -19,6 +19,11 @@ const __NEXTAUTH = {
 }
 const logger = proxyLogger(_logger, __NEXTAUTH.basePath)
 
+/**
+ *
+ * @param params
+ * @param params.callbackUrl
+ */
 export async function getCsrfToken (params: {
   callbackUrl?: string
 } = {}): Promise<string | undefined> {

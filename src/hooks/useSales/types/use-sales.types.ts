@@ -1,4 +1,4 @@
-import { NotificationPayload } from ".";
+import { NotificationPayload } from '.'
 
 export interface UseSalesProps {
   disabled?: boolean;

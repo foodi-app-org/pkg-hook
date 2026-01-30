@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import {
   useCallback,
   useEffect,
@@ -6,11 +7,13 @@ import {
   useState,
   createRef
 } from 'react'
-import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
-import { useMutation } from '@apollo/client'
-import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
-import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
+
 import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
+import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
+
+import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
+import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
+
 
 export const useDessertWithPrice = ({
   dataExtra = [],
@@ -59,7 +62,7 @@ export const useDessertWithPrice = ({
     Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems
   )
 
-  const inputRefs = useRef(LineItems.Lines.map(() => createRef()))
+  const inputRefs = useRef(LineItems.Lines.map(() => {return createRef()}))
 
   const handleSelect = (item, index) => {
     try {
@@ -75,7 +78,7 @@ export const useDessertWithPrice = ({
 
   useEffect(() => {
     // Asegurándote de que las referencias se actualicen si LineItems cambia
-    inputRefs.current = LineItems.Lines.map((_, i) => inputRefs.current[i] || createRef())
+    inputRefs.current = LineItems.Lines.map((_, i) => {return inputRefs.current[i] || createRef()})
   }, [LineItems])
 
   const handleCleanLines = useCallback(() => {
@@ -123,11 +126,11 @@ export const useDessertWithPrice = ({
   }
 
   /**
- * Handles changes in line items, updating the state accordingly.
- * @param {number} index - The index of the line item being updated.
- * @param {string} name - The name of the attribute being changed.
- * @param {any} value - The new value of the attribute.
- */
+   * Handles changes in line items, updating the state accordingly.
+   * @param {number} index - The index of the line item being updated.
+   * @param {string} name - The name of the attribute being changed.
+   * @param {any} value - The new value of the attribute.
+   */
   const handleLineChange = (index, name, value) => {
     const newLines = LineItems.Lines.map((line, i) => {
       if (i !== index) return { ...line }
@@ -150,9 +153,9 @@ export const useDessertWithPrice = ({
   const { deleteExtraProductFoods } = useDeleteExtraProductFoods()
 
   /**
- * Filter out a specific line from the LineItems array.
- * @param {number} index - Index of the line to be filtered out.
- */
+   * Filter out a specific line from the LineItems array.
+   * @param {number} index - Index of the line to be filtered out.
+   */
   const filterOneLine = (index) => {
     // Use optional chaining to safely access nested properties.
     const Lines = LineItems?.Lines?.filter((_, i) => { return i !== index })
@@ -173,7 +176,7 @@ export const useDessertWithPrice = ({
         return filterOneLine(i)
       }
 
-      const findDataExtra = dataExtra?.find(x => x?.exPid === exPid)
+      const findDataExtra = dataExtra?.find(x => {return x?.exPid === exPid})
       if (!findDataExtra) return
 
       await deleteExtraProductFoods({
@@ -206,13 +209,13 @@ export const useDessertWithPrice = ({
                 if (!Array.isArray(dataOld)) return dataOld
 
                 const transformedData = transformData(dataOld)
-                const Lines = transformedData.filter((_, index) => index !== i)
-                const newCache = dataOld.filter((_, index) => index !== i)
+                const Lines = transformedData.filter((_, index) => {return index !== i})
+                const newCache = dataOld.filter((_, index) => {return index !== i})
 
-                setLine(prev => ({
+                setLine(prev => {return {
                   ...prev,
                   Lines
-                }))
+                }})
 
                 return newCache
               }
@@ -235,16 +238,16 @@ export const useDessertWithPrice = ({
   }, [dataExtra.length])
 
   const prepareAndValidateData = useCallback((pId) => {
-    const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }) => ({
+    const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }) => {return {
       extraPrice,
       exState: exState === true ? 1 : 0,
       extraName,
       pId
-    }))
+    }})
     console.log(dataArr)
     const message = 'Complete los campos vacíos'
-    const findInputEmpty = dataArr?.find(({ extraName }) => extraName === '')
-    const findInputEmptyPrice = dataArr?.find(({ extraPrice }) => isNaN(extraPrice) || extraPrice === '')
+    const findInputEmpty = dataArr?.find(({ extraName }) => {return extraName === ''})
+    const findInputEmptyPrice = dataArr?.find(({ extraPrice }) => {return isNaN(extraPrice) || extraPrice === ''})
 
     if (findInputEmpty || findInputEmptyPrice) {
       setAlertBox({ message })
@@ -291,6 +294,11 @@ export const useDessertWithPrice = ({
     }
   }
 
+  /**
+   *
+   * @param items
+   * @param pId
+   */
   function filterItemsWithValidExPid (items, pId) {
     // Primero, filtrar los elementos basados en exPid
     const filteredItems = items.filter(({ exPid }) => {
@@ -299,13 +307,13 @@ export const useDessertWithPrice = ({
     })
 
     // Luego, transformar los elementos filtrados
-    return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => ({
+    return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => {return {
       exPid,
       extraPrice,
       exState: exState === true ? 1 : 0,
       extraName,
       pId
-    }))
+    }})
   }
 
   const handleSubmit = ({ pId }) => {

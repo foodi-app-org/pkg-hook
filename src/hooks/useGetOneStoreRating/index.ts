@@ -1,5 +1,6 @@
-import { useState } from 'react'
 import { useLazyQuery } from '@apollo/client'
+import { useState } from 'react'
+
 import { GET_ONE_RATING_STORE } from './queries'
 
 export const useGetOneStoreRating = () => {

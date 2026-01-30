@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react'
 // const imageUrl = 'https://example.com/image.jpg';
 // const optimizedUrl = useImageOptimization(imageUrl);
 
+/**
+ *
+ * @param imageUrl
+ */
 export function useImageOptimization (imageUrl) {
   const [optimizedUrl, setOptimizedUrl] = useState(null)
 

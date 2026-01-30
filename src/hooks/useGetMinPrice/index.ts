@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_MIN_PEDIDO } from './queries'
 
 export const useGetMinPrice = ({ idStore = '' } = {}) => {

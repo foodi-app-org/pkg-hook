@@ -1,4 +1,4 @@
-export const completeSchedules = (dataSchedules) => {
+export const completeSchedules = (dataSchedules: { schDay: number; schHoSta: string; schHoEnd: string }[]) => {
   // Días de la semana
   const daysSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
@@ -10,13 +10,13 @@ export const completeSchedules = (dataSchedules) => {
     }
     mapa[day].push({ horaInicio: horario.schHoSta, horaFin: horario.schHoEnd })
     return mapa
-  }, {})
+  }, {} as Record<string, { horaInicio: string; horaFin: string }[]>)
 
   // Completar los días que faltan y formatear el objeto
-  const horariosFormateados = daysSemana.map((day, index) => ({
+  const horariosFormateados = daysSemana.map((day, index) => {return {
     day,
     horarios: horariosPorDia[day] || [{ horaInicio: '', horaFin: '' }]
-  }))
+  }})
 
   return horariosFormateados
 }

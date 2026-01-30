@@ -1,3 +1,7 @@
+/**
+ *
+ * @param o
+ */
 function formatError (o) {
   if (hasErrorProperty(o)) {
     o.error = formatError(o.error)
@@ -6,8 +10,12 @@ function formatError (o) {
   return o
 }
 
+/**
+ *
+ * @param x
+ */
 function hasErrorProperty (x) {
-  return !!(x?.error)
+  return Boolean(x?.error)
 }
 
 const _logger = {
@@ -31,6 +39,11 @@ const _logger = {
   }
 }
 
+/**
+ *
+ * @param newLogger
+ * @param debug
+ */
 export function setLogger (newLogger = {}, debug) {
   if (!debug) _logger.debug = () => { }
 
@@ -39,6 +52,11 @@ export function setLogger (newLogger = {}, debug) {
   if (newLogger.debug) _logger.debug = newLogger.debug
 }
 
+/**
+ *
+ * @param logger
+ * @param basePath
+ */
 export function proxyLogger (logger = _logger, basePath) {
   try {
     if (typeof window === 'undefined') {

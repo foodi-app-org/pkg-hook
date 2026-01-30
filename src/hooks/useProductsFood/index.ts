@@ -5,6 +5,9 @@ import {
   useQuery
 } from '@apollo/client'
 import { useCallback, useMemo, useState } from 'react'
+
+import { useStockUpdatedAllSubscription } from '../useStock'
+
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
@@ -12,7 +15,6 @@ import {
   GET_ONE_PRODUCTS_FOOD,
   UPDATE_PRODUCT_FOOD
 } from './queriesStore'
-import { useStockUpdatedAllSubscription } from '../useStock'
 export * from './useEditProduct'
 
 interface UseProductsFoodOptions {
@@ -49,7 +51,7 @@ export const useProductsFood = ({
 }: UseProductsFoodOptions) => {
   const [showMore, setShowMore] = useState(500)
   const client = useApolloClient()
-  const variables = useMemo(() => ({
+  const variables = useMemo(() => {return {
     categories,
     desc,
     gender,
@@ -57,7 +59,7 @@ export const useProductsFood = ({
     min,
     pState,
     search
-  }), [categories, desc, gender, max, min, pState, search, callback])
+  }}, [categories, desc, gender, max, min, pState, search, callback])
 
   const { data, loading, fetchMore, refetch, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     onCompleted: (data) => {
@@ -72,9 +74,9 @@ export const useProductsFood = ({
 
   const productsFood = data?.productFoodsAll?.data ?? []
   /**
-     * Callback when subscription emits a stock update.
-     * Updates Apollo cache for GET_ALL_PRODUCT_STORE with same variables so UI updates reactively.
-     */
+   * Callback when subscription emits a stock update.
+   * Updates Apollo cache for GET_ALL_PRODUCT_STORE with same variables so UI updates reactively.
+   */
   const onStockUpdated = useCallback(
     (payload: any) => {
       try {
@@ -120,7 +122,7 @@ export const useProductsFood = ({
       } catch (err) {
         // be silent but log for debugging
         // (don't throw — subscription should not break the app)
-        // eslint-disable-next-line no-console
+         
         console.error('useProductsFood: failed updating cache from subscription', err)
       }
     },
@@ -144,10 +146,10 @@ export const useProductsFood = ({
     ]
   }
 
-  const updatedProductsFood = productsFood.map((product: any) => ({
+  const updatedProductsFood = productsFood.map((product: any) => {return {
     ...product,
-    existsInSale: Array.isArray(dataSale) && dataSale.some(item => item.pId === product.pId)
-  }))
+    existsInSale: Array.isArray(dataSale) && dataSale.some(item => {return item.pId === product.pId})
+  }})
 
   return [
     updatedProductsFood,
@@ -167,9 +169,9 @@ export const useDeleteProductsFood = ({
   sendNotification = (arg) => { return arg },
   onSuccess = (arg) => { return arg }
 } = {
-    sendNotification: (arg) => { return arg },
-    onSuccess: (arg) => { return arg }
-  }) => {
+  sendNotification: (arg) => { return arg },
+  onSuccess: (arg) => { return arg }
+}) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
   const handleDelete = async product => {
@@ -196,9 +198,9 @@ export const useDeleteProductsFood = ({
                   return newProductList
                 }
                 return dataOld
-              } else {
-                return []
-              }
+              } 
+              return []
+              
             }
           }
         })

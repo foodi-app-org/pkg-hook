@@ -24,6 +24,8 @@ const UPDATE_ORDER_STATUS_PRIORITIES = gql`
 /**
  * Custom hook to update the priority of order statuses.
  *
+ * @param root0
+ * @param root0.sendNotification
  * @returns {{
  *   updatePriorities: (input: OrderStatusPriorityInput[]) => Promise<UpdateStatusPriorityResponse>,
  *   loading: boolean,
@@ -47,16 +49,16 @@ export const useUpdateOrderStatusPriorities = ({
         success: false,
         message: 'Input must be a non-empty array.',
         data: [],
-        errors: [{ path: 'input', message: 'Invalid or empty input array.' }],
+        errors: [{ path: 'input', message: 'Invalid or empty input array.' }]
       }
     }
 
     const isValid = input.every(
       ({ idStatus, priority }) =>
-        typeof idStatus === 'string' &&
+      {return typeof idStatus === 'string' &&
         idStatus.length > 0 &&
         typeof priority === 'number' &&
-        priority >= 0
+        priority >= 0}
     )
 
     if (!isValid) {
@@ -64,7 +66,7 @@ export const useUpdateOrderStatusPriorities = ({
         success: false,
         message: 'Validation failed for one or more input items.',
         data: [],
-        errors: [{ path: 'input', message: 'Each item must have a valid idStatus and priority.' }],
+        errors: [{ path: 'input', message: 'Each item must have a valid idStatus and priority.' }]
       }
     }
 
@@ -88,7 +90,7 @@ export const useUpdateOrderStatusPriorities = ({
         success: false,
         message: 'Unexpected error while updating priorities.',
         data: [],
-        errors: [{ path: 'mutation', message: err.message }],
+        errors: [{ path: 'mutation', message: err.message }]
       }
     }
   }

@@ -15,7 +15,7 @@ export const resolveProduct = async ({
   if (!pId) return null
 
   // fast memory lookup
-  const mem = productsFood.find((it: any) => it?.pId === pId)
+  const mem = productsFood.find((it: any) => {return it?.pId === pId})
   if (mem) return mem
 
   // fetch from API and normalize

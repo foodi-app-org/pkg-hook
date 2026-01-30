@@ -11,7 +11,7 @@ export const useAnimatedText = (textMessage: string) => {
   useEffect(() => {
     if (index < fullText.length) {
       window.requestAnimationFrame(() => {
-        // eslint-disable-next-line
+         
                 setText(text => text + fullTextRef.current[index]);
         setIndex(() => {return index + 1})
       })

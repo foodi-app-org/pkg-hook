@@ -1,4 +1,5 @@
 import { useLazyQuery } from '@apollo/client'
+
 import { GET_ALL_DEPARTMENTS } from './queries'
 
 /**

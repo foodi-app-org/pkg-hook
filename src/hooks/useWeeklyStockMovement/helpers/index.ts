@@ -18,15 +18,15 @@ export const fillLast7Weeks = (data) => {
   }
 
   // Mapear los datos existentes para acceso rápido
-  const dataMap = new Map(data.map(item => [item.weekStart, item]))
+  const dataMap = new Map(data.map(item => {return [item.weekStart, item]}))
 
   // Construir la nueva lista asegurando que todas las semanas estén presentes
-  return last7Weeks.map(weekStart => (
+  return last7Weeks.map(weekStart => {return (
     dataMap.get(weekStart) || {
       weekStart,
       totalOut: 0,
       prevTotalOut: null,
       percentageChange: 'N/A'
     }
-  ))
+  )})
 }

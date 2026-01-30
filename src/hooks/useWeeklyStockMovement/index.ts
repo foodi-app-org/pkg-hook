@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+
 import { fillLast7Weeks } from './helpers' // Asegúrate de importar el helper
 
 const GET_WEEKLY_STOCK_MOVEMENT = gql`
@@ -22,10 +23,10 @@ export const useWeeklyStockMovement = () => {
   // Transform data and fill missing weeks
   const rawData = data?.getStockMovementWeeklyComparison || []
   const formattedData = fillLast7Weeks(
-    rawData.map(item => ({
+    rawData.map(item => {return {
       ...item,
       percentageChange: formatPercentageChange(item.percentageChange)
-    }))
+    }})
   )
 
   return [formattedData, { loading, error }]

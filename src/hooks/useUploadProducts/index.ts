@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
+
 import { RandomCode } from '../../utils'
+
 import { validateProductDataExcel } from './helpers/validateProductDataExcel'
 
 const STEPS = {
@@ -8,23 +10,31 @@ const STEPS = {
   UPLOAD_PRODUCTS: 1
 }
 
+interface UseUploadProductsProps {
+  sendNotification?: (notification: {
+    title: string
+    description: string
+    backgroundColor: 'success' | 'error' | 'info' | 'warning'
+  }) => void
+}
 export const useUploadProducts = ({
   sendNotification = () => { return null }
-} = {
-  sendNotification: () => { return null }
-}) => {
+}: UseUploadProductsProps) => {
   const [data, setData] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [active, setActive] = useState(STEPS.UPLOAD_FILE)
   const [overActive, setOverActive] = useState(STEPS.UPLOAD_FILE)
 
-  const handleOverActive = (index) => {
+  const handleOverActive = (index: number) => {
     setOverActive(index)
   }
-  const readExcelFile = (file) => {
+  const readExcelFile = (file: File) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = (e) => {
+        if (!e.target || !(e.target.result instanceof ArrayBuffer)) {
+          return reject(new Error('Failed to read file as ArrayBuffer.'))
+        }
         const data = new Uint8Array(e.target.result)
         const workbook = XLSX.read(data, { type: 'array' })
         const sheetName = workbook.SheetNames[0]
@@ -32,29 +42,31 @@ export const useUploadProducts = ({
         const json = XLSX.utils.sheet_to_json(worksheet)
         resolve(json)
       }
-      reader.onerror = (error) => reject(error)
+      reader.onerror = (error) => {return reject(error)}
       reader.readAsArrayBuffer(file)
     })
   }
 
-  const onChangeFiles = async (files) => {
+  const onChangeFiles = async (files: FileList) => {
     setIsLoading(true) // Activa el loader al inicio
     try {
-      const filePromises = Array.from(files).map(file => readExcelFile(file))
+      const filePromises = Array.from(files).map(file => {return readExcelFile(file)})
       const newData = await Promise.all(filePromises)
 
       const newProducts = newData.flat().map((product, index) => {
-        const PRECIO_AL_PUBLICO = isNaN(product.PRECIO_AL_PUBLICO) ? 0.00 : product.PRECIO_AL_PUBLICO
-        const VALOR_DE_COMPRA = isNaN(product.VALOR_DE_COMPRA) ? 0.00 : product.VALOR_DE_COMPRA
-        const validationErrors = validateProductDataExcel(product, index)
+        // Assert product as a record to access its properties
+        const prod = product as Record<string, any>
+        const PRECIO_AL_PUBLICO = Number.isNaN(prod.PRECIO_AL_PUBLICO) ? 0 : prod.PRECIO_AL_PUBLICO
+        const VALOR_DE_COMPRA = Number.isNaN(prod.VALOR_DE_COMPRA) ? 0 : prod.VALOR_DE_COMPRA
+        const validationErrors = validateProductDataExcel(prod, index)
 
         const code = RandomCode(9)
         return {
-          ...product,
-          CANTIDAD: isNaN(product.CANTIDAD) ? 1 : product.CANTIDAD,
-          ORIGINAL_CANTIDAD: isNaN(product.CANTIDAD) ? 1 : product.CANTIDAD,
+          ...prod,
+          CANTIDAD: Number.isNaN(prod.CANTIDAD) ? 1 : prod.CANTIDAD,
+          ORIGINAL_CANTIDAD: Number.isNaN(prod.CANTIDAD) ? 1 : prod.CANTIDAD,
           free: false,
-          product: product?.DESCRIPCION,
+          product: prod?.DESCRIPCION,
           pCode: code,
           editing: false,
           PRECIO_AL_PUBLICO,
@@ -95,12 +107,20 @@ export const useUploadProducts = ({
           const remainingSlots = 100 - currentLength
           const productsToAdd = newProducts.slice(0, remainingSlots)
           return [...prevData, ...productsToAdd]
-        } else {
-          // Agregar todos los nuevos productos si no se excede el límite
-          return [...prevData, ...newProducts]
-        }
+        } 
+        // Agregar todos los nuevos productos si no se excede el límite
+        return [...prevData, ...newProducts]
+        
       })
     } catch (error) {
+      if (error instanceof Error) {
+        sendNotification({
+          description: error.message,
+          title: 'Error',
+          backgroundColor: 'error'
+        })
+        return
+      }
       sendNotification({
         description: 'Un error ha ocurrido mientras se cargaba el archivo de productos.',
         title: 'Error',
@@ -157,12 +177,12 @@ export const useUploadProducts = ({
     setData(newData)
   }
   /**
- * Toggle the 'free' status of a specific product in the data array.
- * Performs validation to ensure the product index is valid.
- *
- * @param {number} productIndex - The index of the product to update.
- */
-  const handleCheckFree = (productIndex) => {
+   * Toggle the 'free' status of a specific product in the data array.
+   * Performs validation to ensure the product index is valid.
+   *
+   * @param {number} productIndex - The index of the product to update.
+   */
+  const handleCheckFree = (productIndex: number) => {
     setData((prevData) => {
     // Validar que el índice es un número válido
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
@@ -186,14 +206,14 @@ export const useUploadProducts = ({
 
       // Crear una nueva copia de los datos actualizando solo el producto específico
       return prevData.map((product, index) =>
-        index === productIndex
-          ? {
-              ...product,
-              free: updatedFreeStatus,
-              PRECIO_AL_PUBLICO: updatedFreeStatus ? 0 : product.oldPrice,
-              oldPrice: product.PRECIO_AL_PUBLICO
-            }
-          : product
+      {return index === productIndex
+        ? {
+          ...product,
+          free: updatedFreeStatus,
+          PRECIO_AL_PUBLICO: updatedFreeStatus ? 0 : product.oldPrice,
+          oldPrice: product.PRECIO_AL_PUBLICO
+        }
+        : product}
       )
     })
   }
@@ -202,11 +222,11 @@ export const useUploadProducts = ({
     setActive(STEPS.UPLOAD_FILE)
   }
   /**
- * Toggle the 'editing' status of a specific product in the data array.
- * Validates the product index and only updates if necessary.
- *
- * @param {number} productIndex - The index of the product to update.
- */
+   * Toggle the 'editing' status of a specific product in the data array.
+   * Validates the product index and only updates if necessary.
+   *
+   * @param {number} productIndex - The index of the product to update.
+   */
   const handleToggleEditingStatus = (productIndex) => {
     setData((prevData) => {
     // Validar que el índice es un número válido
@@ -245,9 +265,9 @@ export const useUploadProducts = ({
       return prevData.map((product, index) => {
         return index === productIndex
           ? {
-              ...product,
-              editing: updatedEditingStatus
-            }
+            ...product,
+            editing: updatedEditingStatus
+          }
           : product
       }
       )
@@ -276,13 +296,13 @@ export const useUploadProducts = ({
 
       // Crear una copia actualizada de prevData donde se actualiza `CANTIDAD` si es necesario
       const updatedData = prevData.map((product, index) =>
-        index === productIndex
-          ? { ...product, editing: false, ORIGINAL_CANTIDAD: product.CANTIDAD } // Actualización o cambio de estado
-          : product
+      {return index === productIndex
+        ? { ...product, editing: false, ORIGINAL_CANTIDAD: product.CANTIDAD } // Actualización o cambio de estado
+        : product}
       )
 
       // Filtrar productos con CANTIDAD mayor a 0
-      const filteredData = updatedData.filter(product => product.CANTIDAD > 0)
+      const filteredData = updatedData.filter(product => {return product.CANTIDAD > 0})
 
       // Cambiar el estado a `STEPS.UPLOAD_FILE` si no quedan productos
       if (filteredData.length === 0) {
@@ -317,18 +337,18 @@ export const useUploadProducts = ({
 
       // Actualiza el array `data` con la nueva cantidad
       return prevData.map((product, index) =>
-        index === productIndex
-          ? { ...product, CANTIDAD: newQuantity }
-          : product
+      {return index === productIndex
+        ? { ...product, CANTIDAD: newQuantity }
+        : product}
       )
     })
   }
   /**
- * Restore the 'CANTIDAD' value to 'ORIGINAL_CANTIDAD' for a specific product.
- * Validates the product index and only updates if necessary.
- *
- * @param {number} productIndex - The index of the product to restore quantity for.
- */
+   * Restore the 'CANTIDAD' value to 'ORIGINAL_CANTIDAD' for a specific product.
+   * Validates the product index and only updates if necessary.
+   *
+   * @param {number} productIndex - The index of the product to restore quantity for.
+   */
   const handleCancelUpdateQuantity = (productIndex) => {
     setData((prevData) => {
     // Validar que el índice es un número válido
@@ -346,20 +366,20 @@ export const useUploadProducts = ({
 
       // Crear una nueva copia de los datos actualizando solo el producto específico
       return prevData.map((product, index) =>
-        index === productIndex
-          ? { ...product, CANTIDAD: product.ORIGINAL_CANTIDAD, editing: false }
-          : product
+      {return index === productIndex
+        ? { ...product, CANTIDAD: product.ORIGINAL_CANTIDAD, editing: false }
+        : product}
       )
     })
   }
   /**
- * Filters products with a quantity of 0 or less from the data array.
- * Sends a notification if any products are found with invalid quantities.
- */
+   * Filters products with a quantity of 0 or less from the data array.
+   * Sends a notification if any products are found with invalid quantities.
+   */
   const filterInvalidQuantityProducts = () => {
     setData((prevData) => {
     // Filtrar productos con `CANTIDAD` mayor a 0
-      const validProducts = prevData.filter(product => product.CANTIDAD > 0)
+      const validProducts = prevData.filter(product => {return product.CANTIDAD > 0})
 
       // Notificar si hubo productos con cantidad no válida
       if (validProducts.length < prevData.length) {
@@ -375,24 +395,24 @@ export const useUploadProducts = ({
   }
 
   /**
- * Compares uploaded products against response data to determine which were successfully uploaded.
- * @param {Array} data - Original array of products with their details.
- * @param {Array} response - Array of response objects from the `updateProducts` function.
- * @returns {Object} Object containing arrays of successfully and unsuccessfully uploaded products.
- */
+   * Compares uploaded products against response data to determine which were successfully uploaded.
+   * @param {Array} data - Original array of products with their details.
+   * @param {Array} response - Array of response objects from the `updateProducts` function.
+   * @returns {Object} Object containing arrays of successfully and unsuccessfully uploaded products.
+   */
   const getUploadResults = (data, response) => {
     const uploadedCodes = new Set(
       response
-        .filter((product) => product.success)
-        .map((product) => product.data.pCode)
+        .filter((product) => {return product.success})
+        .map((product) => {return product.data.pCode})
     )
 
     const successfullyUploaded = data.filter((product) =>
-      uploadedCodes.has(product.pCode)
+    {return uploadedCodes.has(product.pCode)}
     )
 
     const failedUploads = data.filter(
-      (product) => !uploadedCodes.has(product.pCode)
+      (product) => {return !uploadedCodes.has(product.pCode)}
     )
 
     return {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
 import { useQuery, gql } from '@apollo/client'
+import { useState, useEffect } from 'react'
+
 import { fillMissingDates } from './helpers'
 
 const GET_STOCK_MOVEMENTS = gql`
@@ -24,12 +25,12 @@ export const useStockMovements = () => {
   useEffect(() => {
     if (data && data.getStockMovementsByDay) {
       // Transform data to be compatible with Recharts
-      const formattedData = data.getStockMovementsByDay.map(entry => ({
+      const formattedData = data.getStockMovementsByDay.map(entry => {return {
         date: entry.date,
         TotalIn: entry.total_in ?? 0,
         TotalOut: entry.total_out ?? 0,
         TotalAdjustment: entry.total_adjustment ?? 0
-      }))
+      }})
       setChartData(formattedData)
     }
   }, [data])

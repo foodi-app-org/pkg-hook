@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+
 import { GET_ALL_SALES_STATISTICS } from '../useSales/queries'
 
 export const useGetAllSales = ({

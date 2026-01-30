@@ -1,4 +1,5 @@
 import { useLazyQuery } from '@apollo/client'
+
 import { GET_ONE_SALE } from './queries'
 
 export const useGetSale = () => {

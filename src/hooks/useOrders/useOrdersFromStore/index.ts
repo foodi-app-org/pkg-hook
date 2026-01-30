@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
-import { GET_ALL_ORDER, GET_ALL_ORDER_FROM_STORE } from '../queries.js'
 import groupBy from 'lodash/groupBy'
+import { GET_ALL_ORDER, GET_ALL_ORDER_FROM_STORE } from '../queries'
 
 export const useOrders = ({
   refetchWritePolicy = 'merge',
@@ -53,7 +53,7 @@ export const useOrdersFromStore = ({
     return data
   }
 }) => {
-   const key = 'status'
+  const key = 'status'
   const {
     data,
     loading,

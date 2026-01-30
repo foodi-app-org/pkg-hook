@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
-import { GET_ALL_PEDIDOS_STATUS } from './queries'
+
 import { filterOrders } from './helpers'
+import { GET_ALL_PEDIDOS_STATUS } from './queries'
 
 export const useStatusOrdersClient = () => {
   const { data, loading, error } = useQuery(GET_ALL_PEDIDOS_STATUS, {

@@ -1,39 +1,39 @@
 import React, {
-    useEffect,
-    useRef,
-    useState
+  useEffect,
+  useRef,
+  useState
 } from 'react'
 
 export const useFetchMoreInteractions = ({
-    render,
-    fetchMore = true,
-    callback = () => {}
+  render,
+  fetchMore = true,
+  callback = () => {}
 }) => {
-    const loadingRef = useRef()
+  const loadingRef = useRef()
 
-    const useOnScreen = ref => {
-        const [isIntersecting, setIsIntersecting] = useState(false)
+  const useOnScreen = ref => {
+    const [isIntersecting, setIsIntersecting] = useState(false)
 
-        const observer = new IntersectionObserver(
-            ([entry]) => setIsIntersecting(entry.isIntersecting)
-        )
-
-        useEffect(() => {
-            if (ref.current) observer.observe(ref.current)
-            // Remove the observer as soon as the component is unmounted
-            return () => { observer.disconnect() }
-        }, [ref, observer])
-
-        return isIntersecting
-    }
-
-    const isVisible = useOnScreen(loadingRef)
+    const observer = new IntersectionObserver(
+      ([entry]) => {return setIsIntersecting(entry.isIntersecting)}
+    )
 
     useEffect(() => {
-        if (isVisible && fetchMore) callback()
-    }, [isVisible, callback, fetchMore])
+      if (ref.current) observer.observe(ref.current)
+      // Remove the observer as soon as the component is unmounted
+      return () => { observer.disconnect() }
+    }, [ref, observer])
 
-    return <div ref={loadingRef}>
-        {isVisible && fetchMore ? render || <div style={{ background: 'red' }} >Loading...{isVisible && 'lol'}</div> : <></>}
-    </div>
+    return isIntersecting
+  }
+
+  const isVisible = useOnScreen(loadingRef)
+
+  useEffect(() => {
+    if (isVisible && fetchMore) callback()
+  }, [isVisible, callback, fetchMore])
+
+  return <div ref={loadingRef}>
+    {isVisible && fetchMore ? render || <div style={{ background: 'red' }} >Loading...{isVisible && 'lol'}</div> : <></>}
+  </div>
 }

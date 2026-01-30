@@ -58,10 +58,12 @@ export const useManageQueryParams = (
     location?.query ??
     Object.fromEntries(searchParams.entries())
 
-  const pushFn = location?.push ?? ((url: string) => router.push(url))
+  const pushFn = location?.push ?? ((url: string) => {return router.push(url)})
 
   /**
    * Set or update a query param
+   * @param name
+   * @param value
    */
   const handleQuery = (name: string, value = ''): void => {
     if (!name) return
@@ -74,6 +76,7 @@ export const useManageQueryParams = (
 
   /**
    * Remove a query param
+   * @param name
    */
   const handleCleanQuery = (name: string): void => {
     if (!name) return
@@ -86,6 +89,7 @@ export const useManageQueryParams = (
 
   /**
    * Get a query param value
+   * @param name
    */
   const getQuery = (name: string): string => {
     if (!name) return ''
@@ -94,6 +98,9 @@ export const useManageQueryParams = (
 
   /**
    * Get a dynamic route param from Next.js
+   * @param root0
+   * @param root0.param
+   * @param root0.callback
    */
   const getParams = ({ param, callback }: GetParamsOptions): string => {
     if (!param) return ''

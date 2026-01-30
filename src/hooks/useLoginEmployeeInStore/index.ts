@@ -14,7 +14,7 @@ const LOGIN_EMPLOYEE_IN_STORE = gql`
 export const useLoginEmployeeInStore = () => {
   const [loginEmployeeInStore, { data, loading, error }] = useMutation(LOGIN_EMPLOYEE_IN_STORE)
 
-  const loginEmployee = async (idStore, eEmail) => {
+  const loginEmployee = async (idStore: string, eEmail: string) => {
     try {
       const response = await loginEmployeeInStore({
         variables: {

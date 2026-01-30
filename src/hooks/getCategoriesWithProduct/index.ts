@@ -1,13 +1,13 @@
 import { jaccardSimilarity } from './helpers'
 
 /**
-   * Get categories that contain products with names similar to the given product name.
-   * Uses the Jaccard similarity coefficient for string comparison.
-   * @param {Array} data - The array of categories with product information.
-   * @param {string} productName - The name of the product to search for.
-   * @param {number} similarityThreshold - The minimum similarity threshold for products (0.0 to 1.0).
-   * @returns {Array} - An array of categories containing similar products.
-   */
+ * Get categories that contain products with names similar to the given product name.
+ * Uses the Jaccard similarity coefficient for string comparison.
+ * @param {Array} data - The array of categories with product information.
+ * @param {string} productName - The name of the product to search for.
+ * @param {number} similarityThreshold - The minimum similarity threshold for products (0.0 to 1.0).
+ * @returns {Array} - An array of categories containing similar products.
+ */
 export const getCategoriesWithProduct = (
   data = [],
   productName = '',

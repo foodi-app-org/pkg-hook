@@ -1,5 +1,5 @@
-import { TypeDiscount } from "../helpers/apply-discount-to-cart.utils";
-import { SalesActionTypes } from "../helpers/constants";
+import { TypeDiscount } from '../helpers/apply-discount-to-cart.utils'
+import { SalesActionTypes } from '../helpers/constants'
 /**
  * Basic notification payload used across hook
  */
@@ -26,9 +26,9 @@ export interface SalesState {
 }
 
 /**
-* Basic product model as returned by productsFood (server model).
-* Add fields as your GraphQL schema evolves; keep server -> client mapping explicit.
-*/
+ * Basic product model as returned by productsFood (server model).
+ * Add fields as your GraphQL schema evolves; keep server -> client mapping explicit.
+ */
 export interface ProductFood {
     pId: string
     pName: string
@@ -121,8 +121,8 @@ export type SalesReducerAction =
 
 
 /**
-* Values used in forms (change, client id, comments etc)
-*/
+ * Values used in forms (change, client id, comments etc)
+ */
 export interface ValuesState {
     change: string | number
     cliId: string | null
@@ -132,9 +132,9 @@ export interface ValuesState {
 }
 
 /**
-* Hook return shape — keep in sync with actual returned object.
-* Export a minimal public API so consumers only see typed surface.
-*/
+ * Hook return shape — keep in sync with actual returned object.
+ * Export a minimal public API so consumers only see typed surface.
+ */
 export interface UseSalesReturn {
     loading: boolean
     loadingExtraProduct: boolean
