@@ -11,12 +11,9 @@ export const useFavoriteStores = () => {
     loading,
     error
   } = useQuery(GET_ALL_FAV_STORE, {
-    fetchPolicy: 'cache-and-network',
-    onError: () => {
-      console.log('')
-    }
+    fetchPolicy: 'cache-and-network'
   })
-  const newArray = data?.getFavorite?.map(store => {
+  const newArray = data?.getFavorite?.map((store: { getOneStore }) => {
     return {
       ...store.getOneStore
     }

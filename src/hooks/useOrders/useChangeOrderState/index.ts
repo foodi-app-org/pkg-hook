@@ -1,7 +1,6 @@
-import { gql, useApolloClient, useMutation } from '@apollo/client'
+import { gql, useMutation } from '@apollo/client'
 
 import { SendNotificationFn } from '../../useImageUploaderProduct'
-import { updateExistingOrders } from '../../useUpdateExistingOrders'
 /**
  * GraphQL mutation to change the state of a store order (pedido).
  */
@@ -41,7 +40,6 @@ interface IUseChangeStateOrder {
 export const useChangeStateOrder = ({
   sendNotification
 }: IUseChangeStateOrder) => {
-  const client = useApolloClient()
 
   const [changeState, { loading, error, data }] = useMutation(CHANGE_STATE_STORE_ORDER, {
     onCompleted: (res) => {
@@ -115,7 +113,9 @@ export const useChangeStateOrder = ({
     } catch (err) {
       return {
         success: false,
-        message: err.message || 'Unexpected error occurred'
+        message: typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string'
+          ? (err as any).message
+          : 'Unexpected error occurred'
       }
     }
   }

@@ -1,74 +1,61 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
 
+import { SendNotificationFn } from '../useImageUploaderProduct';
+
 import { CREATE_ONE_EMPLOYEE_STORE_AND_USER } from './queries'
 
 /**
  * Custom hook to handle the createOneEmployeeStoreAndUser mutation.
  *
- * @param root0
- * @param {Object}
- * @param root0.sendNotification
- * @param root0.onCompleted
- * @param root0.onError
- * @returns {{
- *   createEmployeeStoreAndUser: (input: IEmployeeStore) => Promise<void>,
- *   loading: boolean,
- *   error: Error | null,
- *   data: Object | null
- * }} An object containing the mutation function, loading status, error, and data.
+ * @returns An object containing the mutation function, loading status, error, and data.
  */
+type CallbackFn = (response?: any) => void;
+type IEmployeeStore = Record<string, any>; // Replace with actual type if available
+
 export const useCreateEmployeeStoreAndUser = ({
-  sendNotification = () => {
-    return {
-      description: '',
-      title: '',
-      backgroundColor: ''
-    }
-  },
-  onCompleted = () => {
-    return {
-    }
-  },
-  onError = () => {
-    return {
-    }
-  }
+  sendNotification,
+  onCompleted,
+  onError
+}: {
+  sendNotification?: SendNotificationFn;
+  onCompleted?: CallbackFn;
+  onError?: CallbackFn;
 } = {}) => {
   const [createEmployeeStoreAndUserMutation, { loading, error, data }] = useMutation(CREATE_ONE_EMPLOYEE_STORE_AND_USER, {
     onError: () => {
-      sendNotification({
+      sendNotification?.({
         description: 'Error creando empleado',
         title: 'Error',
         backgroundColor: 'error'
       })
     },
     onCompleted: (response) => {
-      console.log(response)
+      // console.log(response)
       const { createOneEmployeeStoreAndUser } = response ?? {}
       const { message, success } = createOneEmployeeStoreAndUser ?? {}
       if (success === false) {
-        onError(response)
+        onError?.(response)
       }
       if (success) {
-        onCompleted(response)
+        onCompleted?.(response)
       }
-      sendNotification({
+      sendNotification?.({
         description: message,
-        title: success ? 'Exito' : 'Error',
+        title: success ? 'Éxito' : 'Error',
         backgroundColor: success ? 'success' : 'error'
       })
     }
   })
-  const [errors, setErrors] = useState([])
+  const [errors, setErrors] = useState<{ message: string }[]>([])
 
   /**
    * Calls the createOneEmployeeStoreAndUser mutation.
    *
-   * @param {Object} input - The input data for the mutation.
-   * @returns {Promise<void>}
+   * @param input - The input data for the mutation.
+   * @returns Promise<void>
    */
-  const createEmployeeStoreAndUser = async (input) => {
+  const createEmployeeStoreAndUser = async (input: IEmployeeStore): Promise<void> => {
     try {
       const response = await createEmployeeStoreAndUserMutation({ variables: { input } })
       if (response.data.createOneEmployeeStoreAndUser.errors) {
@@ -77,7 +64,11 @@ export const useCreateEmployeeStoreAndUser = ({
         setErrors([])
       }
     } catch (err) {
-      setErrors([{ message: err.message }])
+      let message = 'Unknown error'
+      if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+        message = (err as any).message
+      }
+      setErrors([{ message }])
     }
   }
 
@@ -86,5 +77,5 @@ export const useCreateEmployeeStoreAndUser = ({
     error,
     data,
     errors
-  }]
+  }] as const
 }

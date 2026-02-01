@@ -27,6 +27,7 @@ function BroadcastChannel(name: string = 'nextauth.message') {
     /**
      * Listen for broadcast messages
      * @param onReceive
+     *  @returns 
      */
     receive: function (onReceive: BroadcastReceiver): () => void {
       const handler = function (event: StorageEvent): void {

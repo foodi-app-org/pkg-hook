@@ -12,6 +12,7 @@ const InternalUrl = {
 /**
  * Function to parse a URL-like object for server-side requests/redirects
  * @param url
+ * @returns
  */
 function parseUrl (url: string | undefined) {
   const defaultUrl = new URL('http://localhost:3000/api/auth')

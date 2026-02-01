@@ -6,11 +6,26 @@ const defaultSettings = {
   maximumAge: 0
 }
 
-export const usePosition = (watch = false, settings = defaultSettings) => {
-  const [position, setPosition] = useState({})
-  const [error, setError] = useState(null)
+type GeolocationPosition = {
+  coords: {
+    latitude: number
+    longitude: number
+    accuracy: number
+    speed: number | null
+  }
+  timestamp: number
+}
 
-  const onChange = ({ coords, timestamp }) => {
+type GeolocationPositionError = {
+  code: number
+  message: string
+}
+
+export const usePosition = (watch = false, settings = defaultSettings) => {
+  const [position, setPosition] = useState<Partial<GeolocationPosition['coords']> & { timestamp?: number }>({})
+  const [error, setError] = useState<string | null>(null)
+
+  const onChange = ({ coords, timestamp }: GeolocationPosition) => {
     setPosition({
       latitude: coords.latitude,
       longitude: coords.longitude,
@@ -20,8 +35,8 @@ export const usePosition = (watch = false, settings = defaultSettings) => {
     })
   }
 
-  const onError = () => {
-    setError(error?.message)
+  const onError = (err: GeolocationPositionError) => {
+    setError(err.message)
   }
 
   useEffect(() => {
@@ -30,7 +45,7 @@ export const usePosition = (watch = false, settings = defaultSettings) => {
       return
     }
 
-    let watcher = null
+    let watcher: number | null = null
     if (watch) {
       watcher = navigator.geolocation.watchPosition(
         onChange,
@@ -41,7 +56,10 @@ export const usePosition = (watch = false, settings = defaultSettings) => {
       navigator.geolocation.getCurrentPosition(onChange, onError, settings)
     }
 
-    return () => { return watcher && navigator.geolocation.clearWatch(watcher) }
+    // Cleanup function for useEffect
+    if (watcher !== null) {
+      navigator.geolocation.clearWatch(watcher)
+    }
   }, [
     settings,
     settings.enableHighAccuracy,

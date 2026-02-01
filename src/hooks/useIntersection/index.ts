@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 
 export const useOnScreen = (threshold = 0.6) => {
   const [isVisible, setIsVisible] = useState(false)
-  const [ref, setRef] = useState(null)
+  const [ref, setRef] = useState<HTMLElement | null>(null)
 
   useEffect(
     () => {
-      let observer
+      let observer: IntersectionObserver | undefined
       if (ref) {
         observer = new IntersectionObserver(
           ([entry]) => {
@@ -36,19 +36,28 @@ const defaultObserverOptions = {
   rootMargin: '0px'
 }
 
+type UseIntersectionObserverParams = {
+  active?: boolean
+  disconnect?: boolean
+  el: { current: HTMLElement | null }
+  options?: IntersectionObserverInit
+  onEnter?: () => void
+  out?: () => void
+}
+
 export const useIntersectionObserver = ({
   active = true,
-  disconnect,
+  disconnect = false,
   el,
   options = defaultObserverOptions,
   onEnter = () => {},
   out = () => {}
-}) => {
-  const [onScreen, setOnScreen] = useState()
+}: UseIntersectionObserverParams) => {
+  const [onScreen, setOnScreen] = useState<boolean>(false)
   useEffect(() => {
-    let observer
+    let observer: IntersectionObserver | undefined
     const refEl = el.current
-    if (IntersectionObserver && active && refEl) {
+    if (typeof IntersectionObserver !== 'undefined' && active && refEl) {
       observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (disconnect) {
@@ -70,14 +79,13 @@ export const useIntersectionObserver = ({
     }
     return () => {
       if (disconnect) {
-         
-        observer === null || observer === void 0 ? void 0 : observer.disconnect(refEl)
+        if (observer) observer.disconnect()
       }
       if (!disconnect) {
-        if (el && observer) observer.unobserve(refEl)
+        if (el && observer && refEl) observer.unobserve(refEl)
       }
     }
-  }, [el, onEnter, active, options])
+  }, [el, onEnter, active, options, disconnect, out])
   return {
     onScreen
   }

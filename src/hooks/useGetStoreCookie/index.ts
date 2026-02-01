@@ -2,13 +2,11 @@ import Cookies from 'js-cookie'
 import { useState, useEffect } from 'react'
 
 export const useGetStoreCookie = () => {
-  const [vpStoreCookie, setVpStoreCookie] = useState(null)
+  const [vpStoreCookie, setVpStoreCookie] = useState<string | null>(null)
 
   useEffect(() => {
     const getCookieValue = () => {
-      const cookieValue = Cookies.get(process.env.NEXT_PUBLIC_SESSION_NAME)
-      console.log('Cookie Value:', cookieValue)
-
+      const cookieValue = Cookies.get(String(process.env.NEXT_PUBLIC_SESSION_NAME))
       if (cookieValue) {
         setVpStoreCookie(cookieValue)
       }

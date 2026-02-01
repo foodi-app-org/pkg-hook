@@ -6,7 +6,11 @@ export const MEDIA_QUERY = {
   DESKTOP: '(min-width: 961px)'
 }
 
-export const useMobile = ({ callback } = {}) => {
+type UseMobileOptions = {
+  callback?: (values: { isMobile: boolean; isTablet: boolean; isDesktop: boolean }) => void
+}
+
+export const useMobile = ({ callback }: UseMobileOptions = {}) => {
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
@@ -18,11 +22,11 @@ export const useMobile = ({ callback } = {}) => {
   })
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (globalThis.window === undefined) return undefined
 
-    const mobileQuery = window.matchMedia(MEDIA_QUERY.MOBILE)
-    const tabletQuery = window.matchMedia(MEDIA_QUERY.TABLET)
-    const desktopQuery = window.matchMedia(MEDIA_QUERY.DESKTOP)
+    const mobileQuery = globalThis.matchMedia(MEDIA_QUERY.MOBILE)
+    const tabletQuery = globalThis.matchMedia(MEDIA_QUERY.TABLET)
+    const desktopQuery = globalThis.matchMedia(MEDIA_QUERY.DESKTOP)
 
     const updateMatches = () => {
       const newIsMobile = mobileQuery.matches

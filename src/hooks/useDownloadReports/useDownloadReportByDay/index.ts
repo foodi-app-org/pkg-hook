@@ -1,5 +1,4 @@
-import { useLazyQuery } from '@apollo/client'
-import { gql } from '@apollo/client'
+import { useLazyQuery, gql } from '@apollo/client'
 import { useState } from 'react'
 
 import { downloadFileFromResponse } from '../helpers/downloadFileFromResponse'

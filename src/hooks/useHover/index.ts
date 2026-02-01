@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect } from 'react'
 
 /**
- *
+ *  @returns
  */
 export function useHover () {
   const [value, setValue] = useState(false)
 
-  const ref = useRef(null)
+  const ref = useRef<HTMLElement | null>(null)
 
   const handleMouseOver = () => { return setValue(true) }
   const handleMouseOut = () => { return setValue(false) }
@@ -23,7 +23,7 @@ export function useHover () {
           node.removeEventListener('mouseout', handleMouseOut)
         }
       }
-      return {}
+      return undefined
     },
     [] // Recall only if ref changes
   )

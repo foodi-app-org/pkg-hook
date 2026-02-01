@@ -10,7 +10,6 @@ import { useState } from 'react'
  */
 export function useLocationManager (getDepartments, getCities) {
   const [values, setValues] = useState({})
-  console.log('🚀 ~ useLocationManager ~ values:', values)
   const [errors, setErrors] = useState({})
   const [showLocation, setShowLocation] = useState(true)
 

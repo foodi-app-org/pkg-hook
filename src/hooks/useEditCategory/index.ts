@@ -9,10 +9,10 @@ const EDIT_CATEGORY_PRODUCT = gql`
   }
 `
 
-export const useEditCategoryProduct = ({ sendNotification = () => { } } = {}) => {
+export const useEditCategoryProduct = () => {
   const [editCategoryProductMutation] = useMutation(EDIT_CATEGORY_PRODUCT)
 
-  const editCategoryProduct = async (pName, ProDescription, carProId) => {
+  const editCategoryProduct = async (pName: string, ProDescription: string, carProId: string) => {
     try {
       const { data } = await editCategoryProductMutation({
         variables: { pName, ProDescription, carProId }
@@ -30,9 +30,15 @@ export const useEditCategoryProduct = ({ sendNotification = () => { } } = {}) =>
       }
       
     } catch (error) {
+      if (error instanceof Error) {
+        return {
+          success: false,
+          message: error.message || 'Error al editar la categoría de producto'
+        }
+      }
       return {
         success: false,
-        message: error.message || 'Error al editar la categoría de producto'
+        message: 'Error desconocido al editar la categoría de producto'
       }
     }
   }

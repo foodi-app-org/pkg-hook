@@ -6,9 +6,10 @@ import { useEffect, useState } from 'react'
 /**
  *
  * @param imageUrl
+ * @returns {string|null} optimized image URL
  */
-export function useImageOptimization (imageUrl) {
-  const [optimizedUrl, setOptimizedUrl] = useState(null)
+export function useImageOptimization (imageUrl: string): string | null {
+  const [optimizedUrl, setOptimizedUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const image = new Image()
@@ -21,10 +22,11 @@ export function useImageOptimization (imageUrl) {
       canvas.width = image.width
       canvas.height = image.height
 
-      ctx.drawImage(image, 0, 0, image.width, image.height)
-
-      const optimizedUrl = canvas.toDataURL('image/jpeg', 0.8)
-      setOptimizedUrl(optimizedUrl)
+      if (ctx) {
+        ctx.drawImage(image, 0, 0, image.width, image.height)
+        const optimizedUrl = canvas.toDataURL('image/jpeg', 0.8)
+        setOptimizedUrl(optimizedUrl)
+      }
     }
   }, [imageUrl])
 

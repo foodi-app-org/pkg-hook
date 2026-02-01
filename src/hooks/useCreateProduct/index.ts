@@ -9,10 +9,9 @@ import {
 } from '../useProductsFood/queriesStore'
 import { useTagsProducts } from '../useProductsFood/usetagsProducts'
 import { useSetImageProducts } from '../useSetImageProducts'
-import { UPDATE_IMAGE_PRODUCT_FOOD } from '../useSetImageProducts/queries'
 import { useStore } from '../useStore'
 
-import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
+// import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 
 
@@ -51,16 +50,16 @@ export const useCreateProduct = ({
   const [names, setName] = useLocalStorage('namefood', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
-  const [imageBase64, setImageBase64] = useState(null)
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [active, setActive] = useState(STEPS.PRODUCT)
-  const [pId, setPid] = useState(null)
+  const [pId, setPid] = useState<string | null>(null)
 
   const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
   const [filter, setFilter] = useState({ gender: [], desc: [], speciality: [] })
   const initialState = { alt: '/ images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRef = useRef(null)
-  const [arrTags, setTags] = useState([])
+  const [arrTags, setTags] = useState<string[]>([])
   const [stock, setStock] = useState(1)
   // Manage stock optional value boolean
   const [checkStock, setCheckStock] = useState(false)
@@ -161,7 +160,6 @@ export const useCreateProduct = ({
 
   const [updateProductFoods, { loading }] = useMutation(UPDATE_PRODUCT_FOOD, {
   })
-  const [setImageProducts] = useMutation(UPDATE_IMAGE_PRODUCT_FOOD)
 
   const onTargetClick = () => {
     if (fileInputRef.current) {
@@ -244,14 +242,13 @@ export const useCreateProduct = ({
         errors: []
       }
       if (errors?.length > 0) {
-        errors.forEach(error => {
-          sendNotification({
+        errors.forEach((error: { message: string }) => {
+          sendNotification?.({
             backgroundColor: 'error',
             title: 'Error',
             description: error.message
           })
         })
-        return
       }
       if (image !== null) {
         try {
@@ -260,7 +257,7 @@ export const useCreateProduct = ({
             image
           })
         } catch {
-          sendNotification({
+          sendNotification?.({
             backgroundColor: 'error',
             title: `Ocurrió un error en la imagen en el producto ${names}`,
             description: 'error'
@@ -270,12 +267,19 @@ export const useCreateProduct = ({
       setPid(response?.data?.updateProductFoods?.data?.pId ?? null)
       return response
     } catch (error) {
+      if (error instanceof Error) {
+        sendNotification?.({
+          backgroundColor: 'error',
+          title: 'Error',
+          description: error.message
+        })
+      }
       setAlertBox({ message: 'Ha ocurrido un error', duration: 7000 })
     }
   }
 
   // Manage tags
-  const changeHandler = (name, value) => {
+  const changeHandler = (name: string, value: any) => {
     if (name === 'tags') {
       setTags(value)
       if (value.length > 0 && errors.tags) {

@@ -83,7 +83,7 @@ export type FilterConfigRecord = {
  * @param anyData any
  * @returns boolean
  */
-const isFilterTabs = (anyData: any): any is FilterTab[] => {
+const isFilterTabs = (anyData: any) => {
   if (!Array.isArray(anyData)) return false
   for (const tab of anyData) {
     if (typeof tab?.id !== 'string' || typeof tab?.name !== 'string') return false
@@ -141,7 +141,7 @@ export const useFilterConfigs = ({
   const rawRecords =
         Array.isArray((data as any)?.filterConfigs) ? (data as any).filterConfigs as FilterConfigRecord[] : null
 
-  let tabs: FilterTab[] = []
+  // let tabs: FilterTab[] = []
 
   if (rawRecords && rawRecords.length > 0) {
     // pick the active config with highest priority (lowest number)
@@ -152,12 +152,13 @@ export const useFilterConfigs = ({
     const candidate = active ?? rawRecords[0]
 
     if (candidate && isFilterTabs(candidate.filterTabs)) {
-      tabs = candidate.filterTabs
+      // tabs = candidate.filterTabs
     } else {
       // defensive logging — don't throw to avoid crashing UI, return empty array
        
       console.warn('useFilterConfigs: invalid filterTabs structure', candidate?.filterTabs)
-      tabs = []
+      // eslint-disabled-next-line
+      // tabs = []
     }
   }
 

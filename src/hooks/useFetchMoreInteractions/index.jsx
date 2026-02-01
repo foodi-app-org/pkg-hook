@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export const useFetchMoreInteractions = ({
   render,
@@ -14,15 +10,14 @@ export const useFetchMoreInteractions = ({
   const useOnScreen = ref => {
     const [isIntersecting, setIsIntersecting] = useState(false)
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {return setIsIntersecting(entry.isIntersecting)}
-    )
-
     useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => setIsIntersecting(entry.isIntersecting)
+      )
       if (ref.current) observer.observe(ref.current)
       // Remove the observer as soon as the component is unmounted
       return () => { observer.disconnect() }
-    }, [ref, observer])
+    }, [ref])
 
     return isIntersecting
   }
@@ -34,6 +29,6 @@ export const useFetchMoreInteractions = ({
   }, [isVisible, callback, fetchMore])
 
   return <div ref={loadingRef}>
-    {isVisible && fetchMore ? render || <div style={{ background: 'red' }} >Loading...{isVisible && 'lol'}</div> : <></>}
+    {isVisible && fetchMore ? render || <div style={{ background: 'red' }} >Loading...{isVisible && 'lol'}</div> : null}
   </div>
 }
