@@ -7,31 +7,34 @@ const __NEXTAUTH = {
   basePath: parseUrl(process.env.NEXTAUTH_URL).path,
   baseUrlServer: parseUrl(
     process.env.NEXTAUTH_URL_INTERNAL ||
-        process.env.NEXTAUTH_URL ||
-        process.env.VERCEL_URL
+    process.env.NEXTAUTH_URL ||
+    process.env.VERCEL_URL
   ).origin,
   basePathServer: parseUrl(
     process.env.NEXTAUTH_URL_INTERNAL || process.env.NEXTAUTH_URL
   ).path,
   _lastSync: 0,
   _session: undefined,
-  _getSession: () => {}
+  _getSession: () => { }
 }
-const logger = proxyLogger(_logger, __NEXTAUTH.basePath)
+const logger = proxyLogger(__NEXTAUTH.basePath, _logger)
 
 /**
  *
  * @param params
  * @param params.callbackUrl
+ * @returns A promise that resolves to the CSRF token string or undefined.
  */
-export async function getCsrfToken (params: {
+// eslint-disable-next-line
+export async function getCsrfToken(params: {
   callbackUrl?: string
 } = {}): Promise<string | undefined> {
   const response = await fetchData(
     'csrf',
     __NEXTAUTH,
     logger,
-    params
+    // params
+    {}
   )
   return response?.csrfToken
 }

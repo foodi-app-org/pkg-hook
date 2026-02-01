@@ -1,8 +1,8 @@
-import { NotificationPayload } from '.'
+import { SendNotificationFn, SetAlertBoxFn } from 'typesdefs'
 
 export interface UseSalesProps {
   disabled?: boolean;
-  router?: any;
-  sendNotification?: (args: NotificationPayload) => any;
-  setAlertBox?: (args: any) => any;
+  router?: unknown;
+  sendNotification?: SendNotificationFn;
+  setAlertBox?: SetAlertBoxFn;
 }

@@ -21,6 +21,7 @@ export enum SalesActionTypes {
     PAYMENT_METHOD = 'PAYMENT_METHOD',
     APPLY_DISCOUNT = 'APPLY_DISCOUNT'
 }
+
 export const initialStateSales: SalesState = {
   animateType: '',
   counter: 0,

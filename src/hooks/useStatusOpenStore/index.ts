@@ -14,14 +14,20 @@ import {
   getTimeObject
 } from './helpers'
 
-export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
+type StoreSchedule = {
+  schDay: number
+  schHoSta: string
+  schHoEnd: string
+}
+
+export const useStatusOpenStore = ({ dataSchedules = [] }: { dataSchedules?: StoreSchedule[] }) => {
   const [open, setOpen] = useState('')
   const [openNow, setOpenNow] = useState(false)
   const { handleHourPmAM } = useFormatDate({
-    date: null
+    date: undefined
   })
 
-  const handleMessageHour = (message, open) => {
+  const handleMessageHour = (message: string, open: boolean) => {
     setOpen(message)
     setOpenNow(open)
   }
@@ -30,19 +36,20 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
    *
    * @param dataSchedules
    * @param currentDayOfWeek
+   * @returns {{ findNextDay: boolean, findDataNextDay: StoreSchedule | {} , dayOfWeekTomorrow: number }}
    */
-  function getNextDaySchedule (dataSchedules, currentDayOfWeek) {
+  function getNextDaySchedule(dataSchedules: StoreSchedule[]) {
     const today = new Date()
     const tomorrow = new Date(today)
     tomorrow.setDate(today.getDate() + 1)
     const dayOfWeekTomorrow = tomorrow.getDay()
 
     const findNextDay = dataSchedules?.length
-      ? dataSchedules?.some((schedule) => {return schedule?.schDay === dayOfWeekTomorrow})
+      ? dataSchedules?.some((schedule: StoreSchedule) => { return schedule?.schDay === dayOfWeekTomorrow })
       : false
 
     const findDataNextDay = dataSchedules?.length
-      ? dataSchedules?.find((schedule) => {return schedule?.schDay === dayOfWeekTomorrow})
+      ? dataSchedules?.find((schedule: StoreSchedule) => { return schedule?.schDay === dayOfWeekTomorrow })
       : {}
 
     return { findNextDay, findDataNextDay, dayOfWeekTomorrow }
@@ -53,8 +60,9 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
    * @param openings
    * @param currentTime
    * @param currentDayOfWeek
+   * @returns {{message: string, isOpen: boolean}}  Estado de apertura.
    */
-  function getOpeningStatus (openings, currentTime, currentDayOfWeek) {
+  function getOpeningStatus(openings: { [key: string]: string }, currentTime: number, currentDayOfWeek: number) {
     const weekDayLookup = [
       'Sunday',
       'Monday',
@@ -71,10 +79,10 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
     for (let i = 0; i < 7; i++) {
       const dayName = weekDayLookup[dayOfWeek % 7]
       const opening = openings && openings['opening' + dayName.substring(0, 3)]
-      const timeSpans = opening?.split(';').map((item) => {return item.trim()})
+      const timeSpans = opening?.split(';').map((item) => { return item.trim() })
 
       for (const span of timeSpans) {
-        const hours = span.split('-').map((item) => {return item.trim()})
+        const hours = span.split('-').map((item) => { return item.trim() })
         const openTime = timeToInt(hours[0])
         const closeTime = timeToInt(hours[1])
 
@@ -104,15 +112,19 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
           findDataNextDay,
           dayOfWeekTomorrow
         } = getNextDaySchedule(
-          dataSchedules,
-          currentDayOfWeek
+          dataSchedules
         )
 
-        if (findNextDay && findDataNextDay?.schHoSta) {
+        if (
+          findNextDay &&
+          typeof findDataNextDay === 'object' &&
+          findDataNextDay !== null &&
+          'schHoSta' in findDataNextDay &&
+          typeof (findDataNextDay as StoreSchedule).schHoSta === 'string'
+        ) {
           const nameOfDayTomorrow = weekDays[dayOfWeekTomorrow]
           return handleMessageHour(
-            `Cerrado abre Mañana ${nameOfDayTomorrow} ${Boolean(findDataNextDay?.schHoSta) && 'a las'} ${
-              handleHourPmAM(findDataNextDay?.schHoSta) ?? ''
+            `Cerrado abre Mañana ${nameOfDayTomorrow} ${Boolean((findDataNextDay as StoreSchedule).schHoSta) && 'a las'} ${handleHourPmAM((findDataNextDay as StoreSchedule).schHoSta) ?? ''
             }`,
             false
           )
@@ -120,11 +132,11 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
 
         const nextDayName = weekDayLookup[(dayOfWeek + 1) % 7]
         const nextOpening = openings?.['opening' + nextDayName.substring(0, 3)]
-        const nextHours = nextOpening?.split(';')?.map((item) => {return item?.trim()})
+        const nextHours = nextOpening?.split(';')?.map((item) => { return item?.trim() })
 
         if (nextHours[0] !== ceroHours) {
           return handleMessageHour(
-            'Cerrado - Abre el ' + days[nextDayName] + ' a las ' + nextHours[0],
+            'Cerrado - Abre el ' + days[nextDayName as keyof typeof days] + ' a las ' + nextHours[0],
             false
           )
         }
@@ -139,18 +151,40 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
   /**
    *
    * @param openings
+   *  @returns {{currentTime: number, currentDayOfWeek: number}}  Estado de apertura.
    */
-  function getIsOpening (openings) {
+  function getIsOpening(openings: { [key: string]: string }) {
     const { currentTime, currentDayOfWeek } = getCurrentDayAndTime()
     return getOpeningStatus(openings, currentTime, currentDayOfWeek)
+  }
+
+  // Helper function to create schedule object from key and openings
+  /**
+   *
+   * @param key
+   * @param openings
+   * @returns {object}  Objeto de horario.
+   */
+  function createScheduleObject(key: string, openings: { [key: string]: string }) {
+    const day = getDayFromOpeningKey(key)
+    const [schHoSta, schHoEnd] = openings[key].split(' - ').map((timeStr: string) => getTimeObject(timeStr))
+    return {
+      __typename: 'StoreSchedule',
+      schId: '',
+      idStore: '',
+      schDay: day,
+      schHoSta: `${schHoSta?.hours?.toString().padStart(2, '0')}:${schHoSta?.minutes?.toString().padStart(2, '0')}`,
+      schHoEnd: `${schHoEnd?.hours?.toString().padStart(2, '0')}:${schHoEnd?.minutes?.toString().padStart(2, '0')}`,
+      schState: 1
+    }
   }
 
   useEffect(() => {
     (() => {
       // Crear el objeto openings a partir del existStoreSchedule
-      const openings = {}
+      const openings: { [key: string]: string } = {}
       const existStoreSchedule = dataSchedules || []
-      existStoreSchedule?.forEach((schedule) => {
+      existStoreSchedule?.forEach((schedule: StoreSchedule) => {
         const day = schedule.schDay
         const openingKey = getOpeningKeyFromDay(day)
         const schHoSta = getTimeString(schedule?.schHoSta)
@@ -170,19 +204,8 @@ export const useStatusOpenStore = ({ dataSchedules = [] } = {}) => {
       const sortedOpenings = sortOpeningsByDay(openings)
 
       // Crear el array completo con objetos de tiempo
-       
-      const fullArray = Object.keys(sortedOpenings).map((key) => {
-        const day = getDayFromOpeningKey(key)
-        const [schHoSta, schHoEnd] = openings[key].split(' - ').map(timeStr => {return getTimeObject(timeStr)})
-        return {
-          __typename: 'StoreSchedule',
-          schId: '',
-          idStore: '',
-          schDay: day,
-          schHoSta: `${schHoSta?.hours?.toString().padStart(2, '0')}:${schHoSta?.minutes?.toString().padStart(2, '0')}`,
-          schHoEnd: `${schHoEnd?.hours?.toString().padStart(2, '0')}:${schHoEnd?.minutes?.toString().padStart(2, '0')}`,
-          schState: 1
-        }
+      Object.keys(sortedOpenings).forEach((key) => {
+        createScheduleObject(key, openings)
       })
       getIsOpening(sortedOpenings)
     })()

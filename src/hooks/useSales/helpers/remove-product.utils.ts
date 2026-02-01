@@ -3,6 +3,7 @@
  * @param state
  * @param action
  * @param productsFood
+ * @returns updated state
  */
 export function handleRemoveProduct(state: any, action: any, productsFood: any) {
   const productExist = state?.PRODUCT.find((items: any) => {

@@ -36,11 +36,12 @@ export const useRestaurant = ({
   useEffect(() => {
     getAllStoreInStore({})
   }, [location])
-  const handleSendQueries = (name, value) => {
+
+  const handleSendQueries = (name: string, value: any) => {
     if (value) handleQuery(name, value)
   }
 
-  const handleCleanQueries = (name) => {
+  const handleCleanQueries = (name: string) => {
     handleCleanQuery(name)
   }
   const handleFilterStore = async () => {
@@ -52,6 +53,9 @@ export const useRestaurant = ({
         setLoadingFilter(false)
       })
     } catch (error) {
+      if (error instanceof Error) {
+        setLoadingFilter(false)
+      }
       setLoadingFilter(false)
     }
   }

@@ -19,6 +19,7 @@ const getDateDiffs = (timestamp: number): DateDiff | undefined => {
       return { value, unit }
     }
   }
+  return undefined
 }
 
 export const useTimeAgo = (timestamp: number) => {

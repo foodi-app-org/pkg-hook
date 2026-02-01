@@ -1,6 +1,6 @@
 import { gql, useQuery } from '@apollo/client'
 
-import { fillLast7Weeks } from './helpers' // Asegúrate de importar el helper
+import { fillLast7Weeks, WeeklyStockMovement } from './helpers'
 
 const GET_WEEKLY_STOCK_MOVEMENT = gql`
   query GetStockMovementPercentageChange {
@@ -13,20 +13,21 @@ const GET_WEEKLY_STOCK_MOVEMENT = gql`
   }
 `
 
-/**
- * Custom hook to fetch and format weekly stock movement data.
- * @returns {Object} - { data, loading, error, formattedData }
- */
-export const useWeeklyStockMovement = () => {
+type PercentageChange = string | null
+
+export const useWeeklyStockMovement = (): [
+  WeeklyStockMovement[],
+  { loading: boolean; error?: Error }
+] => {
   const { data, loading, error } = useQuery(GET_WEEKLY_STOCK_MOVEMENT)
 
   // Transform data and fill missing weeks
-  const rawData = data?.getStockMovementWeeklyComparison || []
+  const rawData: WeeklyStockMovement[] = data?.getStockMovementWeeklyComparison || []
   const formattedData = fillLast7Weeks(
-    rawData.map(item => {return {
+    rawData.map((item: WeeklyStockMovement) => ({
       ...item,
       percentageChange: formatPercentageChange(item.percentageChange)
-    }})
+    }))
   )
 
   return [formattedData, { loading, error }]
@@ -35,17 +36,17 @@ export const useWeeklyStockMovement = () => {
 /**
  * Ensures percentageChange is a valid string percentage, clamping between -100% and 100%.
  *
- * @param {string | null} percentageChange - Raw percentage change value.
- * @returns {string} - Formatted and clamped percentage change.
+ * @param percentageChange Raw percentage change value.
+ * @returns Formatted and clamped percentage change.
  */
-const formatPercentageChange = (percentageChange) => {
+const formatPercentageChange = (percentageChange: PercentageChange): string => {
   if (percentageChange === null) return 'N/A'
 
-  // Convertir a número
-  let parsedValue = parseFloat(percentageChange)
+  // Convert to number
+  let parsedValue = Number.parseFloat(percentageChange)
 
-  // Clampear entre -100% y 100%
-  if (isNaN(parsedValue)) return 'N/A'
+  // Clamp between -100% and 100%
+  if (Number.isNaN(parsedValue)) return 'N/A'
   parsedValue = Math.max(-100, Math.min(100, parsedValue))
 
   return `${parsedValue.toFixed(1)}`

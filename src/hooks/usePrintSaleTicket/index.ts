@@ -41,6 +41,7 @@ const PRINT_SALE_TICKET = gql`
 /**
  *
  * @param options
+ * @returns [printSale, { loading, data, error }]
  */
 export function usePrintSaleTicket(
   options?: MutationHookOptions<PrintSaleTicketResponse, PrintSaleTicketVars>

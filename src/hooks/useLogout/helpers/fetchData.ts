@@ -3,16 +3,44 @@ import { apiBaseUrl } from './apiBaseUrl'
 /**
  *
  * @param path
- * @param __NEXTAUTH
+ * @param nextAuth
+ * @param logger
+ * @param req
+ * @returns Fetched data or null if an error occurred.
+ */
+
+type ReqType = {
+  headers?: {
+    cookie?: string
+    [key: string]: any
+  }
+  body?: any
+}
+
+type LoggerType = {
+  error: (msg: string, meta?: any) => void
+}
+
+/**
+ *
+ * @param path
+ * @param nextAuth
  * @param logger
  * @param root0
- * @param root0.ctx
  * @param root0.req
+ * @returns Fetched data or null if an error occurred.
  */
-async function fetchData (path, __NEXTAUTH, logger, { ctx, req } = {}) {
-  const url = `${apiBaseUrl(__NEXTAUTH)}/${path}`
+async function fetchData(
+  path: string,
+  nextAuth: any,
+  logger: LoggerType,
+  { req }: { req?: ReqType } = {}
+) {
+  const url = `${apiBaseUrl(nextAuth)}/${path}`
   try {
-    const options = {
+    const options: RequestInit & {
+      headers: Record<string, string>
+    } = {
       headers: {
         'Content-Type': 'application/json',
         ...(req?.headers?.cookie ? { cookie: req.headers.cookie } : {})

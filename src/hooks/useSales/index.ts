@@ -10,6 +10,7 @@ import {
   useMemo,
   useState
 } from 'react'
+import { Product, ExtProductFoodOptional, ExtProductFoodsAll, AlertBoxType } from 'typesdefs'
 
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
@@ -32,19 +33,30 @@ import { addToCartFunc } from './helpers/add-product.utils'
 import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
 import { decrementExtra } from './helpers/extras.utils'
+import { filterChecked } from './helpers/filterChecked'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
-import { handleRemoveProduct } from './helpers/remove-product.utils'
+import { handleAddProduct } from './helpers/handleAddProduct.utils'
+import { handleChangeNumber } from './helpers/handleChangeNumber.utils'
+import { handleCommentProduct } from './helpers/handleCommentProduct'
+import { handleRemoveComment } from './helpers/handleRemoveComment.utils'
+import { handleToggleEditingStatus } from './helpers/handleToggleEditingStatus.utils'
+import { handleUpdateAllExtraAndOptional } from './helpers/handleUpdateAllExtraAndOptional.utils'
 import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
+import { initializer } from './helpers/initializer.utils'
+import { paymentMethod } from './helpers/paymentMethod.utils'
+import { handleRemoveProduct } from './helpers/remove-product.utils'
+import { searchedInput } from './helpers/searchedInput'
+import { sendAlertStock } from './helpers/sendAlertStock.utils'
+import { toggleFreeProducts } from './helpers/toggleFreeProducts'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_COUNT_SALES
 } from './queries'
 import { SalesReducerAction, SalesState, ValuesState } from './types'
 import { UseSalesProps } from './types/use-sales.types'
-import { initializer } from './helpers/initializer.utils'
 import { useGetSale } from './useGetSale'
 
-
+// eslint-disable-next-line
 export const useSales = ({
   disabled = false,
   router,
@@ -55,8 +67,11 @@ export const useSales = ({
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
   const domain = getCurrentDomain()
   const [loadingSale, setLoadingSale] = useState(false)
+  const [delivery, setDelivery] = useState<boolean>(false)
   const [errorSale, setErrorSale] = useState(false)
-  const [onClickLogout] = useLogout({})
+  const { onClickLogout } = useLogout({
+    setAlertBox
+  })
   const [modalItem, setModalItem] = useState(false)
   const [openCommentModal, setOpenCommentModal] = useState(false)
   const [search, setSearch] = useState('')
@@ -65,16 +80,18 @@ export const useSales = ({
   useCatWithProduct({
     max: Infinity,
     callback: (data: GetCatProductsWithProductResponse) => {
-      return setCategories(data.getCatProductsWithProduct?.catProductsWithProduct || [])
+      if (!data?.getCatProductsWithProduct?.catProductsWithProduct) {
+        return setCategories(data.getCatProductsWithProduct?.catProductsWithProduct || [])
+      }
+      return setCategories([])
     }
   })
+
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [totalProductPrice, setTotalProductPrice] = useState<number>(0)
   const [showMore, setShowMore] = useState<number>(100)
   const [inputValue, setInputValue] = useState<string>('')
-   
-  const [_, setFilteredList] = useState([])
-  const [delivery, setDelivery] = useState<boolean>(false)
+
   const [print, setPrint] = useState<boolean>(false)
   const [errors, setErrors] = useState({})
 
@@ -95,7 +112,6 @@ export const useSales = ({
   const [code, setCode] = useState(null)
   const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const [oneProductToComment, setOneProductToComment] = useState({})
-  const [sumExtraProducts, setSumExtraProducts] = useState(0)
   const { yearMonthDay } = useFormatDate({ date: createdAt })
   const [handleGetOneProduct] = useGetOneProductsFood()
   const [valuesDates, setValuesDates] = useState(() => {
@@ -109,8 +125,8 @@ export const useSales = ({
   })
 
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
-  const [dataOptional, setDataOptional] = useState<any[]>([])
-  const [dataExtra, setDataExtra] = useState<any[]>([])
+  const [dataOptional, setDataOptional] = useState<ExtProductFoodOptional[]>([])
+  const [dataExtra, setDataExtra] = useState<ExtProductFoodsAll[]>([])
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
@@ -120,14 +136,15 @@ export const useSales = ({
           ? 'Éxito'
           : 'Error'
         sendNotification({
-          backgroundColor: error ? 'success' : 'error',
+          backgroundColor: error ? AlertBoxType.SUCCESS : AlertBoxType.ERROR,
           title: error,
           description: message
         })
-        setAlertBox({ message, type: 'success' })
+        setAlertBox({ message, type: AlertBoxType.SUCCESS })
         if (message === 'Token expired') {
-          // @ts-ignore
-          onClickLogout()
+          onClickLogout({
+            refresh: true,
+          })
         }
         setOpenCurrentSale(data?.registerSalesStore.success)
       },
@@ -163,7 +180,6 @@ export const useSales = ({
     pagination,
     refetch
   }] = useProductsFood({
-    // @ts-ignore
     search: search?.length >= 4 ? search : '',
     gender: [],
     desc: [],
@@ -191,7 +207,7 @@ export const useSales = ({
     setCategories((prev) => {
       if (!prev || prev.length === 0) return prev
 
-      const index = prev.findIndex((item) => {return item.carProId === caId})
+      const index = prev.findIndex((item) => { return item.carProId === caId })
       if (index === -1) return prev // nothing to update → no rerender
 
       const target = prev[index]
@@ -209,10 +225,7 @@ export const useSales = ({
   }
 
 
-  // HANDLESS
-  // FILTER PRODUCT DATA_DB
-  // @ts-ignore
-  const handlePrint = () => {
+  const handlePrint = (): void => {
     if (disabled) {
       return sendNotification({
         title: 'Error',
@@ -221,6 +234,7 @@ export const useSales = ({
       })
     }
     setPrint(!print)
+    return undefined
   }
 
   const handleChangeFilter = (value: string): void => {
@@ -228,67 +242,34 @@ export const useSales = ({
   }
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: any } },
+    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
     error: boolean
   ) => {
-    const target: any = (e as any).target
+    const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
     setErrors({ ...errors, [name]: error })
-    setValues((prevValues) => {return {
-      ...prevValues,
-      [name]: value
-    }})
+    setValues((prevValues) => {
+      return {
+        ...prevValues,
+        [name]: value
+      }
+    })
   }
 
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     return setValuesDates({ ...valuesDates, [e.target.name]: e.target.value })
   }
 
-  /**
-   * Toggles editing state of a product with maximum performance.
-   * @param {any} state - Current reducer state.
-   * @param {any} action - Payload with product ID.
-   * @returns {any} New updated state.
-   */
-  const handleToggleEditingStatus = (state: any, action: any) => {
-    const pId = action?.payload?.pId
-    if (!pId) return state
-
-    const list = state.PRODUCT
-    const index = list.findIndex((item: any) => {return item.pId === pId})
-
-    // If no match, nothing changes → no re-render
-    if (index === -1) return state
-
-    const target = list[index]
-
-    const updatedItem = {
-      ...target,
-      editing: !target.editing,
-      oldQuantity: target.ProQuantity ?? 0
-    }
-
-    // Clone the array only once
-    const newList = [...list]
-    newList[index] = updatedItem
-
-    return {
-      ...state,
-      PRODUCT: newList
-    }
-  }
-
-
   const handleChangeFilterProduct = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const text = searchedInput(e.target.value)
+    const text = searchedInput(e.target.value, setInputValue)
     if (text === undefined || text === '') {
       return
     }
-    const filteredData = handleList(text)
-    setFilteredList(filteredData)
+    // const filteredData = handleList(text)
+    // setFilteredList(filteredData)
   }
 
-  const handleComment = (product: any) => {
+  const handleComment = (product: Product) => {
     if (product) {
       setOneProductToComment(product)
       setValues({
@@ -299,18 +280,12 @@ export const useSales = ({
     setOpenCommentModal(!openCommentModal)
   }
 
-  /**
-   * Updates a single product inside the PRODUCT array with maximum performance.
-   * @param {any} state - Current state.
-   * @param {any} payload - Action payload.
-   * @returns {any} New updated state.
-   */
-  const handleSuccessUpdateQuantity = (state: any, payload: any) => {
+  const handleSuccessUpdateQuantity = (state: SalesState, payload: { payload: { pId: string } }) => {
     const pId = payload?.payload?.pId
     if (!pId) return state
 
     const list = state.PRODUCT
-    const index = list.findIndex((item: any) => {return item.pId === pId})
+    const index = list.findIndex((item: Product) => { return item.pId === pId })
 
     // If no match → no state changes → no rerender
     if (index === -1) return state
@@ -341,9 +316,11 @@ export const useSales = ({
    * Cancels the update of a product's quantity, resetting it to the previous value.
    * @param {Object} state - The current state.
    * @param {Object} payload - The payload containing the product ID.
+   * @param payload.payload
+   * @param payload.payload.pId
    * @returns {Object} - The new state with the updated product quantity and editing status.
    */
-  const handleCancelUpdateQuantity = (state: any, payload: any) => {
+  const handleCancelUpdateQuantity = (state: SalesState, payload: { payload: { pId: string } }) => {
     // Validación de `state`
     if (!state || typeof state !== 'object') {
       sendNotification({
@@ -377,7 +354,7 @@ export const useSales = ({
 
     return {
       ...state,
-      PRODUCT: state.PRODUCT.map((item: any) => {
+      PRODUCT: state.PRODUCT.map((item: Product) => {
         // Validación de propiedades en cada item
         if (item.pId === pId) {
           if (typeof item.oldQuantity !== 'number' || typeof item.unitPrice !== 'number') {
@@ -402,44 +379,16 @@ export const useSales = ({
     }
   }
 
-  const paymentMethod = (state: any, action: any) => {
-    return {
-      ...state,
-      payId: action.payload
-    }
-  }
-
-
-  const handleAddProduct = async (product: any) => {
-    const pId = String(product?.pId)
-    const memo = productsFood.find((item: any) => {return String(item.pId) === pId})
-    if (!memo) {
-      const response = await handleGetOneProduct({ pId })
-      if (response.data?.productFoodsOne == null) {return sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'No se pudo obtener el producto'
-      })}
-      const productData = response.data?.productFoodsOne ?? { pId: null }
-      return dispatch({
-        type: SalesActionTypes.ADD_TO_CART,
-        payload: productData
-      })
-    }
-    return dispatch({
-      type: SalesActionTypes.ADD_TO_CART,
-      payload: memo
-    })
-  }
-
-  const PRODUCT = (state: any, action: any) => {
+  const PRODUCT = (state: SalesState, action: SalesReducerAction) => {
     switch (action.type) {
       case SalesActionTypes.ADD_TO_CART:
         return addToCartFunc({
           state,
           action,
           product: action.payload,
-          sendAlertStock,
+          sendAlertStock: stock => {
+            return sendAlertStock(stock, sendNotification)
+          },
           sendNotification
         })
       case SalesActionTypes.ADD_PRODUCT:
@@ -453,7 +402,7 @@ export const useSales = ({
       case SalesActionTypes.REMOVE_PRODUCT_TO_CART:
         return {
           ...state,
-          PRODUCT: state?.PRODUCT?.filter((t: any) => {
+          PRODUCT: state?.PRODUCT?.filter((t: Product) => {
             return t.pId !== action?.payload.pId
           }),
           counter: state.counter - action.payload.ProQuantity
@@ -467,13 +416,12 @@ export const useSales = ({
         )
       }
       case SalesActionTypes.UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT: {
-        return handleSuccessUpdateQuantity(state, action)
+        return handleSuccessUpdateQuantity(state, action.payload)
       }
       case SalesActionTypes.CANCEL_UPDATE_QUANTITY_EDITING_PRODUCT: {
-        return handleCancelUpdateQuantity(state, action)
+        return handleCancelUpdateQuantity(state, action.payload)
       }
       case SalesActionTypes.REMOVE_ALL_PRODUCTS:
-        // @ts-ignore
         setValues({
           ...values,
           comment: '',
@@ -488,9 +436,9 @@ export const useSales = ({
         }
 
       case SalesActionTypes.TOGGLE_FREE_PRODUCT:
-        return toggleFreeProducts(state, action)
+        return toggleFreeProducts(state, action.payload, productsFood)
       case SalesActionTypes.TOGGLE_EDITING_PRODUCT: {
-        return handleToggleEditingStatus(state, action)
+        return handleToggleEditingStatus(state, action.payload)
       }
       case SalesActionTypes.INCREMENT: {
         return incrementProductQuantity({
@@ -502,9 +450,18 @@ export const useSales = ({
       }
 
       case SalesActionTypes.PUT_COMMENT:
-        return commentProducts(state, action)
+        return handleCommentProduct({
+          state, 
+          action.payload,
+          false,
+          values.comment,}
+        )
       case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
-        return handleUpdateAllExtraAndOptional(state, action)
+        return handleUpdateAllExtraAndOptional(state, {
+          payload: action.payload,
+          dataOptional,
+          dataExtra
+        })
       case SalesActionTypes.PRICE_RANGE:
         return {
           ...state,
@@ -517,7 +474,6 @@ export const useSales = ({
           ...state
         }
       case SalesActionTypes.PAYMENT_METHOD: return paymentMethod(state, action)
-
       case SalesActionTypes.APPLY_DISCOUNT: {
         return applyDiscountToCart(
           state,
@@ -532,114 +488,39 @@ export const useSales = ({
 
   const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
 
-  const handleRemoveValue = useCallback(({ name, value, pId }: { name: string; value: string | null; pId: string }) => {
-    setValues({
-      ...values,
-      [name]: value ?? ''
-    })
-    sendNotification({
-      backgroundColor: 'success',
-      title: 'Comentario eliminado',
-      description: 'Has eliminado el comentario!'
-    })
-    // @ts-ignore
-    return dispatch({
-      type: SalesActionTypes.PUT_COMMENT,
-      payload: pId,
-      value: ''
-    })
-  }, [])
-
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
-    const item = dataOptional.find((item) => {return item.code === codeCategory})
+    const item = dataOptional.find((item) => { return item.code === codeCategory })
     if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el: any) => {return el.opSubExPid === exOptional}
+      (el) => { return el.opSubExPid === exOptional }
     )
     if (item && idx !== -1) {
       const updatedItem = {
-        // @ts-ignore
+
         ...item,
         ExtProductFoodsSubOptionalAll: [
-          // @ts-ignore
+
           ...item.ExtProductFoodsSubOptionalAll.slice(0, idx),
           {
-            // @ts-ignore
+
             ...item.ExtProductFoodsSubOptionalAll[idx],
-            // @ts-ignore
+
             check: !item.ExtProductFoodsSubOptionalAll[idx].check
           },
-          // @ts-ignore
+
           ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1)
         ]
       }
-      const newData = dataOptional.map((el) =>
-      // @ts-ignore
-      {return el.code === codeCategory ? updatedItem : el}
+      const newData = dataOptional.map((el) => { return el.code === codeCategory ? updatedItem : el }
       )
-      // @ts-ignore
-      setDataOptional(() => {return [...newData]})
+
+      setDataOptional(() => { return [...newData] })
     }
   }
 
   /**
-   *
-   * @param state
-   * @param action
-   */
-  function handleUpdateAllExtraAndOptional(state: any, action: any) {
-    return {
-      ...state,
-      PRODUCT: state?.PRODUCT?.map((items: any) => {
-        return items.pId === action.payload
-          ? {
-            ...items,
-            dataOptional: action.dataOptional || [],
-            dataExtra: action.dataExtra || []
-          }
-          : items
-      })
-    }
-  }
-
-  /**
-   * Description
-   * @returns {any}
-   *  */
-  useEffect(() => {
-    const arr =
-      dataExtra?.length > 0
-        ? dataExtra?.filter((p) => {
-          // @ts-ignore
-          return p.quantity !== 0
-        })
-        : []
-    const val = arr.findIndex((item: any) => {return item.quantity !== 0})
-    if (val === -1) {
-      setSumExtraProducts(0)
-    }
-    /**
-     *
-     */
-    function sumNewExtraPrice() {
-      let sum = 0
-      arr.forEach((obj: any) => {
-        sum += obj.newExtraPrice ?? 0
-      })
-      if (arr.length === 0) {
-        setSumExtraProducts(0)
-      }
-      setSumExtraProducts(sum)
-      return sum
-    }
-    if (arr.length > 0) {
-      sumNewExtraPrice()
-    }
-  }, [dataExtra])
-
-  /**
-   *
+   * @returns {void}
    */
   function handleUpdateAllExtra() {
     try {
@@ -652,22 +533,22 @@ export const useSales = ({
       }
       const filteredDataOptional = dataOptional
         .map((obj) => {
-          // @ts-ignore
+
           const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
-            (subObj: any) => {return subObj?.check === true}
+            (subObj) => { return subObj?.check === true }
           )
           // Excluya todo el objeto padre si filteredSubOptions está vacío
           if (filteredSubOptions?.length === 0) {
             return null
           }
-          // @ts-ignore
+
           return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
         })
-        .filter((obj) => {return obj !== null}) // Elimine todos los objetos nulos del arreglo
-      // @ts-ignore
-      const filteredDataExtra = dataExtra?.filter((p) => {return p?.quantity !== undefined && p?.quantity !== 0})
+        .filter((obj) => { return obj !== null }) // Elimine todos los objetos nulos del arreglo
+
+      const filteredDataExtra = dataExtra?.filter((p) => { return p?.quantity !== undefined && p?.quantity !== 0 })
       if (product?.PRODUCT?.pId) {
-        // @ts-ignore
+
         dispatch({
           type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
           payload: product.PRODUCT.pId,
@@ -694,7 +575,6 @@ export const useSales = ({
     }
   }
 
-  // @ts-ignore
   /**
    *
    * @param root0
@@ -707,16 +587,16 @@ export const useSales = ({
 
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
-        // @ts-ignore
+
         if (exPid === producto.exPid) {
-          // @ts-ignore
+
           const initialQuantity = producto?.quantity ? producto?.quantity : 0
           const newQuantity = initialQuantity + 1
-          // @ts-ignore
+
           const newExtraPrice = producto.extraPrice * newQuantity
 
           return {
-            // @ts-ignore
+
             ...producto,
             quantity: newQuantity,
             newExtraPrice
@@ -724,102 +604,17 @@ export const useSales = ({
         }
         return producto
       })
-
-      // @ts-ignore
       setDataExtra(newExtra)
     }
   }
   const handleDecrementExtra = ({ Adicionales }: { Adicionales: any }) => {
     const exPid = Adicionales?.exPid
     if (!exPid) return
-    setDataExtra((prev) => {return decrementExtra(prev as any, exPid)})
+    setDataExtra((prev) => { return decrementExtra(prev as any, exPid) })
   }
 
 
-  /**
-   *
-   * @param stock
-   */
-  function sendAlertStock(stock: number) {
-    return sendNotification({
-      title: 'Stock insuficiente',
-      backgroundColor: 'warning',
-      description: `Solo hay ${stock} unidades disponibles en el inventario`
-    })
-  }
 
-  /**
-   * Toggles free mode for a product and recalculates its price
-   * with maximum performance.
-   * @param {any} state - Current reducer state.
-   * @param {any} action - Payload containing pId.
-   * @returns {any} Updated state.
-   */
-  function toggleFreeProducts(state: any, action: any) {
-    const pId = action?.payload?.pId
-    if (!pId) return state
-
-    // Find the reference product price only once
-    const referenceProduct = productsFood.find((item: any) => {return item.pId === pId})
-    if (!referenceProduct) return state
-
-    const list = state.PRODUCT
-    const index = list.findIndex((item: any) => {return item.pId === pId})
-
-    // If no match, skip re-render
-    if (index === -1) return state
-
-    const target = list[index]
-
-    const newFreeState = !target.free
-
-    const updatedItem = {
-      ...target,
-      free: newFreeState,
-      ProPrice: newFreeState
-        ? 0
-        : (target.ProQuantity ?? 1) * (referenceProduct.ProPrice ?? 0)
-    }
-
-    // Clone array ONCE
-    const newList = [...list]
-    newList[index] = updatedItem
-
-    return {
-      ...state,
-      PRODUCT: newList
-    }
-  }
-
-
-  // COMMENT_FREE_PRODUCT
-  /**
-   *
-   * @param state
-   * @param action
-   * @param deleteValue
-   */
-  function commentProducts(state: any, action: any, deleteValue = false) {
-    if (values.comment) {
-      sendNotification({
-        backgroundColor: 'success',
-        title: deleteValue ? 'Comentario eliminado' : 'Producto comentado',
-        description: deleteValue ? 'Has eliminado el comentario!' : 'Has comentado!'
-      })
-    }
-    setOpenCommentModal(!openCommentModal)
-    return {
-      ...state,
-      PRODUCT: state?.PRODUCT?.map((items: any) => {
-        return items.pId === action.payload
-          ? {
-            ...items,
-            comment: deleteValue ? '' : values.comment
-          }
-          : items
-      })
-    }
-  }
 
   const getSortedProduct = useCallback((data: any[], sort: string | null) => {
     if (sort && sort === 'PRICE_HIGH_TO_LOW') {
@@ -859,25 +654,15 @@ export const useSales = ({
     return dataList
   }
 
-  const searchedInput = (words: string) => {
-    setInputValue(words)
-    const n = words.split(' ')
-    if (n.length !== 0) {
-      if (n[n.length - 1] === '') {
-        n.pop()
-      }
-      return n[n.length - 1]
-    }
-    return ''
-  }
+
 
   const arrayProduct = useMemo(() => {
     if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return []
     return data.PRODUCT.map((product: any) => {
-      const filteredDataExtra = (product?.dataExtra ?? []).map(({ __typename, ...rest }) => {return rest})
+      const filteredDataExtra = (product?.dataExtra ?? []).map(({ __typename, ...rest }) => { return rest })
       const dataOptional = (product?.dataOptional ?? []).map(({ __typename, ...rest }) => {
         const { ExtProductFoodsSubOptionalAll, ...r } = rest
-        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ __typename, ...s }) => {return s})
+        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ __typename, ...s }) => { return s })
         return { ...r, ExtProductFoodsSubOptionalAll: adjusted }
       })
       return {
@@ -895,7 +680,7 @@ export const useSales = ({
 
   const finalArrayProduct = useMemo(() => {
     return arrayProduct.map((item: any) => {
-      const totalExtra = (item.dataExtra ?? []).reduce((acc: number, ex: any) => {return acc + (Number(ex.newExtraPrice) || 0)}, 0)
+      const totalExtra = (item.dataExtra ?? []).reduce((acc: number, ex: any) => { return acc + (Number(ex.newExtraPrice) || 0) }, 0)
       return { ...item, totalExtra }
     })
   }, [arrayProduct])
@@ -934,7 +719,7 @@ export const useSales = ({
   const { getOneSalesStore } = useGetSale()
   console.log(data)
   const handleSubmit = () => {
-    // @ts-ignore
+
     if (errors?.change || errors?.valueDelivery) {
       return sendNotification({
         title: 'error',
@@ -969,7 +754,7 @@ export const useSales = ({
         description: 'Lo sentimos, ocurrió un error'
       })
     }
-    // @ts-ignore
+
     setCode(code)
     /**
      *
@@ -1038,7 +823,6 @@ export const useSales = ({
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only',
-              // @ts-ignore
               onCompleted: (data) => {
                 client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
               }
@@ -1098,11 +882,11 @@ export const useSales = ({
       })
   }
 
-  const handleProduct = async (PRODUCT: any) => {
+  const handleProduct = async (PRODUCT: Product) => {
     setLoadingExtraProduct(true)
     const { pId } = PRODUCT || {}
     try {
-      const originalArray = data.PRODUCT.find((item: any) => {
+      const originalArray = data.PRODUCT.find((item: Product) => {
         return item.pId === pId
       })
       // OPTIONAL
@@ -1118,7 +902,7 @@ export const useSales = ({
           ?.map((obj: any) => {
             const filteredSubOptions =
               obj.ExtProductFoodsSubOptionalAll.filter(
-                (subObj: any) => {return subObj.check === true}
+                (subObj: any) => { return subObj.check === true }
               )
             // Excluya todo el objeto padre si filteredSubOptions está vacío
             if (filteredSubOptions.length === 0) {
@@ -1129,7 +913,7 @@ export const useSales = ({
               ExtProductFoodsSubOptionalAll: filteredSubOptions
             }
           })
-          .filter((obj: any) => {return obj !== null})
+          .filter((obj: any) => { return obj !== null })
         : []
 
       // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
@@ -1137,7 +921,7 @@ export const useSales = ({
         const updateOption = optionalFetch
           .map((obj: any) => {
             const matchingArray = filteredDataOptional.find(
-              (o: any) => {return o && o.opExPid === obj.opExPid}
+              (o: any) => { return o && o.opExPid === obj.opExPid }
             )
             if (!matchingArray) {
               return obj
@@ -1148,8 +932,7 @@ export const useSales = ({
               extProductFoodsSubOptionalAll.map((subObj: any) => {
                 const newItem =
                   matchingArray.ExtProductFoodsSubOptionalAll.find(
-                    (newItem: any) =>
-                    {return newItem && newItem.opSubExPid === subObj.opSubExPid}
+                    (newItem: any) => { return newItem && newItem.opSubExPid === subObj.opSubExPid }
                   )
                 if (newItem) {
                   return {
@@ -1165,7 +948,7 @@ export const useSales = ({
                 updateExtProductSubOptionalAll
             }
           })
-          .filter((obj: any) => {return obj})
+          .filter((obj: any) => { return obj })
         if (existOptionalCookies) {
           setDataOptional(updateOption || [])
         } else {
@@ -1178,17 +961,19 @@ export const useSales = ({
       if (!originalArray?.dataExtra) {
         finalData = extProduct?.data?.ExtProductFoodsAll
       } else {
-        const filteredData = originalArray.dataExtra.filter((item: any) =>
-        {return extProduct?.data?.ExtProductFoodsAll.some(
-          (newItem: any) => {return newItem.exPid === item.exPid}
-        )}
+        const filteredData = originalArray.dataExtra.filter((item: any) => {
+          return extProduct?.data?.ExtProductFoodsAll.some(
+            (newItem: any) => { return newItem.exPid === item.exPid }
+          )
+        }
         )
         finalData = originalArray?.dataExtra?.concat(
           extProduct?.data?.ExtProductFoodsAll?.filter(
-            (item: any) =>
-            {return !filteredData?.some(
-              (filteredItem: any) => {return filteredItem.exPid === item.exPid}
-            )}
+            (item: any) => {
+              return !filteredData?.some(
+                (filteredItem: any) => { return filteredItem.exPid === item.exPid }
+              )
+            }
           )
         )
       }
@@ -1219,19 +1004,6 @@ export const useSales = ({
 
   const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
 
-  /**
-   * Filter objects with checked property equal to true.
-   * @param {Array} products - Array of objects.
-   * @returns {Array} - Array of objects with checked property equal to true.
-   */
-  function filterChecked(products: any[]) {
-    if (!Array.isArray(products)) {
-      return []
-    }
-
-    return products.filter(product => {return product?.checked === true})?.map(product => {return product?.carProId})
-  }
-
   // Obtener los carProIds de productos con checked en true
   const carProIds = filterChecked(categories)
 
@@ -1239,106 +1011,27 @@ export const useSales = ({
   const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
 
   const allProducts = useMemo(() => {
-    const productMap = new Map(data?.PRODUCT?.map((item: any) => {return [String(item.pId), item.ProQuantity || 0]}))
+    const productMap = new Map(data?.PRODUCT?.map((item: any) => { return [String(item.pId), item.ProQuantity || 0] }))
 
-    return filteredProducts.map(product => {return {
-      ...product,
-      existsInSale: productMap.has(String(product.pId)),
-      ProQuantity: productMap.get(String(product.pId)) || 0
-    }})
+    return filteredProducts.map(product => {
+      return {
+        ...product,
+        existsInSale: productMap.has(String(product.pId)),
+        ProQuantity: productMap.get(String(product.pId)) || 0
+      }
+    })
   }, [data.PRODUCT, filteredProducts])
 
-  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: any) => {return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0)}, 0) }, [finalArrayProduct])
+  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: Product) => { return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0) }, 0) }, [finalArrayProduct])
 
   const handleAddAllProductsToCart = () => {
     for (const product of allProducts) {
-      const existsInCart = data.PRODUCT.some((item: any) => {return item.pId === product.pId})
+      const existsInCart = data.PRODUCT.some((item: any) => { return item.pId === product.pId })
       if (!existsInCart) {
         dispatch({ type: SalesActionTypes.ADD_TO_CART, payload: product })
       } else {
         dispatch({ type: SalesActionTypes.INCREMENT, id: product.pId })
       }
-    }
-  }
-
-  /**
-   * handleChangeNumber
-   * Updates product quantity from input change with full validations.
-   * @param {any} state - Current reducer state
-   * @param {any} action - Action with payload { value, index, id }
-   * @param {any[]} productsFood - Products memory source
-   * @param {(n:{title:string,backgroundColor:string,description?:string})=>void} sendNotification
-   * @param {(a:any)=>void} dispatch
-   * @returns {any} Updated state
-   */
-  function handleChangeNumber(
-    state: any,
-    action: any,
-    productsFood: any[] = [],
-    sendNotification: Function
-  ) {
-    const event = action?.payload ?? {}
-    const { value, index, id } = event
-
-    if (!id || index === undefined) return state
-
-    const productExist = productsFood.find((item: any) => {return item.pId === id})
-    const oneProduct = state?.PRODUCT?.find((item: any) => {return item.pId === id})
-
-    // Product not found
-    if (!productExist || !oneProduct) return state
-
-    // No stock
-    if (productExist.stock === 0) {
-      sendNotification({
-        title: 'Sin stock',
-        backgroundColor: 'warning',
-        description: 'Producto sin stock disponible'
-      })
-      return state
-    }
-
-    // Remove product if quantity <= 0
-    if (value <= 0) {
-      sendNotification({
-        title: 'Producto eliminado',
-        backgroundColor: 'info',
-        description: `Has eliminado ${oneProduct.pName} del carrito.`
-      })
-      return {
-        ...state,
-        PRODUCT: state.PRODUCT.filter((t: any) => {return t.pId !== id}),
-        counter: (state.counter ?? 0) - (oneProduct.ProQuantity || 0)
-      }
-    }
-
-    const safeValue = Number(value) || 0
-    const maxStock = productExist.manageStock ? productExist.stock : safeValue
-    const finalQuantity = Math.min(safeValue, maxStock)
-
-    // Stock exceeded
-    if (safeValue > productExist.stock && productExist.manageStock) {
-      sendNotification({
-        title: 'Stock insuficiente',
-        backgroundColor: 'warning',
-        description: `No puedes agregar más unidades de ${oneProduct.pName}. Stock disponible: ${productExist.stock}`
-      })
-    }
-
-    const updatedProducts = state.PRODUCT.map((item: any, i: number) =>
-    {return i === index
-      ? {
-        ...item,
-        ProQuantity: finalQuantity,
-        ProPrice: finalQuantity * (productExist.ProPrice ?? 0)
-      }
-      : item}
-    )
-
-    return {
-      ...state,
-      PRODUCT: updatedProducts,
-      counter: (state.counter ?? 0) + 1
     }
   }
 
@@ -1371,7 +1064,7 @@ export const useSales = ({
     initialStateSales,
     productsFood: allProducts,
     modalItem,
-    sumExtraProducts,
+    sumExtraProducts: 19999999,
     oneProductToComment: oneProductToComment ?? null,
     dataProduct: dataProduct?.productFoodsOne || {},
     dataOptional: dataOptional || [],
@@ -1396,8 +1089,16 @@ export const useSales = ({
     setOpenCurrentSale,
     setErrors,
     onChangeInput,
-    handleAddProduct,
-    handleRemoveValue,
+    handleAddProduct: (product: Product) => {
+      handleAddProduct({
+        product,
+        dispatch,
+        productsFood,
+        sendNotification,
+        handleGetOneProduct
+      })
+    },
+    handleRemoveValue: handleRemoveComment,
     setDelivery,
     setValues,
     setShowMore,

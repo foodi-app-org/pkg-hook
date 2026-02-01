@@ -1,3 +1,5 @@
+import * as nodeCrypto from 'crypto'
+
 // ticket-generator.ts
 /**
  * Ticket generator for POS systems.
@@ -44,17 +46,17 @@ export type IsUniqueFn = (code: string) => Promise<boolean>;
  * @param max
  * @returns random integer in [0, max)
  */
+
+
 const secureRandomInt = (max: number): number => {
-  if (typeof crypto !== 'undefined' && typeof (crypto as any).getRandomValues === 'function') {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
     // browser
     const arr = new Uint32Array(1);
-    (crypto as any).getRandomValues(arr)
+    crypto.getRandomValues(arr)
     return arr[0] % max
   }
   try {
     // node
-     
-    const nodeCrypto = require('crypto')
     const buf = nodeCrypto.randomBytes(4)
     const val = buf.readUInt32BE(0)
     return val % max
@@ -68,6 +70,7 @@ const secureRandomInt = (max: number): number => {
  * Build a random string from charset.
  * @param length
  * @param charset
+ * @returns random string
  */
 const randomFromCharset = (length: number, charset: string): string => {
   const out: string[] = []
@@ -98,9 +101,48 @@ const timestampChunk = (strategy: Strategy, size = 4): string => {
   return now.toString(36).slice(-size).padStart(size, '0')
 }
 
+
+/**
+ *
+ * @param length
+ * @returns error string or undefined
+ */
+function validateLength(length: any): string | undefined {
+  if (!Number.isInteger(length) || length < 4) {
+    return 'length must be an integer >= 4';
+  }
+  return undefined;
+}
+
+
+/**
+ *
+ * @param strategy
+ * @returns error string or undefined
+ */
+function validateStrategy(strategy: any): string | undefined {
+  if (!['alphanumeric', 'numeric'].includes(strategy)) {
+    return "strategy must be 'alphanumeric' or 'numeric'";
+  }
+  return undefined;
+}
+
+/**
+ * Validate prefix property.
+ * @param prefix
+ * @returns error string or undefined
+ */
+function validatePrefix(prefix: any): string | undefined {
+  if (typeof prefix !== 'string' || /[^A-Za-z0-9-_]/.test(prefix)) {
+    return 'prefix must be alphanumeric, dash or underscore only';
+  }
+  return undefined;
+}
+
 /**
  * Validate config and return normalized defaults or error string.
  * @param cfg
+ * @returns normalized config or error
  */
 const normalizeConfig = (cfg?: TicketConfig): { cfg?: Required<TicketConfig>; error?: string } => {
   const defaultCfg: Required<TicketConfig> = {
@@ -110,33 +152,30 @@ const normalizeConfig = (cfg?: TicketConfig): { cfg?: Required<TicketConfig>; er
     timestamp: false,
     maxAttempts: 5,
     padChar: '0'
-  }
+  };
 
-  if (!cfg) return { cfg: defaultCfg }
+  if (!cfg) return { cfg: defaultCfg };
 
-  const merged = { ...defaultCfg, ...cfg }
+  const merged = { ...defaultCfg, ...cfg };
 
-  if (!Number.isInteger(merged.length) || merged.length < 4) {
-    return { error: 'length must be an integer >= 4' }
-  }
+  const lengthError = validateLength(merged.length);
+  if (lengthError) return { error: lengthError };
 
-  if (!['alphanumeric', 'numeric'].includes(merged.strategy)) {
-    return { error: "strategy must be 'alphanumeric' or 'numeric'" }
-  }
+  const strategyError = validateStrategy(merged.strategy);
+  if (strategyError) return { error: strategyError };
 
-  if (typeof merged.prefix !== 'string' || /[^A-Za-z0-9-_]/.test(merged.prefix)) {
-    return { error: 'prefix must be alphanumeric, dash or underscore only' }
-  }
+  const prefixError = validatePrefix(merged.prefix);
+  if (prefixError) return { error: prefixError };
 
   if (typeof merged.maxAttempts !== 'number' || merged.maxAttempts < 1) {
-    merged.maxAttempts = defaultCfg.maxAttempts
+    merged.maxAttempts = defaultCfg.maxAttempts;
   }
 
   if (typeof merged.padChar !== 'string' || merged.padChar.length !== 1) {
-    merged.padChar = defaultCfg.padChar
+    merged.padChar = defaultCfg.padChar;
   }
 
-  return { cfg: merged }
+  return { cfg: merged };
 }
 
 /**

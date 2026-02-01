@@ -1,11 +1,11 @@
-/**
- * Fills missing weeks for the last 7 weeks, ensuring continuous data.
- * If a week is missing, it fills it with totalOut: 0 and percentageChange: "N/A".
- *
- * @param {Array} data - Array of weekly stock movement objects.
- * @returns {Array} - Filled data ensuring the last 7 weeks are covered.
- */
-export const fillLast7Weeks = (data) => {
+export interface WeeklyStockMovement {
+  weekStart: string;
+  totalOut: number;
+  prevTotalOut: number | null;
+  percentageChange: string;
+}
+
+export const fillLast7Weeks = (data: WeeklyStockMovement[]): WeeklyStockMovement[] => {
   const today = new Date()
   const last7Weeks = []
 
@@ -18,7 +18,7 @@ export const fillLast7Weeks = (data) => {
   }
 
   // Mapear los datos existentes para acceso rápido
-  const dataMap = new Map(data.map(item => {return [item.weekStart, item]}))
+  const dataMap = new Map(data.map((item: WeeklyStockMovement) => {return [item.weekStart, item]}))
 
   // Construir la nueva lista asegurando que todas las semanas estén presentes
   return last7Weeks.map(weekStart => {return (

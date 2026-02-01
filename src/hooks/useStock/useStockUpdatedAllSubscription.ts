@@ -19,7 +19,7 @@ interface StockUpdatedAllData {
         newStock: number
         previousStock: number
         event: string
-        meta: any
+        meta: undefined
     }
 }
 

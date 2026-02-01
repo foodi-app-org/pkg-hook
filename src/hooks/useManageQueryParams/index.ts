@@ -90,6 +90,7 @@ export const useManageQueryParams = (
   /**
    * Get a query param value
    * @param name
+   * @returns {string}
    */
   const getQuery = (name: string): string => {
     if (!name) return ''
@@ -101,6 +102,7 @@ export const useManageQueryParams = (
    * @param root0
    * @param root0.param
    * @param root0.callback
+   * @returns {string}
    */
   const getParams = ({ param, callback }: GetParamsOptions): string => {
     if (!param) return ''

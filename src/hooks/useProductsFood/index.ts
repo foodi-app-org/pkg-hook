@@ -5,6 +5,7 @@ import {
   useQuery
 } from '@apollo/client'
 import { useCallback, useMemo, useState } from 'react'
+import { Product } from 'typedefs'
 
 import { useStockUpdatedAllSubscription } from '../useStock'
 
@@ -30,7 +31,7 @@ interface UseProductsFoodOptions {
   search?: string | null
   toDate?: string | null
   dataSale?: Array<{ pId: string }>
-  isShopppingCard?: boolean
+  isShoppingCard?: boolean
   callback: (args: any) => void
 }
 export const useProductsFood = ({
@@ -38,15 +39,15 @@ export const useProductsFood = ({
   categories = [],
   desc = [],
   fetchPolicy = 'cache-and-network',
-  fromDate = null,
+  // fromDate = null, // removed unused variable
   gender = [],
   max = 100,
   min = null,
   pState,
   search = null,
-  toDate = null,
+  // toDate = null, // removed unused variable
   dataSale = [],
-  isShopppingCard = false,
+  isShoppingCard = false,
   callback
 }: UseProductsFoodOptions) => {
   const [showMore, setShowMore] = useState(500)
@@ -132,7 +133,7 @@ export const useProductsFood = ({
   // Attach subscription only if idStore is provided (the subscription hook internally skips when idStore is falsy)
   useStockUpdatedAllSubscription(idStore ?? '', onStockUpdated)
 
-  if (!isShopppingCard) {
+  if (!isShoppingCard) {
     return [
       productsFood, {
         pagination: data?.productFoodsAll?.pagination || {},
@@ -165,18 +166,23 @@ export const useProductsFood = ({
   ]
 }
 
+type NotificationFn = (args: { title: string; description: string; backgroundColor: string }) => any;
+type SuccessFn = (args?: any) => any;
+
+interface UseDeleteProductsFoodOptions {
+  sendNotification?: NotificationFn;
+  onSuccess?: SuccessFn;
+}
+
 export const useDeleteProductsFood = ({
-  sendNotification = (arg) => { return arg },
-  onSuccess = (arg) => { return arg }
-} = {
-  sendNotification: (arg) => { return arg },
-  onSuccess: (arg) => { return arg }
-}) => {
+  sendNotification = (arg: { title: string; description: string; backgroundColor: string }) => arg,
+  onSuccess = (arg?: any) => arg
+}: UseDeleteProductsFoodOptions = {}) => {
   const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
-  const handleDelete = async product => {
-    const { pId, pState } = product || {}
-    return await updateProductFoods({
+  const handleDelete = async (product: Product) => {
+    const { pId, pState } = product || {};
+    return updateProductFoods({
       variables: {
         input: {
           pId,
@@ -186,64 +192,63 @@ export const useDeleteProductsFood = ({
       update(cache) {
         cache.modify({
           fields: {
-            productFoodsAll(dataOld = []) {
+            productFoodsAll(dataOld: any[] = []) {
               if (Array.isArray(dataOld) && dataOld?.length) {
-                const product = dataOld?.find((product) => {
-                  return product.pId === pId
-                })
-                if (product) {
-                  const newProductList = dataOld?.filter((product) => {
-                    return product?.pId !== pId
-                  })
-                  return newProductList
+                const foundProduct = dataOld?.find((product: any) => {
+                  return product.pId === pId;
+                });
+                if (foundProduct) {
+                  const newProductList = dataOld?.filter((product: any) => {
+                    return product?.pId !== pId;
+                  });
+                  return newProductList;
                 }
-                return dataOld
-              } 
-              return []
-              
+                return dataOld;
+              }
+              return [];
             }
           }
-        })
+        });
         cache.modify({
           fields: {
-            getCatProductsWithProduct(dataOld = []) {
+            getCatProductsWithProduct(dataOld: any = []) {
               if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
-                const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories) => {
+                const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories: any) => {
                   return {
                     ...categories,
                     productFoodsAll: categories?.productFoodsAll?.length
-                      ? categories?.productFoodsAll?.filter((product) => {
-                        return product?.pId !== pId
+                      ? categories?.productFoodsAll?.filter((product: any) => {
+                        return product?.pId !== pId;
                       })
                       : []
-                  }
-                })
+                  };
+                });
                 return {
                   catProductsWithProduct: newListCatProducts,
                   totalCount: newListCatProducts?.length
-                }
+                };
               }
-              return dataOld
+              return dataOld;
             }
           }
-        })
+        });
       }
-    }).then(() => {
-      onSuccess()
+    }).then((res) => {
+      onSuccess(res);
       return sendNotification({
         title: 'Éxito',
         description: pState === 1 ? 'El producto se ha eliminado correctamente' : 'El producto se ha restaurando correctamente',
         backgroundColor: 'success'
-      })
+      });
     }).catch((e) => {
-      console.log(e)
+      console.error(e);
       return sendNotification({
         title: 'Error',
         description: 'Ocurrió un error',
         backgroundColor: 'error'
-      })
-    })
-  }
+      });
+    });
+  };
   return {
     handleDelete, data, loading, error
   }
@@ -258,21 +263,22 @@ export const useExtProductFoodsAll = () => {
     }
   ] = useLazyQuery(GET_ALL_EXTRA_PRODUCT)
 
-  const handleExtProductFoodsAll = (pId) => {
-    if (!pId) return
-    return ExtProductFoodsAll({
+  const handleExtProductFoodsAll = (pId: string): void => {
+    if (!pId) return;
+    ExtProductFoodsAll({
       variables: {
         pId
       }
-    })
-  }
-  return [handleExtProductFoodsAll,
+    });
+  };
+  return [
+    handleExtProductFoodsAll,
     {
       data: data?.ExtProductFoodsAll || [],
       loading,
       error
     }
-  ]
+  ];
 }
 
 export const useExtProductFoodsOptionalAll = () => {
@@ -283,17 +289,17 @@ export const useExtProductFoodsOptionalAll = () => {
       error
     }] = useLazyQuery(GET_EXTRAS_PRODUCT_FOOD_OPTIONAL)
 
-  const handleGetExtProductFood = (pId) => {
+  const handleGetExtProductFood = (pId: string): void => {
     try {
       ExtProductFoodsOptionalAll({
         variables: {
           pId
         }
-      })
+      });
     } catch (e) {
-      console.log(e)
+      console.error(e);
     }
-  }
+  };
   return [handleGetExtProductFood,
     {
       data: data?.ExtProductFoodsOptionalAll || [],
@@ -313,23 +319,31 @@ export const useGetOneProductsFood = ({ fetchOnlyProduct = false }: UseGetOnePro
       error
     }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
 
-  const [handleGetExtProductFood, { data: dataOptional }] = useExtProductFoodsOptionalAll()
-  const [handleExtProductFoodsAll, { data: dataExtra }] = useExtProductFoodsAll()
-  const handleGetOneProduct = async (food: any) => {
-    const { pId } = food
+    
+  const extProductFoodsOptionalAll = useExtProductFoodsOptionalAll();
+  const handleGetExtProductFood = extProductFoodsOptionalAll[0] as (pId: string) => void;
+  const dataOptional = (extProductFoodsOptionalAll[1] as { data: any }).data;
+
+  const extProductFoodsAll = useExtProductFoodsAll();
+  const handleExtProductFoodsAll = extProductFoodsAll[0] as (pId: string) => void;
+  const dataExtra = (extProductFoodsAll[1] as { data: any }).data;
+
+  const handleGetOneProduct = async (food: Product) => {
+    const { pId } = food;
     try {
       const product = await productFoodsOne({
         variables: {
           pId
         }
-      })
-      if (!fetchOnlyProduct) handleGetExtProductFood(pId)
-      if (!fetchOnlyProduct) handleExtProductFoodsAll(pId)
-      return product
+      });
+      if (!fetchOnlyProduct) handleGetExtProductFood(pId);
+      if (!fetchOnlyProduct) handleExtProductFoodsAll(pId);
+      return product;
     } catch (e) {
-      console.log(e)
+      console.error(e);
+      return undefined;
     }
-  }
+  };
   const handleFunctionQuery = fetchOnlyProduct ? productFoodsOne : handleGetOneProduct
   return [handleFunctionQuery, {
     data: data?.productFoodsOne || {},

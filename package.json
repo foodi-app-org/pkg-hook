@@ -2,17 +2,37 @@
   "dependencies": {
     "@apollo/client": "3.13.5",
     "file-saver": "2.0.5",
-    "graphql": "^16.12.0",
-    "js-cookie": "^3.0.5",
-    "lodash": "^4.17.23",
+    "graphql": "16.12.0",
+    "js-cookie": "3.0.5",
+    "lodash": "4.17.23",
+    "typedefs": "0.0.3",
+    "typesdefs": "1.0.6",
     "xlsx": "0.18.5"
   },
   "devDependencies": {
+    "@babel/core": "7.29.0",
+    "@babel/preset-env": "7.29.0",
+    "@babel/preset-typescript": "7.28.5",
+    "@eslint/js": "9.39.2",
     "@types/file-saver": "2.0.7",
     "@types/js-cookie": "3.0.6",
     "@types/react": "18.0.20",
+    "@typescript-eslint/eslint-plugin": "8.54.0",
+    "@typescript-eslint/parser": "8.54.0",
+    "babel-jest": "30.2.0",
+    "eslint": "^9.39.2",
+    "eslint-import-resolver-typescript": "4.4.4",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jsdoc": "62.5.0",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "globals": "17.3.0",
+    "jest": "30.2.0",
+    "ts-node": "10.9.2",
     "tsup": "8.5.1",
-    "typescript": "5.9.3"
+    "typedoc": "^0.28.16",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.54.0"
   },
   "exports": {
     ".": {
@@ -32,10 +52,14 @@
   "scripts": {
     "build": "tsup",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "link" : "npm link typedefs"
   },
   "types": "dist/index.d.ts",
-  "version": "1.13.7"
+  "version": "1.14.2"
 }

@@ -66,7 +66,7 @@ type UseRegisterMultipleTagsReturn = [
   (tags: string[]) => Promise<IResponseTag>,
   {
     loading: boolean
-    error: any
+    error: Error | null
     data: IResponseTag | null
   }
 ]
@@ -150,7 +150,7 @@ export const useRegisterMultipleTags = (
     handleRegisterTags,
     {
       loading,
-      error,
+      error: error || null,
       data: data?.registerMultipleTags ?? null
     }
   ]

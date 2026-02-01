@@ -4,6 +4,9 @@ import MersenneTwister from './mersenne_twister'
 /**
  *
  * @param opts
+ * @param opts.random
+ * @param opts.min
+ * @param opts.max
  */
 function minMax (opts: { random: number; min: number; max: number }): number {
   const { random, min, max } = opts

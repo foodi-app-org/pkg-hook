@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto'
+import { randomBytes } from 'node:crypto'
 
 /**
  * @description It takes an array of elements and returns an object with a submit hook for each element.
@@ -29,34 +29,30 @@ export const statusProduct = {
   active: 1
 }
 
-export const validationSubmitHooks = (elements: Array<HTMLElement & { name?: string; type?: string; value?: any; dataset?: DOMStringMap }>) => {
+export const validationSubmitHooks = (elements: Array<HTMLElement & { name?: string; type?: string; value?: unknown; dataset?: DOMStringMap }>) => {
   if (!elements || elements.length === 0) {
     return {}
   }
   let errorForm: Record<string, boolean> = {}
 
   for (const element of elements) {
-    if (element.name) {
-      const elementType = (element.type as string) || element.tagName.toLowerCase()
-      if (validTypes[elementType]) {
-        if (element.dataset && element.dataset.required === 'true') {
-          if (!element.value) {
-            errorForm = { ...errorForm, [element.name]: true }
-          } else {
-            errorForm = { ...errorForm, [element.name]: false }
-          }
-        } else {
-          errorForm = { ...errorForm, [element.name]: false }
-        }
-      }
+    if (!element.name) continue;
+    const elementType = (element.type as string) || element.tagName.toLowerCase();
+    if (!validTypes[elementType]) continue;
+
+    if (element.dataset && element.dataset.required === 'true') {
+      errorForm = { ...errorForm, [element.name]: !element.value };
+      continue;
     }
+
+    errorForm = { ...errorForm, [element.name]: false };
   }
 
   return errorForm
 }
 
 export const getCurrentDomain = (): string | boolean => {
-  return typeof window !== 'undefined' && window.location.hostname
+  return globalThis.window !== undefined && globalThis.window.location.hostname
 }
 
 
@@ -99,25 +95,50 @@ export const RandomCode = (
  * @param {{ cache: object, query: object, nameFun: string, dataNew: object, type: number, id: string }} params Parámetros para actualizar el cachet de apollo
  * @returns {null} no hay retorno
  */
+import { ApolloCache, DocumentNode } from '@apollo/client';
+
 export interface UpdateCacheModParams {
-  cache: any;
-  query: any;
+  cache: ApolloCache<unknown>;
+  query: DocumentNode;
   nameFun: string;
-  dataNew?: any;
+  dataNew?: Record<string, unknown>;
   type: number;
   id?: string;
 }
 
-export const updateCacheMod = async ({ cache, query, nameFun, dataNew, type, id }: UpdateCacheModParams): Promise<any> => {
+export const updateCacheMod = async ({
+  cache,
+  query,
+  nameFun,
+  dataNew,
+  type,
+  id
+}: UpdateCacheModParams): Promise<ReturnType<ApolloCache<unknown>['modify']>> => {
   return cache.modify({
     fields: {
-      [nameFun](dataOld = []) {
-        if (type === 1) return cache.writeQuery({ query, data: [...(dataOld || []), { ...(dataNew || {}) }] })
-        if (type === 2) return cache.writeQuery({ query, data: { ...(dataOld || {}), ...(dataNew || {}) } })
-        if (type === 3) return cache.writeQuery({ query, data: dataOld.filter(x => { return x === id }) })
+      [nameFun](dataOld: unknown) {
+        if (type === 1 && Array.isArray(dataOld)) {
+          return cache.writeQuery({
+            query,
+            data: [...dataOld, ...(dataNew ? [dataNew] : [])]
+          });
+        }
+        if (type === 2 && typeof dataOld === 'object' && dataOld !== null && !Array.isArray(dataOld)) {
+          return cache.writeQuery({
+            query,
+            data: { ...(dataOld as Record<string, unknown>), ...(dataNew) }
+          });
+        }
+        if (type === 3 && Array.isArray(dataOld)) {
+          return cache.writeQuery({
+            query,
+            data: dataOld.filter((x: unknown) => x === id)
+          });
+        }
+        return undefined;
       }
     }
-  })
+  });
 }
 /**
  * Formatea un valor como un número siguiendo el formato de Colombia.
@@ -133,11 +154,11 @@ export const numberFormat = (value: string | number) => {
   }
 
   // Convierte el valor a string y elimina puntos.
-  const stringValue = `${value}`.replace(/\./g, '')
+  const stringValue = `${value}`.replaceAll('.', '')
 
   // Intenta convertir a número y formatear si es posible.
-  const numberValue = parseFloat(stringValue)
-  if (!isNaN(numberValue)) {
+  const numberValue = Number.parseFloat(stringValue)
+  if (!Number.isNaN(numberValue)) {
     return new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 2,
       style: 'decimal',
@@ -149,26 +170,35 @@ export const numberFormat = (value: string | number) => {
   return value
 }
 /**
- *
- * @param {Object} data objeto a filtrar
- * @param {Array} filters array a comparar o claves del objeto a excluir
- * @param {boolean} dataFilter booleano para devolver los datos filtrados o no
- * @return {Object} devuelve un objeto con los datos filtrados
+ * Filtra un objeto según las claves proporcionadas en filters.
+ * @param data Objeto a filtrar.
+ * @param filters Array de claves a comparar o excluir del objeto.
+ * @param dataFilter Booleano para devolver los datos filtrados o no.
+ * @returns El objeto filtrado según los parámetros.
  */
-export const filterKeyObject = (data: Record<string, any>, filters: string[], dataFilter: boolean) => {
-  let values = {}; let valuesFilter = {}
+export const filterKeyObject = (
+  data: Record<string, unknown>,
+  filters: string[],
+  dataFilter: boolean
+): Record<string, unknown> | { values: Record<string, unknown>; valuesFilter: Record<string, unknown> } => {
+  let values: Record<string, unknown> = {};
+  let valuesFilter: Record<string, unknown> = {};
   for (const elem in data) {
-    let coincidence = false
-    for (let i = 0; i < filters.length; i++) {
-      if (elem === filters[i]) coincidence = true
-      else valuesFilter = filters[i]
+    let coincidence = false;
+    for (const filter of filters) {
+      if (elem === filter) {
+        coincidence = true;
+        break;
+      }
     }
-
-    if (!coincidence) values = { ...values, [elem]: data[elem] }
-    else valuesFilter = { ...valuesFilter, [elem]: data[elem] }
+    if (coincidence) {
+      valuesFilter = { ...valuesFilter, [elem]: data[elem] };
+    } else {
+      values = { ...values, [elem]: data[elem] };
+    }
   }
-  if (!dataFilter) return values
-  if (dataFilter) return { values, valuesFilter }
+  if (dataFilter) return { values, valuesFilter };
+  return values;
 }
 
 export const MONTHS: readonly string[] = [
@@ -221,7 +251,17 @@ export const convertBase64 = (file: File): Promise<string | ArrayBuffer | null> 
       resolve(reader.result)
     }
     reader.onerror = error => {
-      reject(error)
+      let errorMessage: string;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      } else {
+        errorMessage = String(error);
+      }
+      reject(
+        new Error(errorMessage)
+      )
     }
   })
 }
@@ -271,29 +311,29 @@ const cleanValue = ({
   if (typeof value !== 'string') return null
 
   // Remove currency symbols and whitespace
-  let cleaned = value.replace(/[$€£¥]/g, '').trim()
+  let cleaned = value.replaceAll(/[$€£¥]/g, '').trim()
 
   // Handle abbreviations like K, M, B
   if (!disableAbbreviations) {
-    cleaned = cleaned.replace(/([kmb])\b/i, (match) => {
+    cleaned = cleaned.replaceAll(/([kmb])\b/i, (match) => {
       const multipliers: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9 }
       const key = match.toLowerCase()
       return multipliers[key] ? `*${multipliers[key]}` : ''
     })
   }
 
-  // Replace group separator with empty string
+  // replaceAll group separator with empty string
   if (groupSeparator) {
-    cleaned = cleaned.replace(new RegExp(`\\${groupSeparator}`, 'g'), '')
+    cleaned = cleaned.replaceAll(new RegExp(`\\${groupSeparator}`, 'g'), '')
   }
 
-  // Replace decimal separator with a dot
+  // replaceAll decimal separator with a dot
   if (decimalSeparator) {
-    cleaned = cleaned.replace(new RegExp(`\\${decimalSeparator}`, 'g'), '.')
+    cleaned = cleaned.replaceAll(new RegExp(`\\${decimalSeparator}`, 'g'), '.')
   }
 
   // Remove any non-numeric characters except for the decimal point
-  cleaned = cleaned.replace(/[^0-9.-]/g, '')
+  cleaned = cleaned.replaceAll(/[^0-9.-]/g, '')
 
   // Limit decimals if specified
   if (allowDecimals && typeof decimalsLimit === 'number' && decimalsLimit > 0) {
@@ -306,7 +346,7 @@ const cleanValue = ({
 
   // Handle negative values
   if (!allowNegativeValue) {
-    cleaned = cleaned.replace(/-/g, '')
+    cleaned = cleaned.replaceAll('-', '')
   }
 
   return cleaned
@@ -331,12 +371,12 @@ export function parseFormattedFloat(value: string): number {
   }
   const cleaned = cleanValue({ value, ...options })
 
-  // If cleaned is null/undefined/empty, return 0 to avoid calling replace on null
+  // If cleaned is null/undefined/empty, return 0 to avoid calling replaceAll on null
   if (cleaned === null || cleaned === undefined || cleaned === '') return 0
 
   const normalized = (typeof options.decimalSeparator === 'string' && options.decimalSeparator !== '')
-    // Replace the decimal separator with a dot for parsing
-    ? cleaned.replace(options.decimalSeparator, '.')
+    // replaceAll the decimal separator with a dot for parsing
+    ? cleaned.replaceAll(options.decimalSeparator, '.')
     : cleaned
 
   const num = Number.parseFloat(normalized)

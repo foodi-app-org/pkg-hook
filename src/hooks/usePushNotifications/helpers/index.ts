@@ -2,24 +2,27 @@
 const pushServerPublicKey = 'BIN2Jc5Vmkmy-S3AUrcMlpKxJpLeVRAfu9WBqUbJ70SJOCWGCGXKY-Xzyh7HDr6KbRDGYHjqZ06OcS3BjD7uAm8'
 
 /**
- * checks if Push notification and service workers are supported by your browser
+ * Checks if Push notification and service workers are supported by your browser.
+ * @returns {boolean | undefined} True if supported, otherwise undefined.
  */
-function isPushNotificationSupported () {
-  if (typeof window !== 'undefined' && window.Notification && window.ServiceWorker) {
-    return 'serviceWorker' in navigator && 'PushManager' in window
+function isPushNotificationSupported (): boolean | undefined {
+  if (globalThis.window !== undefined && globalThis.window.Notification && globalThis.window.ServiceWorker) {
+    return 'serviceWorker' in navigator && 'PushManager' in globalThis.window
   }
 }
 
 /**
- * asks user consent to receive push notifications and returns the response of the user, one of granted, default, denied
+ * Asks user consent to receive push notifications and returns the response of the user, one of granted, default, denied.
+ * @returns {Promise<NotificationPermission>} The user's permission response.
  */
-async function askUserPermission () {
-  return await Notification.requestPermission()
+async function askUserPermission (): Promise<NotificationPermission> {
+  return Notification.requestPermission()
 }
 /**
- * shows a notification
+ * Shows a notification.
+ * @returns {void}
  */
-function sendNotification () {
+function sendNotification (): void {
   const img = '/images/jason-leung-HM6TMmevbZQ-unsplash.jpg'
   const text = 'Take a look at this brand new t-shirt!'
   const title = 'New Product Available'
@@ -38,77 +41,68 @@ function sendNotification () {
 }
 
 /**
- *
+ * Registers the service worker.
+ * @returns {Promise<ServiceWorkerRegistration>} The service worker registration promise.
  */
-function registerServiceWorker () {
+function registerServiceWorker (): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.register('/sw.js')
 }
 
 /**
- *
- * using the registered service worker creates a push notification subscription and returns it
- *
+ * Using the registered service worker creates a push notification subscription and returns it.
+ * @returns {Promise<PushSubscription>} The push subscription.
  */
-async function createNotificationSubscription () {
+async function createNotificationSubscription (): Promise<PushSubscription> {
   // wait for service worker installation to be ready
   const serviceWorker = await navigator.serviceWorker.ready
   // subscribe and return the subscription
-  return await serviceWorker.pushManager.subscribe({
+  return serviceWorker.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: pushServerPublicKey
   })
 }
 
 /**
- * returns the subscription if present or nothing
+ * Returns the subscription if present or nothing.
+ * @returns {Promise<PushSubscription | null>} The user's push subscription or null.
  */
-function getUserSubscription () {
+async function getUserSubscription (): Promise<PushSubscription | null> {
   // wait for service worker installation to be ready, and then
-  return navigator.serviceWorker.ready
-    .then(function (serviceWorker) {
-      return serviceWorker.pushManager.getSubscription()
-    })
-    .then(function (pushSubscription) {
-      return pushSubscription
-    })
+  const serviceWorker = await navigator.serviceWorker.ready
+  const pushSubscription = await serviceWorker.pushManager.getSubscription()
+  return pushSubscription
 }
 
-const host = process.env.NODE_ENV === 'production' ? 'http://localhost:4000' : 'http://localhost:4000'
+const host = 'http://localhost:4000'
 
 /**
- *
- * @param path
- * @param body
+ * Sends a POST request.
+ * @param {string} path The API path.
+ * @param {unknown} body The request body.
+ * @returns {Promise<any>} The response data.
  */
-function post (path, body) {
-  return fetch(`${host}${path}`, {
+async function post (path: string, body: unknown): Promise<any> {
+  const response = await fetch(`${host}${path}`, {
     body: JSON.stringify(body),
     method: 'POST',
     mode: 'cors'
   })
-    .then(function (response) {
-      return response.json()
-    })
-    .then(function (data) {
-      return data
-    })
+  const data = await response.json()
+  return data
 }
 
 /**
- *
- * @param path
+ * Sends a GET request.
+ * @param {string} path The API path.
+ * @returns {Promise<any>} The response data.
  */
-function get (path) {
-  return fetch(`${host}${path}`, {
+async function get (path: string): Promise<any> {
+  const response = await fetch(`${host}${path}`, {
     method: 'GET',
     mode: 'cors'
   })
-    .then(function (response) {
-      return response.json()
-    })
-    .then(function (data) {
-      return data
-    })
+  const data = await response.json()
+  return data
 }
 
 export {

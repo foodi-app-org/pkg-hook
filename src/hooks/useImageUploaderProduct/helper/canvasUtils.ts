@@ -1,17 +1,19 @@
-export const createImage = (url) =>
-{return new Promise((resolve, reject) => {
-  const image = new Image()
-  image.addEventListener('load', () => {return resolve(image)})
-  image.addEventListener('error', (error) => {return reject(error)})
-  image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues on CodeSandbox
-  image.src = url
-})}
+export const createImage = (url: string) => {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.addEventListener('load', () => { return resolve(image) })
+    image.addEventListener('error', (error) => { return reject(error) })
+    image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues on CodeSandbox
+    image.src = url
+  })
+}
 
 /**
  *
  * @param degreeValue
+ * @returns radian value
  */
-export function getRadianAngle(degreeValue) {
+export function getRadianAngle(degreeValue: number): number {
   return (degreeValue * Math.PI) / 180
 }
 
@@ -20,8 +22,9 @@ export function getRadianAngle(degreeValue) {
  * @param width
  * @param height
  * @param rotation
+ * @returns rotated rectangle dimensions
  */
-export function rotateSize(width, height, rotation) {
+export function rotateSize(width: number, height: number, rotation: number): { width: number; height: number } {
   const rotRad = getRadianAngle(rotation)
 
   return {
@@ -39,12 +42,18 @@ export function rotateSize(width, height, rotation) {
  * This function was adapted from the one in the ReadMe of https://github.com/DominicTobias/react-image-crop
  * @param imageSrc
  * @param pixelCrop
+ * @param pixelCrop.x
+ * @param pixelCrop.y
+ * @param pixelCrop.width
+ * @param pixelCrop.height
  * @param rotation
  * @param flip
+ * @returns cropped image as a URL string
+ * 
  */
 export async function getCroppedImg(
-  imageSrc,
-  pixelCrop,
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number },
   rotation = 0,
   flip = { horizontal: false, vertical: false }
 ) {
@@ -60,8 +69,8 @@ export async function getCroppedImg(
 
   // calculate bounding box of the rotated image
   const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-    image.width,
-    image.height,
+    Number(image.width),
+    Number(image.height),
     rotation
   )
 
@@ -107,9 +116,9 @@ export async function getCroppedImg(
   // return croppedCanvas.toDataURL('image/jpeg');
 
   // As a blob
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve) => {
     croppedCanvas.toBlob((file) => {
-      resolve(URL.createObjectURL(file))
+      resolve(URL.createObjectURL(file as Blob))
     }, 'image/png')
   })
 }
@@ -118,8 +127,9 @@ export async function getCroppedImg(
  *
  * @param imageSrc
  * @param rotation
+ * @returns rotated image as a URL string
  */
-export async function getRotatedImage(imageSrc, rotation = 0) {
+export async function getRotatedImage(imageSrc: string, rotation = 0) {
   const image = await createImage(imageSrc)
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -134,13 +144,16 @@ export async function getRotatedImage(imageSrc, rotation = 0) {
     canvas.height = image.height
   }
 
+  if (!ctx) {
+    return null;
+  }
   ctx.translate(canvas.width / 2, canvas.height / 2)
   ctx.rotate((rotation * Math.PI) / 180)
   ctx.drawImage(image, -image.width / 2, -image.height / 2)
 
   return new Promise((resolve) => {
     canvas.toBlob((file) => {
-      resolve(URL.createObjectURL(file))
+      resolve(URL.createObjectURL(file as Blob))
     }, 'image/png')
   })
 }

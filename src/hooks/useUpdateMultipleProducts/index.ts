@@ -5,18 +5,27 @@ import { useCategoriesProduct } from '../useCategoriesProduct'
 
 import { UPDATE_MULTIPLE_PRODUCTS } from './queries'
 
+interface UpdateMultipleProductResult {
+  errors?: { message: string }[];
+  // Add other fields as needed
+}
+
+interface UpdateMultipleProductsResponse {
+  updateMultipleProducts: UpdateMultipleProductResult[];
+}
+
 interface UpdateMultipleProductsProps {
   sendNotification?: (notification: Notification) => void;
 }
 
 interface Product {
   PRECIO_AL_PUBLICO: number;
-  DESCRIPCION: string;
-  NOMBRE: string;
+  DESCRIPTION: string;
+  NAME: string;
   pCode: string;
-  CANTIDAD?: number;
-  'IMPUESTO (%)': number;
-  CODIGO_DE_BARRAS: string | null;
+  QUANTITY?: number;
+  'TAX (%)': number;
+  BARCODE: string | null;
 }
 
 interface Notification {
@@ -28,10 +37,10 @@ interface Notification {
 export const useUpdateMultipleProducts = ({
   sendNotification = () => {}
 }: UpdateMultipleProductsProps): {
-    updateProducts: (products: Product[]) => Promise<any[]>;
-    data: any; 
+    updateProducts: (products: Product[]) => Promise<UpdateMultipleProductResult[]>;
+    data: UpdateMultipleProductsResponse | undefined; 
     loading: boolean; 
-    error: any; 
+    error: Error | undefined; 
 } => {
   
   const [updateMultipleProducts, {
@@ -44,17 +53,17 @@ export const useUpdateMultipleProducts = ({
   
   const findEmptyCategory = dataCategoriesProducts?.find(({ pName }: { pName: string }) => {return pName === CATEGORY_EMPTY})
   
-  const updateProducts = async (products: Product[]): Promise<any[]> => {
+  const updateProducts = async (products: Product[]): Promise<UpdateMultipleProductResult[]> => {
     
     const newProducts = products.map(product => {
       const {
         PRECIO_AL_PUBLICO: ProPrice,
-        DESCRIPCION: ProDescription,
-        NOMBRE: pName,
+        DESCRIPTION: ProDescription,
+        NAME: pName,
         pCode,
-        CANTIDAD: stock = 0,
-        'IMPUESTO (%)': vat,
-        CODIGO_DE_BARRAS: ProBarCode
+        QUANTITY: stock = 0,
+        'TAX (%)': vat,
+        BARCODE: ProBarCode
       } = product
 
       return {
@@ -96,10 +105,10 @@ export const useUpdateMultipleProducts = ({
       
       return response.data.updateMultipleProducts
 
-    } catch (e) {
+    } catch {
       sendNotification({
         backgroundColor:'error',
-        description :'Ocurrió un error al actualizar los productos',
+        description :'An error occurred while updating the products',
         title :'Error'
       })
       

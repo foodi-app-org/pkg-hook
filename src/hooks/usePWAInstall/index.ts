@@ -1,20 +1,26 @@
 import { useState, useEffect } from 'react'
 
 export const usePWAInstall = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  type BeforeInstallPromptEvent = Event & {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  };
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstallable, setIsInstallable] = useState(false)
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault() // Evita que el navegador muestre el diálogo automáticamente
-      setDeferredPrompt(e) // Almacena el evento para que puedas llamarlo más tarde
+    const handleBeforeInstallPrompt = (e: Event) => {
+      const event = e as unknown as BeforeInstallPromptEvent
+      event.preventDefault() // Evita que el navegador muestre el diálogo automáticamente
+      setDeferredPrompt(event) // Almacena el evento para que puedas llamarlo más tarde
       setIsInstallable(true) // Marca que la PWA es instalable
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    globalThis.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      globalThis.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
   }, [])
 
@@ -22,11 +28,11 @@ export const usePWAInstall = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt()
 
-      deferredPrompt.userChoice.then((choiceResult) => {
+      deferredPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed'; platform: string }) => {
         if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt')
+          console.warn('User accepted the install prompt')
         } else {
-          console.log('User dismissed the install prompt')
+          console.warn('User dismissed the install prompt')
         }
         setDeferredPrompt(null) // Limpia el evento después de usarlo
         setIsInstallable(false) // Oculta el botón de instalación

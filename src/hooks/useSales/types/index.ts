@@ -1,3 +1,5 @@
+import { Product } from 'typesdefs'
+
 import { TypeDiscount } from '../helpers/apply-discount-to-cart.utils'
 import { SalesActionTypes } from '../helpers/constants'
 /**
@@ -10,7 +12,7 @@ export interface NotificationPayload {
 }
 
 export interface SalesState {
-    PRODUCT: any[];
+    PRODUCT: Product[];
     totalPrice: number;
     sortBy: string | null;
     itemsInCart: number;
@@ -29,17 +31,11 @@ export interface SalesState {
  * Basic product model as returned by productsFood (server model).
  * Add fields as your GraphQL schema evolves; keep server -> client mapping explicit.
  */
-export interface ProductFood {
+export interface ProductFood extends Product {
     pId: string
     pName: string
-    ProPrice: number
-    unitPrice?: number
-    stock?: number
-    manageStock?: boolean
-    ProQuantity?: number
-    existsInSale?: boolean
-    // allow extra server metadata
-    [key: string]: any
+    stock: number
+    manageStock: boolean
 }
 
 /**
@@ -162,10 +158,10 @@ export interface UseSalesReturn {
     modalItem: boolean
     sumExtraProducts: number
     oneProductToComment: any
-    dataProduct: any
+    dataProduct: Product
     dataOptional: OptionalGroup[]
     dataExtra: ExtraItem[]
-    fetchMore: Function
+    fetchMore: () => void
     pagination: any
     discount: number
     datCat: any[]
@@ -177,20 +173,20 @@ export interface UseSalesReturn {
     handleAddAllProductsToCart: () => void
     dispatch: React.Dispatch<SalesReducerAction>
     handlePageChange: (pageNumber: number) => void
-    handleComment: (product: any) => void
+    handleComment: (product: Product) => void
     setModalItem: (v: boolean) => void
     handleChangeFilter: (value: string) => void
-    handleProduct: (PRODUCT: any) => Promise<void>
+    handleProduct: (PRODUCT: Product) => Promise<void>
     handleChange: (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: any } }, error: boolean) => void
     setOpenCurrentSale: (v: any) => void
     setErrors: (e: any) => void
     onChangeInput: (e: React.ChangeEvent<HTMLInputElement>) => void
-    handleAddProduct: (product: any) => Promise<void>
+    handleAddProduct: (product: Product) => Promise<void>
     handleRemoveValue: ({ name, value, pId }: { name: string; value: any; pId: string }) => void
     setDelivery: (v: boolean) => void
     setValues: (v: ValuesState) => void
     setShowMore: (n: number) => void
-    PriceRangeFunc: (products: any[], price: number) => any[]
+    PriceRangeFunc: (products: Product[], price: number) => any[]
     handleCleanFilter: () => null
     handleSubmit: () => void
     handleChangeFilterProduct: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -200,7 +196,7 @@ export interface UseSalesReturn {
     getSortedProduct: (data: any[], sort: string) => any[]
     handleAddOptional: ({ exOptional, codeCategory }: { exOptional?: string | null; codeCategory?: string | null }) => void
     handleIncrementExtra: ({ Adicionales, index }: { Adicionales: any; index?: number }) => void
-    setProduct: (p: any) => void
+    setProduct: (p: Product) => void
     setPrint: () => void
     PRODUCT: (state: SalesState, action: SalesReducerAction) => SalesState
 }

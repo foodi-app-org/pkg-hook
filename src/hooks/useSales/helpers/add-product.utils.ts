@@ -1,12 +1,14 @@
-import { NotificationPayload } from '../types'
+import { Product, SendNotificationFn } from 'typesdefs'
+
+import { SalesReducerAction, SalesState } from '../types'
 
 import { isStockInsufficient } from './isStockInsufficient'
 
 interface AddToCartProps {
-  state: any
-  action: any
-  product: any
-  sendNotification?: (args: NotificationPayload) => any
+  state: SalesState
+  action: SalesReducerAction
+  product: Product | null
+  sendNotification?: SendNotificationFn
   sendAlertStock: (stock: number) => void
 }
 
@@ -18,8 +20,8 @@ interface AddToCartProps {
  * @returns {any} Updated state.
  */
 export const addToCartFunc = ({
-  state = {},
-  action = {},
+  state,
+  action,
   product,
   sendNotification = () => { },
   sendAlertStock = () => { }
@@ -47,7 +49,7 @@ export const addToCartFunc = ({
   }
 
   // PRE-FETCH product references (only ONCE)
-  const productExistIndex = state.PRODUCT.findIndex((item: any) => {return item.pId === pId})
+  const productExistIndex = state.PRODUCT.findIndex((item: Product) => {return item.pId === pId})
   const productExist = productExistIndex !== -1 ? state.PRODUCT[productExistIndex] : null
   if (!product) return state
 

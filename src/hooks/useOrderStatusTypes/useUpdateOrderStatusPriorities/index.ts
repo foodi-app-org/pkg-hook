@@ -1,5 +1,10 @@
 import { gql, useMutation } from '@apollo/client'
+import { SendNotificationFn } from 'typesdefs'
 
+interface OrderStatusPriorityInput {
+  idStatus: string
+  priority: number
+}
 /**
  * GraphQL mutation to update the priority of order statuses.
  */
@@ -21,6 +26,20 @@ const UPDATE_ORDER_STATUS_PRIORITIES = gql`
   }
 `
 
+interface UpdateStatusPriorityResponse {
+  success: boolean
+  message: string
+  data: Array<{
+    idStatus: string
+    name: string
+    priority: number
+  }>
+  errors: Array<{ path: string; message: string }>
+}
+
+interface UseUpdateOrderStatusPrioritiesOptions {
+  sendNotification?:  SendNotificationFn
+}
 /**
  * Custom hook to update the priority of order statuses.
  *
@@ -33,8 +52,8 @@ const UPDATE_ORDER_STATUS_PRIORITIES = gql`
  * }}
  */
 export const useUpdateOrderStatusPriorities = ({
-  sendNotification = (...res) => { }
-} = {}) => {
+  sendNotification
+}: UseUpdateOrderStatusPrioritiesOptions = {}) => {
   const [mutate, { loading, error }] = useMutation(UPDATE_ORDER_STATUS_PRIORITIES)
 
   /**
@@ -43,7 +62,7 @@ export const useUpdateOrderStatusPriorities = ({
    * @param {OrderStatusPriorityInput[]} input - Array of objects containing idStatus and priority.
    * @returns {Promise<UpdateStatusPriorityResponse>} Response from the server.
    */
-  const updatePriorities = async (input) => {
+  const updatePriorities = async (input: OrderStatusPriorityInput[]): Promise<UpdateStatusPriorityResponse> => {
     if (!Array.isArray(input) || input.length === 0) {
       return {
         success: false,
@@ -72,25 +91,38 @@ export const useUpdateOrderStatusPriorities = ({
 
     try {
       const { data } = await mutate({ variables: { data: input } })
-      if (data) {
-        const { updateOrderStatusPriorities } = data ?? {}
-        const { success, message } = updateOrderStatusPriorities ?? {
-          success: false,
-          message: ''
+      if (data && data.updateOrderStatusPriorities) {
+        const { updateOrderStatusPriorities } = data
+        const { success, message } = updateOrderStatusPriorities
+        if (typeof sendNotification === 'function') {
+          sendNotification({
+            title: success ? 'Exitoso' : 'Error',
+            description: message,
+            backgroundColor: success ? 'success' : 'error'
+          })
         }
-        return sendNotification({
-          title: success ? 'Exitoso' : 'Error',
-          description: message,
-          backgroundColor: success ? 'success' : 'error'
-        })
+        return updateOrderStatusPriorities
       }
-      return data.updateOrderStatusPriorities
-    } catch (err) {
       return {
         success: false,
-        message: 'Unexpected error while updating priorities.',
+        message: 'No data returned from server.',
         data: [],
-        errors: [{ path: 'mutation', message: err.message }]
+        errors: [{ path: 'mutation', message: 'No data returned from server.' }]
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        return {
+          success: false,
+          message: 'Error while updating priorities.',
+          data: [],
+          errors: [{ path: 'mutation', message: err.message }]
+        }
+      }
+      return {
+        success: false,
+        message: 'Unknown error occurred.',
+        data: [],
+        errors: [{ path: 'mutation', message: 'Unknown error occurred.' }]
       }
     }
   }

@@ -9,6 +9,8 @@ import { resolveProduct } from './resolveProduct'
  * @param {any[]} params.productsFood - in-memory products list
  * @param {(action:any)=>void} params.dispatch - reducer dispatch
  * @param {(n:{title:string,backgroundColor:string,description:string})=>void} params.sendNotification
+ * - notification sender
+ * @returns {(action:any)=>Promise<void>} stable handler to add product to cart
  */
 export const useAddToCart = ({
   handleGetOneProduct,

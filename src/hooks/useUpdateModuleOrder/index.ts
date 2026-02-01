@@ -18,14 +18,19 @@ const UPDATE_MODULE_ORDER = gql`
   }
 `
 
+interface ModuleOrderInput {
+  mId: string | number
+  mPriority: number
+}
+
 export const useUpdateModuleOrder = () => {
   const [updateModuleOrderMutation] = useMutation(UPDATE_MODULE_ORDER)
 
-  const updateModulesOrder = useCallback(async (newOrder) => {
+  const updateModulesOrder = useCallback(async (newOrder: ModuleOrderInput[]) => {
     // Enviar la actualización a la API (GraphQL)
     try {
       await updateModuleOrderMutation({
-        variables: { input: newOrder.map(({ mId, mPriority }) => {return { mId, mPriority }}) }
+        variables: { input: newOrder.map(({ mId, mPriority }: ModuleOrderInput) => { return { mId, mPriority } }) }
       })
     } catch (error) {
       console.error('Error updating module order:', error)

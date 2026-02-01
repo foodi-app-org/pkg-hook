@@ -26,8 +26,31 @@ const DELETE_ONE_TAG = gql`
  * Custom hook to delete a tag by ID or name.
  * @returns {Object} An object with the deleteTag function and mutation state.
  */
+// Type definitions for tag and mutation variables
+type Tag = {
+  tgId: string
+  nameTag: string
+  state: string
+}
+
+type DeleteTagVariables = {
+  tgId?: string
+  nameTag?: string
+}
+
+type DeleteTagResponse = {
+  success: boolean
+  message: string
+  data: Tag | null
+  errors: Array<{
+    path: string
+    message: string
+    type: string
+  }>
+}
+
 export const useDeleteOneTag = () => {
-  const [deleteOneTag, { data, loading, error }] = useMutation(DELETE_ONE_TAG, {
+  const [deleteOneTag, { data, loading, error }] = useMutation<{ deleteOneTag: DeleteTagResponse }, DeleteTagVariables>(DELETE_ONE_TAG, {
     update(cache, { data }) {
       const deleted = data?.deleteOneTag?.data
       const success = data?.deleteOneTag?.success
@@ -39,7 +62,7 @@ export const useDeleteOneTag = () => {
         fields: {
           getAllTags(existing = {}) {
             const filteredData = existing?.data?.filter(
-              (tag: any) => {return tag.tgId !== deleted.tgId}
+              (tag: Tag) => tag.tgId !== deleted.tgId
             ) || []
 
             return {
@@ -59,20 +82,18 @@ export const useDeleteOneTag = () => {
       console.error('❌ Apollo error in deleteOneTag:', err)
     }
   })
+
   /**
    * Deletes a tag by ID or name.
-   * @param {Object} variables - Mutation input.
-   * @param {string} [variables.tgId] - Tag ID (optional).
-   * @param {string} [variables.nameTag] - Tag name (optional).
-   * @returns {Promise<Object>} Response from server.
+   * @param root0
+   * @param root0.tgId
+   * @param root0.nameTag
+   * @returns {Promise<DeleteTagResponse>} The response from the delete operation.
    */
   const handleDeleteTag = async ({
     tgId,
     nameTag
-  }: {
-        tgId?: string
-        nameTag?: string
-    }) => {
+  }: DeleteTagVariables): Promise<DeleteTagResponse> => {
     try {
       const { data } = await deleteOneTag({
         variables: {
@@ -81,8 +102,12 @@ export const useDeleteOneTag = () => {
         }
       })
 
-      return data.deleteOneTag
-    } catch (err: any) {
+      return data!.deleteOneTag
+    } catch (err: unknown) {
+      let message = 'Unknown error'
+      if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+        message = err.message
+      }
       return {
         success: false,
         message: 'An error occurred while deleting the tag.',
@@ -90,7 +115,7 @@ export const useDeleteOneTag = () => {
         errors: [
           {
             path: 'mutation',
-            message: err.message || 'Unknown error',
+            message,
             type: 'server'
           }
         ]
@@ -102,5 +127,5 @@ export const useDeleteOneTag = () => {
     data,
     loading,
     error
-  }]
+  }] as const
 }

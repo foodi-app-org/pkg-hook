@@ -33,7 +33,7 @@ interface DashboardComponent {
   id: string;
   idStore: string;
   idUser: string;
-  coordinates: any;
+  coordinates: unknown;
   createAt: string;
   updateAt: string;
   title: string;
@@ -55,12 +55,13 @@ interface UpdateDashboardComponentResponse {
 
 interface UpdateDashboardComponentInput {
   id: string;
-  coordinates?: any;
+  coordinates?: unknown;
   title?: string;
 }
 
 /**
  * Custom hook to update a dashboard component.
+ * @returns An object containing the update function, loading state, error, and data.
  */
 export const useUpdateDashboardComponent = () => {
   const [mutate, { loading, error, data }] = useMutation<
@@ -71,6 +72,7 @@ export const useUpdateDashboardComponent = () => {
   /**
    * Calls the mutation with the provided input.
    * @param input DashboardComponentUpdateInput
+   * @returns Promise resolving to the mutation response.
    */
   const updateComponent = async (input: UpdateDashboardComponentInput[]) => {
     try {

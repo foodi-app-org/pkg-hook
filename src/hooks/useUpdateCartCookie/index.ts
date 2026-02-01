@@ -6,7 +6,8 @@ import { getCurrentDomain } from '../../utils'
 type Product = {
   pId: string;
   ProQuantity: number;
-  [key: string]: any;
+  // Add more specific known properties here if needed
+  [key: string]: string | number | undefined;
 };
 
 type State = {
@@ -18,7 +19,7 @@ type Action =
   | { type: 'REMOVE_PRODUCT_TO_CART'; payload: Product }
   | { type: 'ADD_PRODUCT_TO_CART'; payload: Product }
   | { type: 'UPDATE_PRODUCT_IN_CART'; payload: Product }
-  | { type: string; payload?: any };
+  | { type: string; payload?: unknown };
 
 export const useUpdateCartCookie = () => {
   const keyToSaveData = process.env.NEXT_LOCAL_SALES_STORE
@@ -26,14 +27,17 @@ export const useUpdateCartCookie = () => {
 
   const PRODUCT = (state: State, action: Action): State => {
     switch (action.type) {
-      case 'REMOVE_PRODUCT_TO_CART':
+      case 'REMOVE_PRODUCT_TO_CART': {
+        // action.payload is Product for this case
+        const removePayload = action.payload as Product;
         return {
           ...state,
           PRODUCT: state?.PRODUCT?.filter((t: Product) => {
-            return t.pId !== action?.payload.pId
+            return t.pId !== removePayload.pId;
           }),
-          counter: state.counter - action.payload.ProQuantity
+          counter: state.counter - removePayload.ProQuantity
         }
+      }
       case 'ADD_PRODUCT_TO_CART':
         // Add code for 'ADD_PRODUCT_TO_CART' case
         return state
@@ -50,7 +54,7 @@ export const useUpdateCartCookie = () => {
     dispatch({ type: 'REMOVE_PRODUCT_TO_CART', payload: product })
   }
   useEffect(() => {
-    // @ts-ignore
+    // @ts-expect-error: Cookies.set type does not match expected signature for this usage
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
   }, [data, domain])
 

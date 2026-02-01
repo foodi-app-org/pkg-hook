@@ -18,12 +18,19 @@ export const __NEXTAUTH = {
   ).path,
   _lastSync: 0,
   _session: undefined,
-  _getSession: ({ ...args }) => { }
+  // Mock function to be replaced at runtime
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _getSession: (_p0?: { event: string }) => Promise.resolve()
 }
 
 /**
  *
  * @param options
+ * @param options.callbackUrl URL a la que redirigir después del cierre de sesión
+ * @param options.redirect Si es true, redirige a la URL de callback después del cierre de sesión
+ * @param options.reload Si es true, recarga la página después del cierre de sesión
+ * @returns {Promise<{ url: string } | void>} Si no se redirige, devuelve un objeto con la URL de redirección
+ * @description Función para cerrar la sesión del usuario
  */
 export async function signOutAuth(options: {
   callbackUrl?: string
@@ -31,14 +38,15 @@ export async function signOutAuth(options: {
   reload?: boolean
 } | undefined = undefined
 ): Promise<{ url: string } | void> {
-  const { callbackUrl = window.location.href, reload = true } = options ?? {}
+  const currentHref = globalThis.location.href
+  const { callbackUrl = currentHref, reload = true } = options ?? {}
   const baseUrl = apiBaseUrl(__NEXTAUTH)
   const fetchOptions = {
     method: 'post',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    // @ts-expect-error
+    // @ts-expect-error getCsrfToken returns a Promise, but URLSearchParams expects a string
     body: new URLSearchParams({
       csrfToken: await getCsrfToken(),
       callbackUrl,
@@ -50,15 +58,16 @@ export async function signOutAuth(options: {
 
   broadcast.post({ event: 'session', data: { trigger: 'signout' } })
   if (!reload) {
-    await __NEXTAUTH._getSession({ event: 'storage' })
+    await __NEXTAUTH._getSession()
     return data
   }
   if (options?.redirect ?? true) {
     const url = data.url ?? callbackUrl
-    window.location.href = url
+    const { location } = globalThis
+    location.href = url
     // If url contains a hash, the browser does not reload the page. We reload manually
-    if (url.includes('#') && !reload) window.location.reload()
-    return
+    if (url.includes('#') && !reload) location.reload()
+    return undefined
   }
   await __NEXTAUTH._getSession({ event: 'storage' })
   return data

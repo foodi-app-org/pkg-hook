@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 /**
  *
  * @param imageUrl
+ * @returns {number | null} weight in bytes
  */
-export function useImageWeight (imageUrl) {
-  const [weight, setWeight] = useState(null)
+export function useImageWeight (imageUrl: string) {
+  const [weight, setWeight] = useState<number | null>(null)
 
   useEffect(() => {
     const image = new Image()
@@ -17,7 +18,7 @@ export function useImageWeight (imageUrl) {
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4 && xhr.status === 200) {
           const contentLength = xhr.getResponseHeader('Content-Length')
-          setWeight(contentLength)
+          setWeight(contentLength ? Number.parseInt(contentLength, 10) : null)
         }
       }
       xhr.send()

@@ -1,32 +1,33 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
+import { SendNotificationFn } from 'typesdefs'
 
 import { CREATE_TABLE_MUTATION } from './queries'
 
-/**
- * Custom hook to handle table creation with validation and mutation logic
- * @param {string} tableName Name of the table
- * @param {number} seats Number of seats at the table
- * @param {string} section Section where the table is located
- * @param {number} tableState Current state of the table (e.g., Active, Occupied)
- * @returns {Object} The state of the mutation including success, message, errors, and data
- */
+
+export interface StoreTableCreateResult {
+  data: {
+    storeTableCreate: {
+      success: boolean
+      message?: string
+    }
+  }
+}
+
 export const useStoreTableCreate = ({
   sendNotification = () => {}
-} = {}) => {
+}: { sendNotification?: SendNotificationFn } = {}) => {
   const [loading, setLoading] = useState(false)
   const [createTableMutation] = useMutation(CREATE_TABLE_MUTATION)
-  /**
-   * Function to create a table with validation and mutation
-   * @param {string} tableName Table name
-   * @param {number} seats Number of seats
-   * @param {string} section Table section
-   * @param {number} tableState Table state (e.g., 0 = Unavailable, 1 = Active, 2 = Occupied)
-   */
-  const storeTableCreate = async (tableName, seats, section, tableState) => {
-    setLoading(true) // Start loading
+
+  const storeTableCreate = async (
+    tableName: string,
+    seats: number,
+    section: string,
+    tableState: number
+  ): Promise<StoreTableCreateResult | { success: false; message: string }> => {
+    setLoading(true)
     try {
-      // Call the mutation to create the table
       const result = await createTableMutation({
         variables: {
           tableName,
@@ -34,9 +35,8 @@ export const useStoreTableCreate = ({
           section,
           tableState
         },
-        update (cache, { data: { storeTableCreate } }) {
-          if (storeTableCreate.success) {
-            // Actualizar la lista de mesas en la caché
+        update (cache, { data }) {
+          if (data?.storeTableCreate?.success) {
             cache.modify({
               fields: {
                 storeTables (existingTables = []) {
@@ -55,23 +55,41 @@ export const useStoreTableCreate = ({
         }
       })
 
-      sendNotification({
-        backgroundColor: result.data.storeTableCreate.success ? 'success' : 'error',
-        description: result.data.storeTableCreate.message || '',
-        title: result.data.storeTableCreate.success ? 'Success' : 'Error'
-      })
-      return result
-    } catch (error) {
+      if (result.data && result.data.storeTableCreate) {
+        sendNotification({
+          backgroundColor: result.data.storeTableCreate.success ? 'success' : 'error',
+          description: result.data.storeTableCreate.message || '',
+          title: result.data.storeTableCreate.success ? 'Success' : 'Error'
+        })
+        return { data: result.data } as StoreTableCreateResult
+      } else {
+        sendNotification({
+          backgroundColor: 'error',
+          description: 'No data returned from mutation.',
+          title: 'Error'
+        })
+        return { success: false, message: 'No data returned from mutation.' }
+      }
+    } catch (error: unknown) {
+      let message = 'Error occurred while creating the table.'
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as { message?: unknown }).message === 'string'
+      ) {
+        message = (error as { message: string }).message
+      }
       sendNotification({
         backgroundColor: 'error',
-        description: error.message || 'Error occurred while creating the table.',
+        description: message,
         title: 'Creation Failed'
       })
-      return { success: false, message: error.message }
+      return { success: false, message }
     } finally {
       setLoading(false)
     }
   }
 
-  return [storeTableCreate, { loading }]
+  return [storeTableCreate, { loading }] as const
 }

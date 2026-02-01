@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Product } from 'typesdefs'
 import * as XLSX from 'xlsx'
 
 import { RandomCode } from '../../utils'
@@ -8,6 +9,25 @@ import { validateProductDataExcel } from './helpers/validateProductDataExcel'
 const STEPS = {
   UPLOAD_FILE: 0,
   UPLOAD_PRODUCTS: 1
+}
+
+type PrecioAlPublico = number | null | string;
+
+export interface ProductUpload  extends Product {
+  CANTIDAD: number
+  ORIGINAL_CANTIDAD: number
+  free: boolean
+  product: string
+  pCode: string
+  editing: boolean
+  PRECIO_AL_PUBLICO: PrecioAlPublico
+  ProImage: string
+  VALOR_DE_COMPRA: number
+  manageStock: boolean
+  errors: string[] | null
+  oldPrice?: number // changed from number | undefined to just number | undefined (default for optional)
+  NOMBRE?: string
+  [key: string]: unknown
 }
 
 interface UseUploadProductsProps {
@@ -20,7 +40,7 @@ interface UseUploadProductsProps {
 export const useUploadProducts = ({
   sendNotification = () => { return null }
 }: UseUploadProductsProps) => {
-  const [data, setData] = useState([])
+  const [data, setData] = useState<ProductUpload[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [active, setActive] = useState(STEPS.UPLOAD_FILE)
   const [overActive, setOverActive] = useState(STEPS.UPLOAD_FILE)
@@ -28,23 +48,18 @@ export const useUploadProducts = ({
   const handleOverActive = (index: number) => {
     setOverActive(index)
   }
-  const readExcelFile = (file: File) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (!e.target || !(e.target.result instanceof ArrayBuffer)) {
-          return reject(new Error('Failed to read file as ArrayBuffer.'))
-        }
-        const data = new Uint8Array(e.target.result)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const json = XLSX.utils.sheet_to_json(worksheet)
-        resolve(json)
-      }
-      reader.onerror = (error) => {return reject(error)}
-      reader.readAsArrayBuffer(file)
-    })
+  const readExcelFile = async (file: File) => {
+    try {
+      const buffer = await file.arrayBuffer()
+      const data = new Uint8Array(buffer)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[sheetName]
+      const json = XLSX.utils.sheet_to_json(worksheet)
+      return json
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to read file as ArrayBuffer.')
+    }
   }
 
   const onChangeFiles = async (files: FileList) => {
@@ -55,33 +70,55 @@ export const useUploadProducts = ({
 
       const newProducts = newData.flat().map((product, index) => {
         // Assert product as a record to access its properties
-        const prod = product as Record<string, any>
-        const PRECIO_AL_PUBLICO = Number.isNaN(prod.PRECIO_AL_PUBLICO) ? 0 : prod.PRECIO_AL_PUBLICO
-        const VALOR_DE_COMPRA = Number.isNaN(prod.VALOR_DE_COMPRA) ? 0 : prod.VALOR_DE_COMPRA
-        const validationErrors = validateProductDataExcel(prod, index)
+        const prod = product as Partial<ProductUpload>
+        const rawPrecio = prod.PRECIO_AL_PUBLICO
+        const PRECIO_AL_PUBLICO: string | number | null =
+          rawPrecio === undefined || rawPrecio === null || Number.isNaN(Number(rawPrecio))
+            ? 0
+            : rawPrecio
+
+        const rawValorCompra = prod.VALOR_DE_COMPRA
+        const VALOR_DE_COMPRA: number =
+          rawValorCompra === undefined || rawValorCompra === null || Number.isNaN(Number(rawValorCompra))
+            ? 0
+            : Number(rawValorCompra)
+
+        // Ensure CANTIDAD is always a number
+        const safeCantidad = Number.isNaN(Number(prod.CANTIDAD)) || prod.CANTIDAD === undefined ? 1 : Number(prod.CANTIDAD)
 
         const code = RandomCode(9)
-        return {
-          ...prod,
-          CANTIDAD: Number.isNaN(prod.CANTIDAD) ? 1 : prod.CANTIDAD,
-          ORIGINAL_CANTIDAD: Number.isNaN(prod.CANTIDAD) ? 1 : prod.CANTIDAD,
+        // Use "DESCRIPCIÓN" if your Excel uses the accented version, otherwise keep "DESCRIPCION"
+        const description = (prod.DESCRIPCIÓN ?? prod.DESCRIPCION) as string
+
+        // Construct a valid ProductUpload object before validation
+        const productUpload: ProductUpload = {
+          ...(prod as Product),
+          CANTIDAD: safeCantidad,
+          ORIGINAL_CANTIDAD: safeCantidad,
           free: false,
-          product: prod?.DESCRIPCION,
+          product: description,
           pCode: code,
           editing: false,
           PRECIO_AL_PUBLICO,
           ProImage: '/images/placeholder-image.webp',
           VALOR_DE_COMPRA,
           manageStock: true,
-          errors: validationErrors.length > 0 ? validationErrors : null
+          errors: null
         }
+
+        const validationErrors = validateProductDataExcel(productUpload, index)
+
+        // Attach errors after validation
+        productUpload.errors = validationErrors.length > 0 ? validationErrors : null
+
+        return productUpload
       })
 
       // Notificación de errores
       newProducts.forEach(product => {
         if (product.errors) {
           // Enviar una notificación por cada error encontrado
-          product.errors.forEach(error => {
+          product.errors.forEach((error: string) => {
             sendNotification({
               description: error,
               title: 'Error',
@@ -131,7 +168,7 @@ export const useUploadProducts = ({
     }
   }
 
-  const handleSetActive = (index) => {
+  const handleSetActive = (index: number) => {
     if (typeof index !== 'number' || index < 0 || index >= Object.keys(STEPS).length) {
       sendNotification({
         description: 'Invalid step index',
@@ -145,7 +182,7 @@ export const useUploadProducts = ({
     }
   }
 
-  const updateProductQuantity = (index, quantityChange) => {
+  const updateProductQuantity = (index: number, quantityChange: number) => {
     // Validar el índice
     if (index < 0 || index >= data.length) {
       console.warn('Invalid product index:', index)
@@ -183,7 +220,7 @@ export const useUploadProducts = ({
    * @param {number} productIndex - The index of the product to update.
    */
   const handleCheckFree = (productIndex: number) => {
-    setData((prevData) => {
+    setData((prevData: ProductUpload[]) => {
     // Validar que el índice es un número válido
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
         console.warn('Invalid product index:', productIndex)
@@ -192,7 +229,7 @@ export const useUploadProducts = ({
 
       // Validar que el producto existe y que tiene la propiedad 'free'
       const product = prevData[productIndex]
-      if (!product || typeof product.free === 'undefined') {
+      if (!product || product.free === undefined) {
         console.warn('Product or "free" property not found for index:', productIndex)
         return prevData // Retorna el estado anterior si no se encuentra el producto
       }
@@ -200,21 +237,36 @@ export const useUploadProducts = ({
       // Evitar cambios innecesarios si el estado de 'free' no cambia
       const updatedFreeStatus = !product.free
       if (product.free === updatedFreeStatus) {
-        console.info('Product "free" status is already:', updatedFreeStatus)
+        // Only warn or error are allowed
+        console.warn('Product "free" status is already:', updatedFreeStatus)
         return prevData // No actualiza si el estado es el mismo
       }
 
+      // Extract nested ternary for clarity and type safety
+      let restoredPrice: number | undefined = undefined
+      if (!updatedFreeStatus) {
+        restoredPrice = typeof product.oldPrice === 'number' ? product.oldPrice : undefined
+      }
+
       // Crear una nueva copia de los datos actualizando solo el producto específico
-      return prevData.map((product, index) =>
-      {return index === productIndex
-        ? {
-          ...product,
-          free: updatedFreeStatus,
-          PRECIO_AL_PUBLICO: updatedFreeStatus ? 0 : product.oldPrice,
-          oldPrice: product.PRECIO_AL_PUBLICO
+      return prevData.map((product, index) => {
+        let precioAlPublicoValue: number | string | null;
+        if (updatedFreeStatus) {
+          precioAlPublicoValue = 0;
+        } else if (typeof restoredPrice === 'number') {
+          precioAlPublicoValue = restoredPrice;
+        } else {
+          precioAlPublicoValue = product.PRECIO_AL_PUBLICO ?? 0;
         }
-        : product}
-      )
+        return index === productIndex
+          ? {
+              ...product,
+              free: updatedFreeStatus,
+              PRECIO_AL_PUBLICO: precioAlPublicoValue,
+              oldPrice: typeof product.PRECIO_AL_PUBLICO === 'number' ? product.PRECIO_AL_PUBLICO : undefined
+            }
+          : product;
+      })
     })
   }
   const handleCleanAllProducts = () => {
@@ -227,7 +279,7 @@ export const useUploadProducts = ({
    *
    * @param {number} productIndex - The index of the product to update.
    */
-  const handleToggleEditingStatus = (productIndex) => {
+  const handleToggleEditingStatus = (productIndex: number) => {
     setData((prevData) => {
     // Validar que el índice es un número válido
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
@@ -241,7 +293,7 @@ export const useUploadProducts = ({
 
       // Validar que el producto existe y tiene la propiedad 'editing'
       const product = prevData[productIndex]
-      if (!product || typeof product.editing === 'undefined') {
+      if (!product || product.editing === undefined) {
         sendNotification({
           description: `Product or "editing" property not found for index: ${productIndex}`,
           title: 'Error',
@@ -280,7 +332,7 @@ export const useUploadProducts = ({
    *
    * @param {number} productIndex - The index of the product to update.
    */
-  const handleSuccessUpdateQuantity = (productIndex) => {
+  const handleSuccessUpdateQuantity = (productIndex: number) => {
     const product = data[productIndex]
     setData((prevData) => {
       // Validar que `CANTIDAD` sea un número entero
@@ -320,26 +372,26 @@ export const useUploadProducts = ({
     }
   }
 
-  const handleChangeQuantity = (event, productIndex) => {
+  const handleChangeQuantity = (event: React.ChangeEvent<HTMLInputElement>, productIndex: number) => {
     const { value } = event.target
-    setData((prevData) => {
+    const parsedQuantity = Number(value)
+    setData((prevData: ProductUpload[]) => {
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
         console.warn('Invalid product index:', productIndex)
         return prevData // Retorna el estado anterior si el índice es inválido
       }
 
-      // Obtener la cantidad temporal para el producto
-      const newQuantity = value
-      if (isNaN(newQuantity) || newQuantity < 0) {
+      // Validar que la cantidad sea un número válido y no negativo
+      if (Number.isNaN(parsedQuantity) || parsedQuantity < 0) {
         console.warn('Quantity must be a valid non-negative number.')
         return prevData // Retorna sin cambios si la cantidad no es válida
       }
 
-      // Actualiza el array `data` con la nueva cantidad
+      // Actualiza el array `data` con la nueva cantidad (como número)
       return prevData.map((product, index) =>
-      {return index === productIndex
-        ? { ...product, CANTIDAD: newQuantity }
-        : product}
+        index === productIndex
+          ? { ...product, CANTIDAD: parsedQuantity }
+          : product
       )
     })
   }
@@ -349,8 +401,8 @@ export const useUploadProducts = ({
    *
    * @param {number} productIndex - The index of the product to restore quantity for.
    */
-  const handleCancelUpdateQuantity = (productIndex) => {
-    setData((prevData) => {
+  const handleCancelUpdateQuantity = (productIndex: number) => {
+    setData((prevData: ProductUpload[]) => {
     // Validar que el índice es un número válido
       if (typeof productIndex !== 'number' || productIndex < 0 || productIndex >= prevData.length) {
         console.warn('Invalid product index:', productIndex)
@@ -359,7 +411,7 @@ export const useUploadProducts = ({
 
       // Validar que el producto existe y tiene las propiedades 'CANTIDAD' y 'ORIGINAL_CANTIDAD'
       const product = prevData[productIndex]
-      if (!product || typeof product.ORIGINAL_CANTIDAD === 'undefined') {
+      if (!product || product.ORIGINAL_CANTIDAD === undefined) {
         console.warn('Product or "ORIGINAL_CANTIDAD" property not found for index:', productIndex)
         return prevData // Retorna el estado anterior si no se encuentra el producto o propiedad
       }
@@ -396,25 +448,30 @@ export const useUploadProducts = ({
 
   /**
    * Compares uploaded products against response data to determine which were successfully uploaded.
-   * @param {Array} data - Original array of products with their details.
-   * @param {Array} response - Array of response objects from the `updateProducts` function.
-   * @returns {Object} Object containing arrays of successfully and unsuccessfully uploaded products.
    */
-  const getUploadResults = (data, response) => {
+  type UploadResponse = {
+    success: boolean
+    data: { pCode: string }
+  }
+  
+  const getUploadResults = (
+    data: ProductUpload[],
+    response: UploadResponse[]
+  ): { successfullyUploaded: ProductUpload[]; failedUploads: ProductUpload[] } => {
     const uploadedCodes = new Set(
       response
-        .filter((product) => {return product.success})
-        .map((product) => {return product.data.pCode})
+        .filter((product: UploadResponse) => { return product.success })
+        .map((product: UploadResponse) => { return product.data.pCode })
     )
-
-    const successfullyUploaded = data.filter((product) =>
-    {return uploadedCodes.has(product.pCode)}
+  
+    const successfullyUploaded = data.filter((product: ProductUpload) =>
+      uploadedCodes.has(product.pCode)
     )
-
+  
     const failedUploads = data.filter(
-      (product) => {return !uploadedCodes.has(product.pCode)}
+      (product: ProductUpload) => { return !uploadedCodes.has(product.pCode) }
     )
-
+  
     return {
       successfullyUploaded,
       failedUploads

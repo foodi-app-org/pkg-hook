@@ -10,6 +10,7 @@ enum Theme {
 /**
  * Handles light/dark theme switching using data-theme attribute.
  * Cookie is used only for persistence, not as source of truth.
+ * @returns {Object} - An object containing theme management functions and current theme.
  */
 export const useTheme = () => {
 

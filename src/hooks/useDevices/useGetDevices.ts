@@ -1,9 +1,10 @@
 import { useQuery } from '@apollo/client'
+import { DeviceUser, GetAllDevicesData } from 'typesdefs'
 
 import { GET_ALL_DEVICES } from './queries'
 
 export const useDevices = () => {
-  const { data, loading } = useQuery(GET_ALL_DEVICES, {
+  const { data, loading } = useQuery<GetAllDevicesData>(GET_ALL_DEVICES, {
     onError: (error) => {
       console.error(error)
     }
@@ -13,7 +14,7 @@ export const useDevices = () => {
   // const { formatDateInTimeZone } = useFormatDate({})
 
   const listDevices = Array.isArray(data?.getDeviceUsers)
-    ? data?.getDeviceUsers.map((device) => {
+    ? data?.getDeviceUsers.map((device: DeviceUser) => {
       // const formattedDate = formatDateInTimeZone(device.createdAt)
       return {
         ...device

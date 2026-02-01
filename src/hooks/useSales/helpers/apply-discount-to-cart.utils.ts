@@ -84,8 +84,8 @@ export const applyDiscountToCart = (
   }
 
   // Helpers - work in cents to preserve exactness
-  const toCents = (n: number) => {return Math.round((Number(n) || 0) * 100)}
-  const fromCents = (c: number) => {return c / 100}
+  const toCents = (n: number) => { return Math.round((Number(n) || 0) * 100) }
+  const fromCents = (c: number) => { return c / 100 }
 
   // --- Normalize / Restore originals to avoid stacking discounts ---
   // For each product, use saved original prices if present; otherwise use current as "original"
@@ -112,8 +112,8 @@ export const applyDiscountToCart = (
       }
     })
 
-    const extrasCentsList = extrasNormalized.map((e: any) => {return e.originalNewExtraPriceCents})
-    const extrasTotalCents = extrasCentsList.reduce((s: number, v: number) => {return s + v}, 0)
+    const extrasCentsList = extrasNormalized.map((e: any) => { return e.originalNewExtraPriceCents })
+    const extrasTotalCents = extrasCentsList.reduce((s: number, v: number) => { return s + v }, 0)
     const itemTotalCents = baseCents + extrasTotalCents
 
     return {
@@ -126,7 +126,7 @@ export const applyDiscountToCart = (
     }
   })
 
-  const cartTotalCents = normalizedItems.reduce((s: number, it: any) => {return s + it.itemTotalCents}, 0)
+  const cartTotalCents = normalizedItems.reduce((s: number, it: any) => { return s + it.itemTotalCents }, 0)
 
   if (cartTotalCents === 0) {
     sendNotification?.({
@@ -165,6 +165,7 @@ export const applyDiscountToCart = (
     return {
       ...state,
       discountType,
+      // eslint-disable-next-line
       discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : +((totalDiscountCents / cartTotalCents) * 100).toFixed(2),
       discountAmount: fromCents(totalDiscountCents),
       discountBreakdown: []
@@ -172,13 +173,13 @@ export const applyDiscountToCart = (
   }
 
   // ---- Allocation using Largest Remainder Method (exact cents) ----
-  const rawAllocs = normalizedItems.map((it: any) => {return (it.itemTotalCents * totalDiscountCents) / cartTotalCents})
-  const floorAllocs = rawAllocs.map((v: any) => {return Math.floor(v)})
-  const remainders = rawAllocs.map((v: any, i: number) => {return { idx: i, rem: v - floorAllocs[i] }})
-  const sumFloor = floorAllocs.reduce((s: number, v: number) => {return s + v}, 0)
+  const rawAllocs = normalizedItems.map((it: any) => { return (it.itemTotalCents * totalDiscountCents) / cartTotalCents })
+  const floorAllocs = rawAllocs.map((v: any) => { return Math.floor(v) })
+  const remainders = rawAllocs.map((v: any, i: number) => { return { idx: i, rem: v - floorAllocs[i] } })
+  const sumFloor = floorAllocs.reduce((s: number, v: number) => { return s + v }, 0)
   let remainingCents = totalDiscountCents - sumFloor
 
-  remainders.sort((a: any, b: any) => {return b.rem - a.rem})
+  remainders.sort((a: any, b: any) => { return b.rem - a.rem })
   const finalAllocs = [...floorAllocs]
   for (let i = 0; i < remainders.length && remainingCents > 0; i++) {
     finalAllocs[remainders[i].idx] += 1
@@ -202,13 +203,13 @@ export const applyDiscountToCart = (
     if (remainingToTake > 0 && it.extrasTotalCents > 0) {
       const extrasTotal = it.extrasTotalCents
       // raw per-extra allocation
-      const rawExtraAllocs = newExtrasCentsList.map((exCents: number) => {return (exCents / extrasTotal) * remainingToTake})
-      const floorExtraAllocs = rawExtraAllocs.map((v: number) => {return Math.floor(v)})
-      const usedExtraFloor = floorExtraAllocs.reduce((s: number, v: number) => {return s + v}, 0)
+      const rawExtraAllocs = newExtrasCentsList.map((exCents: number) => { return (exCents / extrasTotal) * remainingToTake })
+      const floorExtraAllocs = rawExtraAllocs.map((v: number) => { return Math.floor(v) })
+      const usedExtraFloor = floorExtraAllocs.reduce((s: number, v: number) => { return s + v }, 0)
       let rest = remainingToTake - usedExtraFloor
 
-      const extraRemainders = rawExtraAllocs.map((v: number, i: number) => {return { idx: i, rem: v - floorExtraAllocs[i] }})
-      extraRemainders.sort((a: any, b: any) => {return b.rem - a.rem})
+      const extraRemainders = rawExtraAllocs.map((v: number, i: number) => { return { idx: i, rem: v - floorExtraAllocs[i] } })
+      extraRemainders.sort((a: any, b: any) => { return b.rem - a.rem })
       const finalExtraAllocs = [...floorExtraAllocs]
       for (let k = 0; k < extraRemainders.length && rest > 0; k++) {
         finalExtraAllocs[extraRemainders[k].idx] += 1
@@ -228,13 +229,13 @@ export const applyDiscountToCart = (
     const newBaseCents = baseAfter
     const newProPrice = fromCents(newBaseCents)
 
-    const originalExtrasObjects = it.extrasNormalized.map((e: any) => {return e.originalExtraObject || {}})
+    const originalExtrasObjects = it.extrasNormalized.map((e: any) => { return e.originalExtraObject || {} })
     const newDataExtra = originalExtrasObjects.map((exObj: any, i: number) => {
       const newExtraPrice = fromCents(newExtrasCentsList[i] || 0)
       // preserve originalNewExtraPrice on each extra (if not already)
       return {
         ...exObj,
-        originalNewExtraPrice: exObj.originalNewExtraPrice !== undefined ? exObj.originalNewExtraPrice : exObj.newExtraPrice,
+        originalNewExtraPrice: exObj.originalNewExtraPrice === undefined ? exObj.newExtraPrice : exObj.originalNewExtraPrice,
         newExtraPrice
       }
     })
@@ -243,15 +244,14 @@ export const applyDiscountToCart = (
     breakdown.push({ pId: it.originalItem.pId, discountAmount: fromCents(appliedDiscountCents) })
 
     const itemTotalCentsBefore = it.itemTotalCents || 0
+    // eslint-disable-next-line
     const itemDiscountPercent = itemTotalCentsBefore > 0 ? +((appliedDiscountCents / itemTotalCentsBefore) * 100).toFixed(4) : 0
 
     return {
       ...it.originalItem,
       // save originalProPrice if not present (so future calls can restore)
       originalProPrice:
-        it.originalItem.originalProPrice !== undefined && it.originalItem.originalProPrice !== null
-          ? it.originalItem.originalProPrice
-          : fromCents(it.baseCents),
+        it.originalItem.originalProPrice ?? fromCents(it.baseCents),
       ProPrice: newProPrice,
       dataExtra: newDataExtra,
       // per-item metadata
@@ -261,7 +261,7 @@ export const applyDiscountToCart = (
   })
 
   // Final safety check & tiny correction if needed
-  const allocatedSumCents = breakdown.reduce((s, b) => {return s + toCents(Number(b.discountAmount) || 0)}, 0)
+  const allocatedSumCents = breakdown.reduce((s, b) => { return s + toCents(Number(b.discountAmount) || 0) }, 0)
   if (allocatedSumCents !== totalDiscountCents) {
     const diff = totalDiscountCents - allocatedSumCents
     if (newProducts.length > 0 && diff !== 0) {
@@ -272,7 +272,7 @@ export const applyDiscountToCart = (
       breakdown[0].discountAmount = Number(breakdown[0].discountAmount || 0) + fromCents(diff)
     }
   }
-
+  // eslint-disable-next-line
   const overallPercent = +((totalDiscountCents / cartTotalCents) * 100).toFixed(4)
 
   sendNotification?.({

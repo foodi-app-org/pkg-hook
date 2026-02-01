@@ -1,4 +1,5 @@
 export const useReactToPrint = () => {
   // Placeholder implementation
-  console.log("useReactToPrint hook called");
+  // eslint-disable-next-line
+  console.log('useReactToPrint hook called');
 }

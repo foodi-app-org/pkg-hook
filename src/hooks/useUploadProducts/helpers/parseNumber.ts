@@ -14,12 +14,12 @@ export const parseNumber = (value: string | number) => {
 
   // Remove thousands separators and adjust decimal separator
   const sanitizedValue = stringValue
-    .replace(/\./g, '') // Removes thousands separators (.)
+    .replaceAll('.', '') // Removes thousands separators (.)
     .replace(',', '.') // Changes comma to period for decimal
 
   // Parse the sanitized value as a float
-  const parsedNumber = parseFloat(sanitizedValue)
-  if (isNaN(parsedNumber)) {
+  const parsedNumber = Number.parseFloat(sanitizedValue)
+  if (Number.isNaN(parsedNumber)) {
     throw new TypeError('Invalid number format')
   }
 
@@ -28,10 +28,10 @@ export const parseNumber = (value: string | number) => {
 }
 
 // Example usage:
-console.log(parseNumber('1.500,00')) // "1500.00"
-console.log(parseNumber('1500.00')) // "1500.00"
-console.log(parseNumber('1,500.50')) // "1500.50"
-console.log(parseNumber('500')) // "500.00"
-console.log(parseNumber('0,50')) // "0.50"
-console.log(parseNumber(1500)) // "1500.00"
-console.log(parseNumber(1500.5)) // "1500.50"
+// console.log(parseNumber('1.500,00')) // "1500.00"
+// console.log(parseNumber('1500.00')) // "1500.00"
+// console.log(parseNumber('1,500.50')) // "1500.50"
+// console.log(parseNumber('500')) // "500.00"
+// console.log(parseNumber('0,50')) // "0.50"
+// console.log(parseNumber(1500)) // "1500.00"
+// console.log(parseNumber(1500.5)) // "1500.50"

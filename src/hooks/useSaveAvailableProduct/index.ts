@@ -5,9 +5,9 @@ import { days } from './helpers/index'
 import { CREATE_AVAILABLE_PRODUCTS_DAYS } from './queries'
 
 export const useSaveAvailableProduct = () => {
-  const [selectedDays, setSelectedDays] = useState([])
+  const [selectedDays, setSelectedDays] = useState<string[]>([])
 
-  const handleDaySelection = (day) => {
+  const handleDaySelection = (day: string) => {
     if (selectedDays.includes(day)) {
       setSelectedDays(selectedDays.filter((selectedDay) => { return selectedDay !== day }))
     } else {
@@ -17,9 +17,7 @@ export const useSaveAvailableProduct = () => {
   const handleCleanSelectedDays = () => {
     setSelectedDays([])
   }
-  const [registerAvailableProduct, { loading }] = useMutation(CREATE_AVAILABLE_PRODUCTS_DAYS, {
-    onError: () => { return console.log({ message: 'Lo sentimos ocurrió un error, vuelve a intentarlo' }) }
-  })
+  const [registerAvailableProduct, { loading }] = useMutation(CREATE_AVAILABLE_PRODUCTS_DAYS)
   return {
     handleDaySelection,
     handleCleanSelectedDays,

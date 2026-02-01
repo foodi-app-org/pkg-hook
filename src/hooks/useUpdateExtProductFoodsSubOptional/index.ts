@@ -1,32 +1,48 @@
 import { useMutation } from '@apollo/client'
+import { SendNotificationFn } from 'typesdefs';
 
 import { updateCacheMod } from '../../utils'
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL, GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL } from '../useProductsFood/queriesStore'
 
+
+type HandleMutateArgs = {
+  pId: string;
+  title: string;
+  listId: string;
+  id: string;
+  state?: number;
+};
+
 export const useUpdateExtProductFoodsSubOptional = ({
-  sendNotification = (args) => { return args }
-} = {}) => {
+  sendNotification = (args: SendNotificationFn) => { return args }
+}: { sendNotification?: (args: SendNotificationFn) => void } = {}) => {
   const [updateExtProductSubOptional] = useMutation(GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL, {
     onCompleted: (data) => {
-      console.log('🚀 ~ useUpdateExtProductFoodsSubOptional ~ data:', data)
-      const { updateExtProductSubOptional } = data ?? {}
-      const { success, message, errors } = updateExtProductSubOptional ?? {}
+      // console.log('🚀 ~ useUpdateExtProductFoodsSubOptional ~ data:', data)
+      const { updateExtProductSubOptional } = data ?? {
+        updateExtProductSubOptional: null
+      };
+      const { success, message, errors } = updateExtProductSubOptional ?? {
+        success: false, 
+        message: 'No response from server',
+        errors: []
+      };
       sendNotification({
-        description: message,
         title: success ? 'Sub item creado' : 'Error',
-        backgroundColor: success ? 'success' : 'error'
-      })
+        backgroundColor: success ? 'success' : 'error',
+        description: message // Assuming 'description' is a valid property in SendNotificationFn
+      });
       for (const err of errors || []) {
-        const { message: msg } = err || {}
+        const { message: msg } = err || {};
         sendNotification({
-          description: msg,
           title: 'Error',
-          backgroundColor: 'error'
-        })
+          backgroundColor: 'error',
+          description: msg // Assuming 'description' is a valid property in SendNotificationFn
+        });
       }
-      return data
+      return data;
     }
-  })
+  });
 
   const handleMutateExtProductFoodsSubOptional = ({
     pId,
@@ -34,7 +50,7 @@ export const useUpdateExtProductFoodsSubOptional = ({
     listId,
     id,
     state = 1
-  }) => {
+  }: HandleMutateArgs) => {
     updateExtProductSubOptional({
       variables: {
         input: {
@@ -45,17 +61,18 @@ export const useUpdateExtProductFoodsSubOptional = ({
           state
         }
       },
-      update: (cache, { data: { ExtProductFoodsOptionalAll } }) => {
-        return updateCacheMod({
+      update: (cache, { data }: { data: { ExtProductFoodsOptionalAll } }) => {
+        updateCacheMod({
           cache,
           query: GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
           nameFun: 'ExtProductFoodsOptionalAll',
-          dataNew: ExtProductFoodsOptionalAll
-        })
+          dataNew: data.ExtProductFoodsOptionalAll,
+          type: 1
+        });
       }
-    })
-  }
+    });
+  };
   return {
     handleMutateExtProductFoodsSubOptional
-  }
+  };
 }

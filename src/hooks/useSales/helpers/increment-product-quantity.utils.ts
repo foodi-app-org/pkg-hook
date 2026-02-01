@@ -1,3 +1,5 @@
+import { SendNotificationFn } from 'typesdefs';
+
 /**
  * Increments product quantity in cart safely.
  * - Validates stock
@@ -21,7 +23,7 @@ export const incrementProductQuantity = ({
   state: any;
   productId: string | number;
   productsFood: any[];
-  sendNotification?: Function;
+  sendNotification?: SendNotificationFn;
 }) => {
   const sourceProduct = productsFood.find(
     (product) => {return product.pId === productId}

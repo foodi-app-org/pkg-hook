@@ -1,11 +1,21 @@
 import { useState } from 'react'
 
+interface TokenCardPostData {
+  // Define the expected properties for postData here
+  // Example:
+  cardNumber: string;
+  expMonth: string;
+  expYear: string;
+  cvc: string;
+  [key: string]: unknown; // Remove or adjust as needed for stricter typing
+}
+
 export const useTokenCards = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [responseData, setResponseData] = useState(null)
 
-  const handleTokenCardsSubmit = async (postData: any) => {
+  const handleTokenCardsSubmit = async (postData: TokenCardPostData) => {
     setLoading(true)
     setError(null)
     try {

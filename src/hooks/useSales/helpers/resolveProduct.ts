@@ -23,6 +23,9 @@ export const resolveProduct = async ({
     const res = await fetchProduct({ pId })
     return res?.data?.productFoodsOne ?? null
   } catch (err) {
+    if (err instanceof Error) {
+      return null
+    }
     // bubble up null — caller will notify
     return null
   }

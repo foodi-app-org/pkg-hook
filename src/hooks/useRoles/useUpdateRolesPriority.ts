@@ -22,7 +22,7 @@ export const useUpdateRolesPriority = () => {
    * @param {Array} roles - The array of roles with their priorities to be updated
    * @returns {Promise<void>}
    */
-  const handleUpdateRolesPriority = async (roles) => {
+  const handleUpdateRolesPriority = async (roles: any[]) => {
     try {
       const response = await updateRolesPriority({
         variables: { roles }
@@ -33,6 +33,7 @@ export const useUpdateRolesPriority = () => {
     } catch (err) {
       // Handle the error as needed
       console.error('Error updating roles priority:', err)
+      return null
     }
   }
 

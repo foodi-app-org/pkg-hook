@@ -1,13 +1,13 @@
 // import md5 from 'md5'
 
 /**
- *
+ * @returns Información de la CPU en formato JSON
  */
 async function getCPUInfo () {
   if (navigator.hardwareConcurrency) {
     try {
       const logicalCores = navigator.hardwareConcurrency
-      const agent = window.navigator.userAgent
+      const agent = globalThis.navigator.userAgent
       const hyperThreaded = /Intel|Apple/.test(agent) && /Win64|Linux x86_64|MacIntel/.test(agent)
 
       // Ajustar el número de núcleos lógicos si se sospecha hiperprocesamiento
@@ -29,23 +29,31 @@ async function getCPUInfo () {
 }
 
 /**
- *
+ * Genera una huella digital única del navegador y dispositivo del usuario
+ * @returns {Promise<string>} Huella digital en formato JSON
  */
 async function generateFingerprint () {
   const canvas = document.createElement('canvas')
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  const audioContext = new ((globalThis as any).AudioContext || (globalThis as any).webkitAudioContext)()
 
-  const userAgent = navigator.userAgent
-  const language = navigator.language
-  const colorDepth = window.screen.colorDepth
-  const availableScreenHeight = window.screen.availHeight
-  const platform = navigator.platform
-  const cpuClass = navigator.cpuClass || 'unknown'
+  const userAgent = globalThis.navigator.userAgent
+  const language = globalThis.navigator.language
+  const colorDepth = globalThis.screen.colorDepth
+  const availableScreenHeight = globalThis.screen.availHeight
+  const platform = globalThis.navigator.platform
+  const cpuClass = (globalThis.navigator as any)?.cpuClass || 'unknown'
 
   const canvasFingerprint = await generateCanvasFingerprint(canvas)
   const audioFingerprint = await generateAudioFingerprint(audioContext)
 
-  const cpuInfo = await getCPUInfo()
+  const cpuInfoStr = await getCPUInfo()
+  const cpuInfoObj = (() => {
+    try {
+      return JSON.parse(cpuInfoStr)
+    } catch {
+      return {}
+    }
+  })()
   const webGLInfo = await getWebGLInfo()
   const fonts = getInstalledFonts()
   const touchscreenInfo = getTouchscreenInfo()
@@ -56,10 +64,10 @@ async function generateFingerprint () {
       language,
       colorDepth,
       availableScreenHeight,
-      plugins: Array.from(navigator.plugins).map(plugin => {return plugin.name}).join(','),
+      plugins: Array.from(globalThis.navigator.plugins).map(plugin => {return plugin.name}).join(','),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      hardwareConcurrency: cpuInfo.logicalCores || 'unknown',
-      platformVersion: navigator.platformVersion || 'unknown'
+      hardwareConcurrency: cpuInfoObj.logicalCores || 'unknown',
+      platformVersion: (globalThis.navigator as any)?.platformVersion || 'unknown'
     },
     device: {
       platform,
@@ -67,7 +75,7 @@ async function generateFingerprint () {
     },
     canvas: canvasFingerprint,
     audio: audioFingerprint,
-    cpu: cpuInfo,
+    cpu: cpuInfoStr,
     webgl: webGLInfo,
     fonts,
     touchscreen: touchscreenInfo
@@ -82,8 +90,9 @@ async function generateFingerprint () {
 /**
  *
  * @param audioContext
+ * @returns {Promise<{isAudioContextAvailable: boolean}>}
  */
-async function generateAudioFingerprint (audioContext) {
+async function generateAudioFingerprint (audioContext: AudioContext) {
   if (audioContext) {
     try {
       await audioContext.resume()
@@ -107,13 +116,15 @@ async function generateAudioFingerprint (audioContext) {
 /**
  *
  * @param canvas
+ * @returns {Promise<{width: number, height: number}>}
  */
-async function generateCanvasFingerprint (canvas) {
+async function generateCanvasFingerprint (canvas: HTMLCanvasElement) {
   if (canvas) {
     try {
       canvas.width = 200
       canvas.height = 200
       const context = canvas.getContext('2d')
+      if (!context) { throw new Error('No se pudo obtener el contexto del canvas') }
       context.clearRect(0, 0, canvas.width, canvas.height)
       context.fillStyle = '#f60'
       context.fillRect(125, 1, 62, 20)
@@ -138,16 +149,17 @@ async function generateCanvasFingerprint (canvas) {
 }
 
 /**
- *
+ * @returns Información de WebGL en formato string
  */
 async function getWebGLInfo () {
-  if ('WebGLRenderingContext' in window) {
+  if ('WebGLRenderingContext' in globalThis) {
     const canvas = document.createElement('canvas')
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
 
     if (gl) {
-      const renderer = gl.getParameter(gl.RENDERER)
-      const version = gl.getParameter(gl.VERSION)
+      const webgl = gl as WebGLRenderingContext
+      const renderer = webgl.getParameter(webgl.RENDERER)
+      const version = webgl.getParameter(webgl.VERSION)
 
       // Obtener más información sobre las capacidades WebGL si es necesario
 
@@ -159,10 +171,10 @@ async function getWebGLInfo () {
 }
 
 /**
- *
+ * @returns {string} Información de las fuentes instaladas
  */
 function getInstalledFonts () {
-  const fonts = []
+  const fonts = [] as string[]
 
   if ('fonts' in document) {
     document.fonts.forEach(font => {
@@ -174,7 +186,7 @@ function getInstalledFonts () {
 }
 
 /**
- *
+ * @returns {string} Información de la pantalla táctil
  */
 function getTouchscreenInfo () {
   if ('maxTouchPoints' in navigator) {
@@ -188,7 +200,8 @@ function getTouchscreenInfo () {
 }
 
 /**
- *
+ * Genera y devuelve la huella digital del usuario
+ * @returns {Promise<string>} Huella digital en formato JSON
  */
 export async function fingerprintJs () {
   const fingerprint = await generateFingerprint()

@@ -71,8 +71,8 @@ export const useSubscriptionValidation = (
         data.validateFreeSubscription
 
       const currentDate = new Date()
-      const endOfPeriod = new Date(parseInt(currentPeriodEnd, 10))
-      const startOfPeriod = new Date(parseInt(currentPeriodStart, 10))
+      const endOfPeriod = new Date(Number.parseInt(currentPeriodEnd, 10))
+      const startOfPeriod = new Date(Number.parseInt(currentPeriodStart, 10))
 
       const differenceInTimeUntilEnd =
         endOfPeriod.getTime() - currentDate.getTime()
@@ -82,7 +82,7 @@ export const useSubscriptionValidation = (
       )
 
       setDaysRemaining(
-        isNaN(differenceInDaysUntilEnd)
+        Number.isNaN(differenceInDaysUntilEnd)
           ? 0
           : differenceInDaysUntilEnd
       )
@@ -95,7 +95,7 @@ export const useSubscriptionValidation = (
       )
 
       setDaysElapsed(
-        isNaN(differenceInDaysSinceStart)
+        Number.isNaN(differenceInDaysSinceStart)
           ? 0
           : differenceInDaysSinceStart
       )

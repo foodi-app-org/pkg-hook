@@ -1,4 +1,16 @@
 import { gql, useMutation } from '@apollo/client'
+import { SendNotificationFn } from 'typedefs'
+
+// Define UpsertGoalInput type if not imported from elsewhere
+/**
+ * @typedef {Object} UpsertGoalInput
+ * @property {string} idStore
+ * @property {number} dailyGoal
+ */
+type UpsertGoalInput = {
+  idStore: string
+  dailyGoal: number
+}
 
 /**
  * GraphQL mutation to upsert (create or update) the daily goal.
@@ -16,35 +28,34 @@ const UPSERT_GOAL = gql`
   }
 `
 
-/**
- * Custom hook to handle the upsert of the daily goal.
- * @param {Object} input - The goal data (e.g. dailyGoal).
- * @param input.sendNotification
- * @returns {{
- *   upsertGoal: (input: { dailyGoal: number }) => void,
- *   data: { success: boolean, message: string, dailyGoal: number } | undefined,
- *   loading: boolean,
- *   error: any
- * }}
- */
+type UpsertGoalData = {
+  success: boolean
+  message: string
+  data: { idStore: string; dailyGoal: number }
+}
+type UseUpsertGoalOptions = {
+  sendNotification?: SendNotificationFn
+}
+
 export const useUpsertGoal = ({
   sendNotification = () => {}
-} = {}) => {
-  const [upsertGoalMutation, { data, loading, error }] = useMutation(UPSERT_GOAL, {
-    onCompleted (data) {
+}: UseUpsertGoalOptions = {}) => {
+  const [upsertGoalMutation, { data, loading }] = useMutation<{ upsertGoal: UpsertGoalData }, { input: UpsertGoalInput }>(UPSERT_GOAL, {
+    onCompleted(data) {
       const { upsertGoal } = data || {}
-      sendNotification({
-        title: upsertGoal.success ? 'Exito' : 'Error',
-        description: upsertGoal?.message || 'Meta actualizada correctamente',
-        backgroundColor: upsertGoal.success ? 'success' : 'warning'
-      })
+        sendNotification({
+          title: upsertGoal?.success ? 'Éxito' : 'Error',
+          description: upsertGoal?.message || 'Meta actualizada correctamente',
+          backgroundColor: upsertGoal?.success ? 'success' : 'warning'
+        })
     },
-    update (cache, { data: { upsertGoal } }) {
+    update(cache, { data }) {
+      const upsertGoal = data?.upsertGoal;
       if (!upsertGoal?.success) return
 
       cache.modify({
         fields: {
-          getStore (dataOld = []) {
+          getStore(dataOld = []) {
             return {
               ...dataOld,
               dailyGoal: upsertGoal.data.dailyGoal
@@ -54,15 +65,23 @@ export const useUpsertGoal = ({
       })
     }
   })
-  const upsertGoal = (input) => {
+  const upsertGoal = (input: UpsertGoalInput) => {
     upsertGoalMutation({
       variables: { input }
     })
   }
 
-  return [upsertGoal, {
-    data: data?.upsertGoal,
-    loading,
-    error
-  }]
+  return [
+    upsertGoal,
+    {
+      data: data?.upsertGoal,
+      loading
+    }
+  ] as [
+    (input: UpsertGoalInput) => void,
+    {
+      data: UpsertGoalData | undefined
+      loading: boolean
+    }
+  ]
 }

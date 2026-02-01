@@ -3,21 +3,14 @@ import {
   useEffect,
   useState
 } from 'react'
+import { SendNotificationFn } from 'typesdefs';
 
 import { validationSubmitHooks } from '../../utils'
 
 
 interface UseFormToolsProps {
   initialValues?: Record<string, any>;
-  sendNotification?: ({
-    title,
-    description,
-    backgroundColor
-  }: {
-    title?: string;
-    description?: string;
-    backgroundColor?: string;
-  }) => void;
+  sendNotification?: SendNotificationFn
 }
 
 /**
@@ -26,17 +19,11 @@ interface UseFormToolsProps {
  * @param root0.sendNotification
  * @version 0.0.1
  * @description Hook con herramientas de validación y eventos de cambio
- * @return {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
+ * @returns {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
 export const useFormTools = ({
   initialValues = {},
-  sendNotification = ({
-    title = '',
-    description = '',
-    backgroundColor = ''
-  }) => {
-    console.log({ title, description, backgroundColor })
-  }
+  sendNotification
 }: UseFormToolsProps = {}) => {
   const [dataForm, setDataForm] = useState<Record<string, any>>({ ...initialValues })
   const [errorForm, setErrorForm] = useState<Record<string, boolean>>({})
@@ -69,7 +56,7 @@ export const useFormTools = ({
     msgError = '',
     msgSuccess,
     action = () => { return Promise.resolve() },
-    actionAfterSuccess = () => { }
+    actionAfterSuccess = () => { return undefined }
   }: {
     event: React.FormEvent<HTMLFormElement>,
     msgError?: string,
@@ -86,7 +73,7 @@ export const useFormTools = ({
       if (errorForm[x]) errSub = true
     }
     if (errSub) {
-      sendNotification({
+      sendNotification?.({
         description: 'Completa los campos requeridos',
         title: 'Error',
         backgroundColor: 'error'
@@ -94,19 +81,25 @@ export const useFormTools = ({
     }
     if (errors) {
       setErrorSubmit(true)
-      return setForcedError({ ...errorForm })
+      setForcedError({ ...errorForm })
+      return undefined
     }
 
-    if (errSub) return setErrorSubmit(errSub)
+    if (errSub) {
+      setErrorSubmit(errSub)
+      return undefined
+    }
 
     // Valida los errores desde el evento
-    const errores = validationSubmitHooks(event.currentTarget.elements)
+    const errores = validationSubmitHooks(event.currentTarget.elements as any)
     setErrorForm(errores)
     for (const x in errores) {
-      // @ts-ignore
       if (errores[x]) errSub = true
     }
-    if (errSub) return setErrorSubmit(errSub)
+    if (errSub) {
+      setErrorSubmit(errSub)
+      return undefined
+    }
 
     // Ejecuta la accion si es válido
     if (!errSub && typeof action === 'function') {
@@ -114,7 +107,7 @@ export const useFormTools = ({
       if (result && typeof result.then === 'function') {
         result.then((res) => {
           if (res) {
-            sendNotification({
+            sendNotification?.({
               title: msgSuccess ?? 'Operación exitosa',
               description: 'Operación exitosa',
               backgroundColor: 'success'
@@ -122,15 +115,19 @@ export const useFormTools = ({
             if (actionAfterSuccess) actionAfterSuccess()
           }
         }).catch((e) => {
-          sendNotification({
-            title: msgError || e?.message || 'Ha ocurrido un error',
-            backgroundColor: 'error'
-          })
+          if (typeof sendNotification === 'function') {
+            sendNotification({
+              title: msgError || e?.message || 'Ha ocurrido un error',
+              description: msgError || e?.message || 'Ha ocurrido un error',
+              backgroundColor: 'error'
+            })
+          }
         })
       }
     }
 
     setErrorSubmit(errSub)
+    return undefined
   }
 
   useEffect(() => { return setCalledSubmit(false) }, [calledSubmit])

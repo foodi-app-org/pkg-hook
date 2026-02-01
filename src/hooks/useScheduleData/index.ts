@@ -1,8 +1,9 @@
 /**
  *
  * @param data
+ * @returns {object}  Datos del horario.
  */
-export function useScheduleData (data) {
+export function useScheduleData (data: { schDay: number; schHoSta: string; schHoEnd: string }[]) {
   const days = {
     1: 'Lunes',
     2: 'Martes',
@@ -36,7 +37,12 @@ export function useScheduleData (data) {
     })
   )
 
-  const calculateYPosition = (start) => {
+  /**
+   * Calcula la posición Y basada en la hora de inicio.
+   * @param {string} start - Hora de inicio en formato 'HH:mm'.
+   * @returns {number} Posición Y calculada.
+   */
+  const calculateYPosition = (start: string): number => {
     const time = new Date(`2023-08-01 ${start}`)
     const differenceInMinutes = (time.getTime() - earliestStartTime) / (1000 * 40)
     return differenceInMinutes / 40 // Ajusta el valor para adaptarse a la posición deseada en el eje Y
@@ -54,8 +60,9 @@ export function useScheduleData (data) {
    *
    * @param startTime
    * @param endTime
+   * @returns {number|string}  Duración en horas.
    */
-  function calculateDurationInHours (startTime, endTime) {
+  function calculateDurationInHours (startTime: string, endTime: string): number|string {
     const startHour = new Date(`2000-01-01T${startTime}`)
     const endHour = new Date(`2000-01-01T${endTime}`)
     const duration = (endHour - startHour) / (1000 * 40 * 40) // Convertir la diferencia en horas
@@ -111,9 +118,10 @@ export function useScheduleData (data) {
   const formattedHours = sortedUniqueHours
 
   /**
-   *
+   * @description Calcula la altura total de las líneas de tiempo basándose en las horas únicas.
+   * @returns {number}  Altura total de las líneas de tiempo.
    */
-  function calculateTimeLinesHeight () {
+  function calculateTimeLinesHeight (): number {
     const totalHours = uniqueHours.length
     return totalHours * 60 // Cada hora ocupa 60 píxeles de altura
   }

@@ -1,4 +1,6 @@
-export const validateProductDataExcel = (product, productIndex) => {
+import { ProductUpload } from '..'
+
+export const validateProductDataExcel = (product: ProductUpload, productIndex: number) => {
   const expectedHeaders = [
     {
       name: 'NOMBRE',
@@ -47,7 +49,7 @@ export const validateProductDataExcel = (product, productIndex) => {
     }
   ]
 
-  const errors = []
+  const errors: string[] = []
 
   // Validar encabezados requeridos y tipos
   expectedHeaders.forEach(({ name, required, types }) => {

@@ -2,10 +2,10 @@ import { Cookies } from '../../cookies'
 import { getCurrentDomain } from '../../utils'
 
 export const useSetSession = () => {
-  const handleSession = async (props) => {
+  const handleSession = async (props:{ cookies: { name: string; value: string; domain?: string }[] }) => {
     try {
       const { cookies } = props
-      let domain = getCurrentDomain()
+      let domain = getCurrentDomain() as string | undefined
 
       // Si estás en entorno local, usa 'localhost' como dominio
       if (domain === 'localhost') {
@@ -13,7 +13,7 @@ export const useSetSession = () => {
       }
 
       if (!Array.isArray(cookies)) {
-        throw new Error('Input cookies should be an array.')
+        throw new TypeError('Las cookies deben ser un array.')
       }
 
       for (const { name, value, domain: incomingDomain } of cookies) {
@@ -33,7 +33,6 @@ export const useSetSession = () => {
         }
       }
 
-      console.log('Cookies guardadas correctamente.')
     } catch (error) {
       console.error('Error al guardar las cookies:', error)
       throw new Error('Error al guardar las cookies.')

@@ -1,13 +1,18 @@
-export const isValidCodeRef = (codeRef) => {
+export const isValidCodeRef = (codeRef: string) => {
   return typeof codeRef === 'string' && codeRef.trim() !== ''
 }
 
+type StatusKey = 1 | 2 | 3 | 4 | 5;
+type StatusString = 'ACCEPT' | 'PROCESSING' | 'READY' | 'CONCLUDES' | 'REJECTED';
+type Order = { pCodeRef: string; pSState: StatusKey; [key: string]: unknown };
+type ExistingOrders = { [key in StatusString]: Order[] };
+
 export const updateExistingOrders = (
-  existingOrders,
-  pCodeRef,
-  pSState,
-  objectToAdd
-) => {
+  existingOrders: ExistingOrders,
+  pCodeRef: string,
+  pSState: StatusKey,
+  objectToAdd?: Order
+): ExistingOrders => {
   if (typeof existingOrders !== 'object' || existingOrders === null) {
     // existingOrders no es un objeto válido
     return existingOrders
@@ -23,7 +28,7 @@ export const updateExistingOrders = (
 
   const updatedExistingOrders = { ...existingOrders } // Copiar el objeto existente
 
-  const statusKeys = {
+  const statusKeys: Record<StatusKey, StatusString> = {
     1: 'ACCEPT',
     2: 'PROCESSING',
     3: 'READY',
@@ -36,13 +41,13 @@ export const updateExistingOrders = (
     // El valor de pSState no está mapeado a ninguna propiedad existente en existingOrders
     return existingOrders
   }
-  Object.keys(updatedExistingOrders).forEach((key) => {
+  (Object.keys(updatedExistingOrders) as StatusString[]).forEach((key) => {
     if (Array.isArray(updatedExistingOrders[key])) {
-      const oneSale = updatedExistingOrders[key].find((order) => {
+      const oneSale = (updatedExistingOrders[key]).find((order) => {
         return order.pCodeRef === pCodeRef
       })
 
-      updatedExistingOrders[key] = updatedExistingOrders[key].filter(
+      updatedExistingOrders[key] = (updatedExistingOrders[key]).filter(
         (order) => {
           return order.pCodeRef !== pCodeRef
         }
@@ -63,7 +68,7 @@ export const updateExistingOrders = (
     }
   })
 
-  if (objectToAdd && objectToAdd.pCodeRef === pCodeRef) {
+  if (objectToAdd?.pCodeRef === pCodeRef) {
     if (!Array.isArray(updatedExistingOrders[targetArray])) {
       updatedExistingOrders[targetArray] = []
     }
@@ -75,11 +80,15 @@ export const updateExistingOrders = (
   }
 
   // Asegurar que todas las propiedades estén presentes
-  Object.keys(statusKeys).forEach((statusKey) => {
-    if (!(statusKeys[statusKey] in updatedExistingOrders)) {
-      updatedExistingOrders[statusKeys[statusKey]] = []
-    }
-  })
+  (Object.keys(statusKeys)
+    .map(Number)
+    .filter((k): k is StatusKey => [1, 2, 3, 4, 5].includes(k as StatusKey)))
+    .forEach((statusKey) => {
+      const key = statusKeys[statusKey];
+      if (!(key in updatedExistingOrders)) {
+        updatedExistingOrders[key] = []
+      }
+    })
 
   return updatedExistingOrders
 }
