@@ -1,4 +1,4 @@
-import { Product } from 'typesdefs'
+import type { Product } from 'typesdefs'
 
 import { SalesState } from '../types'
 

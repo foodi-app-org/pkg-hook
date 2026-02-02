@@ -10,7 +10,7 @@ import {
   useMemo,
   useState
 } from 'react'
-import { Product, ExtProductFoodOptional, ExtProductFoodsAll, AlertBoxType } from 'typesdefs'
+import type { Product, ExtProductFoodOptional, ExtProductFoodsAll, AlertBoxType } from 'typesdefs'
 
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'

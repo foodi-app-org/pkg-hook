@@ -7,7 +7,7 @@ import {
   MutationFunction,
   LazyQueryExecFunction
 } from '@apollo/client'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 import {
   CREATE_CLIENTS,

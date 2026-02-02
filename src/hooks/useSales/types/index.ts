@@ -1,4 +1,4 @@
-import { Product } from 'typesdefs'
+import type { Product } from 'typesdefs'
 
 import { TypeDiscount } from '../helpers/apply-discount-to-cart.utils'
 import { SalesActionTypes } from '../helpers/constants'

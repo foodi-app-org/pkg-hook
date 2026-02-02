@@ -1,4 +1,4 @@
-import { Product } from 'typesdefs'
+import type { Product } from 'typesdefs'
 
 /**
  * Updates category and products data with a new product.

@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 import { CREATE_TABLE_MUTATION } from './queries'
 

@@ -1,6 +1,6 @@
 import { useApolloClient } from '@apollo/client'
 import { useState } from 'react'
-import { SetAlertBoxFn } from 'typesdefs'
+import type { SetAlertBoxFn } from 'typesdefs'
 
 import { Cookies } from '../../cookies/index'
 import { getCurrentDomain } from '../../utils'

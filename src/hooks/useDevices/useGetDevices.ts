@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { DeviceUser, GetAllDevicesData } from 'typesdefs'
+import type { DeviceUser, GetAllDevicesData } from 'typesdefs'
 
 import { GET_ALL_DEVICES } from './queries'
 

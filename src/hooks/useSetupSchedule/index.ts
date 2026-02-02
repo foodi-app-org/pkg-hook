@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 import { days as NameDays } from '../../utils'
 import { convertToMilitaryTime } from '../convertToMilitaryTime'

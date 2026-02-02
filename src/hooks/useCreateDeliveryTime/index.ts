@@ -1,5 +1,5 @@
 import { useMutation, gql } from '@apollo/client'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 const CREATE_DELIVERY_TIME = gql`
   mutation CreateDeliveryTime($minutes: Int!) {

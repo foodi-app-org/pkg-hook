@@ -1,4 +1,4 @@
-import { SendNotificationFn, SetAlertBoxFn } from 'typesdefs'
+import type { SendNotificationFn, SetAlertBoxFn } from 'typesdefs'
 
 export interface UseSalesProps {
   disabled?: boolean;

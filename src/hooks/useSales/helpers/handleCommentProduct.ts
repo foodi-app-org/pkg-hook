@@ -1,4 +1,4 @@
-import { Product, SendNotificationFn } from 'typesdefs';
+import type { Product, SendNotificationFn } from 'typesdefs';
 
 import { SalesState } from '../types'
 

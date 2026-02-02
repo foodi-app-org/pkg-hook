@@ -42,7 +42,7 @@ export const randomNumber = ({
   min: number
   max: number
 }): number => {
-  if (!value) throw new Error('value is required')
+  if (!value) return minMax({ random: Math.random(), min, max })
 
   const alea = new AleaGen(value)
   const seed = alea.getSeed()

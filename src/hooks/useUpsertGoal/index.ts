@@ -1,5 +1,5 @@
 import { gql, useMutation } from '@apollo/client'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 // Define UpsertGoalInput type if not imported from elsewhere
 /**

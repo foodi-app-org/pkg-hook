@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Product } from 'typesdefs'
+import type { Product } from 'typesdefs'
 import * as XLSX from 'xlsx'
 
 import { RandomCode } from '../../utils'

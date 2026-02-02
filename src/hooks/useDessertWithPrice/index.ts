@@ -7,7 +7,7 @@ import {
   useState,
   createRef
 } from 'react'
-import {
+import type {
   AlertBoxType,
   SendNotificationFn,
   SetAlertBoxFn

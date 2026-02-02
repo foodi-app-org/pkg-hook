@@ -1,5 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 import { UPDATE_MULTI_EXTRAS_PRODUCT_FOOD } from './queries'
 

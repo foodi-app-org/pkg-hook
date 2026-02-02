@@ -1,4 +1,4 @@
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 /**
  *

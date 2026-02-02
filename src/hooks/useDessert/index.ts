@@ -2,7 +2,7 @@ import {
   useState,
   useEffect
 } from 'react'
-import { SendNotificationFn } from 'typesdefs'
+import type { SendNotificationFn } from 'typesdefs'
 
 import { MockData } from '../../mock'
 import { RandomCode, updateCacheMod } from '../../utils'

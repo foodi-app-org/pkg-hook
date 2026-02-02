@@ -3,7 +3,7 @@ import {
   useEffect,
   useState
 } from 'react'
-import { SendNotificationFn } from 'typesdefs';
+import type { SendNotificationFn } from 'typesdefs';
 
 import { validationSubmitHooks } from '../../utils'
 
