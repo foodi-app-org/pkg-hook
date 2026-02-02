@@ -2,26 +2,63 @@ import AleaGen from './alea'
 import MersenneTwister from './mersenne_twister'
 
 /**
- *
- * @param opts
- * @param opts.random
- * @param opts.min
- * @param opts.max
+ * Returns an integer between min and max (inclusive).
+ * @param root0
+ * @param root0.random
+ * @param root0.min
+ * @param root0.max
+ * @returns {number}
  */
-function minMax (opts: { random: number; min: number; max: number }): number {
-  const { random, min, max } = opts
-  return Math.floor(random * (max - min + 1) + min)
+const minMax = ({
+  random,
+  min,
+  max,
+}: {
+  random: number
+  min: number
+  max: number
+}): number => {
+  if (min > max) {
+    throw new Error('min must be less than or equal to max')
+  }
+
+  return Math.floor(random * (max - min + 1)) + min
 }
 
-export const randomNumber = (opts: { value: string; min: number; max: number }): number => {
-  const { value, min, max } = opts
+/**
+ * Generates a deterministic random number based on a string value.
+ * @param root0
+ * @param root0.value
+ * @param root0.min
+ * @param root0.max
+ * @returns {number}
+ */
+export const randomNumber = ({
+  value,
+  min,
+  max,
+}: {
+  value: string
+  min: number
+  max: number
+}): number => {
+  if (!value) throw new Error('value is required')
 
-  const prepareSeed = new AleaGen(value)
-  // @ts-ignore
-  const seedOutput = prepareSeed.s1 * 10000000
-  
-  // @ts-ignore
-  const mersenne = new MersenneTwister(seedOutput)
+  const alea = new AleaGen(value)
+  const seed = alea.getSeed()
 
-  return minMax({ random: mersenne.random(), min, max })
+  // Add this type if you don't have one:
+  type MersenneTwisterType = new (seed: number) => { random: () => number }
+
+  // Then cast the import:
+  const MersenneTwisterClass = MersenneTwister as unknown as MersenneTwisterType
+
+  // Use the casted class:
+  const mersenne = new MersenneTwisterClass(seed)
+
+  return minMax({
+    random: mersenne.random(),
+    min,
+    max,
+  })
 }

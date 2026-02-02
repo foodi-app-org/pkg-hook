@@ -2,22 +2,22 @@
 const pushServerPublicKey = 'BIN2Jc5Vmkmy-S3AUrcMlpKxJpLeVRAfu9WBqUbJ70SJOCWGCGXKY-Xzyh7HDr6KbRDGYHjqZ06OcS3BjD7uAm8'
 
 /**
- * Checks if Push notification and service workers are supported by your browser.
- * @returns {boolean | undefined} True if supported, otherwise undefined.
+ * Checks if Push notifications and Service Workers are supported in the current environment.
+ * @returns {boolean} True if supported, otherwise false.
  */
-function isPushNotificationSupported (): boolean | undefined {
-  if (globalThis.window !== undefined && globalThis.window.Notification && globalThis.window.ServiceWorker) {
-    return 'serviceWorker' in navigator && 'PushManager' in globalThis.window
-  }
+function isPushNotificationSupported(): boolean {
+  if (globalThis.window === undefined) return false
+  return 'serviceWorker' in navigator && 'PushManager' in globalThis.window && 'Notification' in globalThis.window
 }
 
 /**
- * Asks user consent to receive push notifications and returns the response of the user, one of granted, default, denied.
- * @returns {Promise<NotificationPermission>} The user's permission response.
+ * Asks the user for permission to display notifications.
+ * @returns {Promise<NotificationPermission>} One of 'granted' | 'denied' | 'default'
  */
-async function askUserPermission (): Promise<NotificationPermission> {
+async function askUserPermission(): Promise<NotificationPermission> {
   return Notification.requestPermission()
 }
+
 /**
  * Shows a notification.
  * @returns {void}
@@ -73,36 +73,48 @@ async function getUserSubscription (): Promise<PushSubscription | null> {
   return pushSubscription
 }
 
-const host = 'http://localhost:4000'
-
+const HOST = 'http://localhost:4000'
 /**
- * Sends a POST request.
- * @param {string} path The API path.
- * @param {unknown} body The request body.
- * @returns {Promise<any>} The response data.
+ * Generic POST helper.
+ * @template T
+ * @param {string} path
+ * @param {unknown} body
+ * @param {string} [baseHost]
+ * @returns {Promise<T>}
  */
-async function post (path: string, body: unknown): Promise<any> {
-  const response = await fetch(`${host}${path}`, {
+async function post<T = unknown>(path: string, body: unknown, baseHost = HOST): Promise<T> {
+  const response = await fetch(`${baseHost}${path}`, {
     body: JSON.stringify(body),
     method: 'POST',
-    mode: 'cors'
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
-  const data = await response.json()
-  return data
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`POST ${path} failed: ${response.status} ${text}`)
+  }
+  return (await response.json()) as T
 }
 
 /**
- * Sends a GET request.
- * @param {string} path The API path.
- * @returns {Promise<any>} The response data.
+ * Generic GET helper.
+ * @template T
+ * @param {string} path
+ * @param {string} [baseHost]
+ * @returns {Promise<T>}
  */
-async function get (path: string): Promise<any> {
-  const response = await fetch(`${host}${path}`, {
+async function get<T = unknown>(path: string, baseHost = HOST): Promise<T> {
+  const response = await fetch(`${baseHost}${path}`, {
     method: 'GET',
     mode: 'cors'
   })
-  const data = await response.json()
-  return data
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`GET ${path} failed: ${response.status} ${text}`)
+  }
+  return (await response.json()) as T
 }
 
 export {

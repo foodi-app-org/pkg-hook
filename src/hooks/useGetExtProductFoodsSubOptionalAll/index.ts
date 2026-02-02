@@ -1,15 +1,34 @@
-import { useLazyQuery } from '@apollo/client'
+import { gql, useLazyQuery, ApolloError } from '@apollo/client'
+import {
+  GetExtrasProductFoodOptionalResponse,
+  GetExtrasProductFoodOptionalVars,
+  ExtProductFoodOptional
+} from './types'
 
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useProductsFood/queriesStore'
 
-export const useGetExtProductFoodsSubOptionalAll = ({ setDataOptional = () => { } } = {}) => {
-  const [ExtProductFoodsSubOptionalAll] = useLazyQuery(
-    GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
-    {
-      onError: () => {
-        setDataOptional([])
-      }
+interface UseGetExtProductFoodsSubOptionalAllParams {
+  setDataOptional?: (data: ExtProductFoodOptional[]) => void
+}
+
+export const useGetExtProductFoodsSubOptionalAll = (
+  { setDataOptional = () => {} }: UseGetExtProductFoodsSubOptionalAllParams = {}
+): [
+  (options?: { variables?: GetExtrasProductFoodOptionalVars }) => void,
+  {
+    data?: GetExtrasProductFoodOptionalResponse
+    loading: boolean
+    error?: ApolloError
+  }
+] => {
+  const [getExtras, { data, loading, error }] = useLazyQuery<
+    GetExtrasProductFoodOptionalResponse,
+    GetExtrasProductFoodOptionalVars
+  >(GET_EXTRAS_PRODUCT_FOOD_OPTIONAL, {
+    onError: () => {
+      setDataOptional([])
     }
-  )
-  return [ExtProductFoodsSubOptionalAll]
+  })
+
+  return [getExtras, { data, loading, error }]
 }

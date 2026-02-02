@@ -8,7 +8,7 @@ export interface ICatWithProduct {
     desc?: string | null
     speciality?: string[]
   }
-  callback?: Function  
+  callback?: (obj: GetCatProductsWithProductResponse) => void  
 }
 
 

@@ -106,6 +106,7 @@ export const useAsideCart = ({
   /**
    * Handle the deletion of a shopping cart item.
    * @param {Object} item - The item to be deleted from the shopping cart.
+   * @returns {Promise<void>} A promise that resolves when the deletion is complete.
    */
   const handleDeleteItemShopping = async (item) => {
     if (!item) {
@@ -150,15 +151,15 @@ export const useAsideCart = ({
    * @param {number} cant - The quantity of the product.
    * @returns {number} The calculated total price.
    */
-  const sumProduct = (ProPrice, ProDelivery, cant) => {
+  const sumProduct = (ProPrice: number, ProDelivery: number, cant: number): number => {
     // Convertir a números, con manejo de posibles errores
     const price = ProPrice
     const delivery = ProDelivery || 0
     const quantity = cant
 
     // Verificar si las conversiones fueron exitosas
-    if (isNaN(price) || isNaN(delivery) || isNaN(quantity)) {
-      throw new Error('Los valores proporcionados no son números válidos.')
+    if (Number.isNaN(price) || Number.isNaN(delivery) || Number.isNaN(quantity)) {
+      throw new TypeError('Los valores proporcionados no son números válidos.')
     }
 
     // Calcular el precio final
@@ -167,7 +168,6 @@ export const useAsideCart = ({
     // Devolver la suma total, incluyendo el costo de entrega si es aplicable
     return delivery ? priceFinal + delivery : priceFinal
   }
-  console.log(dataShoppingCard)
 
   /**
    * Verifica el estado de apertura de la tienda.

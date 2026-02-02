@@ -1,4 +1,4 @@
-import { Product } from 'typesdefs';
+import { Product, SendNotificationFn } from 'typesdefs';
 
 import { SalesState } from '../types'
 
@@ -12,6 +12,9 @@ interface ICommentProductProps {
     };
     deleteValue?: boolean;
     value?: string;
+    openCommentModal?: boolean;
+    setOpenCommentModal?: (open: boolean) => void;
+    sendNotification?: SendNotificationFn
 }
 
 /**
@@ -33,7 +36,9 @@ export const handleCommentProduct = ({
     action,
     deleteValue = false,
     value = '',
+    openCommentModal = false,
     setOpenCommentModal = () => { },
+    sendNotification = () => { },
 }: ICommentProductProps) => {
     if (value) {
         sendNotification({

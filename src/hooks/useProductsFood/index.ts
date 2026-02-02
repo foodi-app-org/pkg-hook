@@ -29,6 +29,7 @@ interface UseProductsFoodOptions {
   min?: number | null
   pState?: number
   search?: string | null
+  isShopppingCard?: boolean | null
   toDate?: string | null
   dataSale?: Array<{ pId: string }>
   isShoppingCard?: boolean
@@ -45,6 +46,7 @@ export const useProductsFood = ({
   min = null,
   pState,
   search = null,
+  isShopppingCard = null,
   // toDate = null, // removed unused variable
   dataSale = [],
   isShoppingCard = false,
@@ -158,6 +160,7 @@ export const useProductsFood = ({
       pagination: data?.productFoodsAll?.pagination || {},
       loading: called ? false : loading,
       error,
+      isShopppingCard,
       showMore,
       fetchMore,
       refetch,

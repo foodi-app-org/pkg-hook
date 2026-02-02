@@ -7,14 +7,22 @@ import { filterAndSortByDate } from './helpers'
 import { getStatusForStores } from './helpers/manageStatusOpen'
 import { GET_ALL_RESTAURANT } from './queries'
 
+export type ItemWithCreatedAt = {
+  createdAt: string;
+  [key: string]: any;
+};
+
+type CustomLocation = {
+  query: Record<string, any>;
+  push: (url: string) => void;
+};
+
 export const useRestaurant = ({
   location = {
     query: {},
-    push: (props, state, { shallow }) => {
-      return { ...props, state, shallow }
-    }
+    push: (url: string) => { }
   }
-} = {}) => {
+}: { location?: CustomLocation } = {}) => {
   const [loadingFilter, setLoadingFilter] = useState(false)
   const { handleQuery, handleCleanQuery } = useManageQueryParams({
     location
@@ -59,9 +67,11 @@ export const useRestaurant = ({
       setLoadingFilter(false)
     }
   }
-  const dataRestaurant = data?.getAllStoreInStore || []
-  const dataSort = filterAndSortByDate(dataRestaurant)
-  const statuses = getStatusForStores(dataSort)
+
+
+  const dataRestaurant: ItemWithCreatedAt[] = data?.getAllStoreInStore || [];
+  const dataSort: any[] = filterAndSortByDate(dataRestaurant);
+  const statuses = getStatusForStores(dataSort as any) || [];
 
   return [statuses, {
     loading,

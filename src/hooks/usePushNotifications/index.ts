@@ -1,6 +1,5 @@
-/* eslint-disable no-console */
-import { useState, useEffect } from 'react'
-
+// usePushNotifications.tsx
+import { useEffect, useState } from 'react'
 import {
   isPushNotificationSupported,
   post,
@@ -10,137 +9,163 @@ import {
   createNotificationSubscription,
   getUserSubscription
 } from './helpers'
-// import all the function created to manage the push notifications
 
-const pushNotificationSupported = isPushNotificationSupported()
-// first thing to do: check if the push notifications are supported by the browser
+/**
+ * Notification payload used by external callbacks (if any)
+ */
+export type NotificationInfo = {
+  title?: string
+  description?: string
+  backgroundColor?: string
+}
 
-export const usePushNotifications = () => {
-  const [userConsent, setSuserConsent] = useState()
-  useEffect(() => {
-    if (typeof Notification !== 'undefined') {
-      setSuserConsent(Notification.permission)
+/**
+ * Hook return shape
+ */
+export type UsePushNotificationsReturn = {
+  onClickAskUserPermission: () => Promise<void>
+  onClickSusbribeToPushNotification: () => Promise<void>
+  onClickSendSubscriptionToPushServer: () => Promise<void>
+  onClickSendNotification: () => Promise<void>
+  pushServerSubscriptionId?: string
+  userConsent?: NotificationPermission
+  pushNotificationSupported: boolean
+  userSubscription: PushSubscription | null
+  error?: Error | null
+  loading: boolean
+}
+
+/**
+ * Custom hook that manages browser push notification flow.
+ *
+ * @returns UsePushNotificationsReturn
+ */
+export const usePushNotifications = (): UsePushNotificationsReturn => {
+  const pushNotificationSupported = isPushNotificationSupported()
+
+  // userConsent will be one of 'granted' | 'denied' | 'default' | undefined
+  const [userConsent, setUserConsent] = useState<NotificationPermission | undefined>(() => {
+    try {
+      return typeof Notification !== 'undefined' ? Notification.permission : undefined
+    } catch {
+      return undefined
     }
-  }, [])
+  })
 
-  // to manage the user consent: Notification.permission is a JavaScript native function that return the current state of the permission
-  // We initialize the userConsent with that value
-  const [userSubscription, setUserSubscription] = useState(null)
-  // to manage the use push notification subscription
-  const [pushServerSubscriptionId, setPushServerSubscriptionId] = useState()
-  // to manage the push server subscription
-  const [error, setError] = useState(null)
-  // to manage errors
-  const [loading, setLoading] = useState(true)
-  // to manage async actions
+  const [userSubscription, setUserSubscription] = useState<PushSubscription | null>(null)
+  const [pushServerSubscriptionId, setPushServerSubscriptionId] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<Error | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
 
+  // Register service worker if supported
   useEffect(() => {
-    if (pushNotificationSupported) {
-      setLoading(true)
-      setError(false)
-      registerServiceWorker().then(() => {
-        setLoading(false)
+    if (!pushNotificationSupported) return
+    setLoading(true)
+    setError(null)
+    registerServiceWorker()
+      .catch(err => {
+        setError(err instanceof Error ? err : new Error(String(err)))
       })
-    }
+      .finally(() => setLoading(false))
+    // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  // if the push notifications are supported, registers the service worker
-  // this effect runs only the first render
 
+  // Get existing subscription if any
   useEffect(() => {
+    if (!pushNotificationSupported) return
     setLoading(true)
-    setError(false)
-    const getExixtingSubscription = async () => {
-      const existingSubscription = await getUserSubscription()
-      setUserSubscription(existingSubscription)
-      setLoading(false)
-    }
-    getExixtingSubscription()
-  }, [])
-  // Retrieve if there is any push notification subscription for the registered service worker
-  // this use effect runs only in the first render
-
-  /**
-   * define a click handler that asks the user permission,
-   * it uses the setSuserConsent state, to set the consent of the user
-   * If the user denies the consent, an error is created with the setError hook
-   */
-  const onClickAskUserPermission = () => {
-    setLoading(true)
-    setError(false)
-    askUserPermission().then(consent => {
-      setSuserConsent(consent)
-      if (consent !== 'granted') {
-        setError({
-          name: 'consentimiento denegado',
-          message: 'Negaste el consentimiento para recibir notificaciones',
-          code: 0
-        })
+    setError(null)
+    ;(async () => {
+      try {
+        const existing = await getUserSubscription()
+        setUserSubscription(existing)
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)))
+      } finally {
+        setLoading(false)
       }
+    })()
+    // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Ask for user permission to show notifications.
+   */
+  const onClickAskUserPermission = async (): Promise<void> => {
+    setLoading(true)
+    setError(null)
+    try {
+      const consent = await askUserPermission()
+      setUserConsent(consent)
+      if (consent !== 'granted') {
+        setError(new Error('User denied notification permission'))
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
       setLoading(false)
-    })
-  }
-  //
-
-  /**
-   * define a click handler that creates a push notification subscription.
-   * Once the subscription is created, it uses the setUserSubscription hook
-   */
-  const onClickSusbribeToPushNotification = () => {
-    setLoading(true)
-    setError(false)
-    createNotificationSubscription()
-      .then(function (subscrition) {
-        setUserSubscription(subscrition)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error("Couldn't create the notification subscription", err, 'name:', err.name, 'message:', err.message, 'code:', err.code)
-        setError(err)
-        setLoading(false)
-      })
+    }
   }
 
   /**
-   * define a click handler that sends the push susbcribtion to the push server.
-   * Once the subscription ics created on the server, it saves the id using the hook setPushServerSubscriptionId
+   * Create a PushSubscription via the service worker's PushManager.
    */
-  const onClickSendSubscriptionToPushServer = () => {
+  const onClickSusbribeToPushNotification = async (): Promise<void> => {
     setLoading(true)
-    setError(false)
-    post('/subscription2', userSubscription)
-      .then(function (response) {
-        setPushServerSubscriptionId(response.id)
-        setLoading(false)
-      })
-      .catch(err => {
-        setLoading(false)
-        setError(err)
-      })
-  }
-
-  /**
-   * define a click handler that request the push server to send a notification, passing the id of the saved subscription
-   */
-  const onClickSendNotification = async () => {
-    setLoading(true)
-    setError(false)
-    console.log(pushServerSubscriptionId)
-    await get(`/subscription/${pushServerSubscriptionId}`).catch(err => {
+    setError(null)
+    try {
+      const subscription = await createNotificationSubscription()
+      setUserSubscription(subscription)
+    } catch (err) {
+      console.error("Couldn't create the notification subscription", err)
+      setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
       setLoading(false)
-      setError(err)
-    })
-    setLoading(false)
+    }
   }
 
   /**
-   * returns all the stuff needed by a Component
+   * Send the subscription object to the push server (persist it).
    */
+  const onClickSendSubscriptionToPushServer = async (): Promise<void> => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (!userSubscription) throw new Error('No push subscription available to send')
+      const body = userSubscription.toJSON()
+      const resp = await post<{ id: string }>('/subscription2', body)
+      setPushServerSubscriptionId(resp.id)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Ask push server to trigger a notification for the saved subscription id.
+   */
+  const onClickSendNotification = async (): Promise<void> => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (!pushServerSubscriptionId) throw new Error('No server subscription id available')
+      await get(`/subscription/${pushServerSubscriptionId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     onClickAskUserPermission,
     onClickSusbribeToPushNotification,
     onClickSendSubscriptionToPushServer,
-    pushServerSubscriptionId,
     onClickSendNotification,
+    pushServerSubscriptionId,
     userConsent,
     pushNotificationSupported,
     userSubscription,

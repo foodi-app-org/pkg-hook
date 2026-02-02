@@ -54,12 +54,13 @@ interface UseCategoryInStoreResult {
  * @param root0
  * @param root0.catStoreId
  * @param root0.setAlertBox
+ * @returns {UseCategoryInStoreResult} Hook result
  */
 export const useCategoryInStore = ({
   catStoreId,
   setAlertBox = () => {}
 }: UseCategoryInStoreParams = {}): UseCategoryInStoreResult => {
-  const [categories, setOneCategoryInStore] = useState<Category[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
 
   const [deleteCatOfProducts] = useMutation(DELETE_ONE_CAT_PRODUCTS, {
     onError: (e: ApolloError) => {
@@ -116,7 +117,7 @@ export const useCategoryInStore = ({
     },
     onCompleted: (response) => {
       if (response?.getOneCatStore) {
-        setOneCategoryInStore(response.getOneCatStore)
+        setCategories(response.getOneCatStore)
       }
     }
   })
@@ -124,12 +125,13 @@ export const useCategoryInStore = ({
   /**
    * Delete category from products
    * @param category
+   * @returns {Promise<unknown> | void} Deletion result
    */
   const handlerDeleteCategoryInStore = (category?: Category) => {
     const { pState, idPc } = category || {}
     if (!idPc || !pState) return
 
-    return deleteCatOfProducts({
+    deleteCatOfProducts({
       variables: { idPc, pState }
     })
   }

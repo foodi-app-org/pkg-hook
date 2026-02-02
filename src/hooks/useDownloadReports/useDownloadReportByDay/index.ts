@@ -79,7 +79,15 @@ export const useDownloadReportByDay = ({
           backgroundColor: 'success'
         })
       } catch (e) {
+        if (e instanceof Error) {
+          setFinished(false)
+        }
         setFinished(false)
+        return sendNotification({
+          description: e instanceof Error ? e.message : 'Error desconocido',
+          title: 'Error al descargar reporte',
+          backgroundColor: 'error'
+        })
       }
     },
     onError: () => {

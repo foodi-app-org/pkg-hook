@@ -1,20 +1,34 @@
-import { useQuery } from '@apollo/client'
-
+import { useQuery, ApolloError } from '@apollo/client'
 import { GET_ALL_ROLES } from './queries'
+import {
+  GetRolesResponse,
+  GetRolesVars,
+  UseGetRolesParams
+} from './useGetRoles.types'
 
-export const useGetRoles = ({
-  max,
-  order = 'DESC',
-  search,
-  sendNotification = () => { }
-} = {}) => {
+export const useGetRoles = (
+  {
+    max = 25,
+    order = 'DESC',
+    search,
+    sendNotification = () => {}
+  }: UseGetRolesParams = {}
+): [
+  GetRolesResponse['getRoles'] | undefined,
+  {
+    loading: boolean
+    buttonLoading: boolean
+    error?: ApolloError
+    refetch: () => void
+  }
+] => {
   const {
     loading,
     error,
     called,
     data,
     refetch
-  } = useQuery(GET_ALL_ROLES, {
+  } = useQuery<GetRolesResponse, GetRolesVars>(GET_ALL_ROLES, {
     onError: () => {
       sendNotification({
         title: 'Error',
@@ -24,14 +38,18 @@ export const useGetRoles = ({
     },
     variables: {
       search,
-      max: max || 25,
+      max,
       order
     }
   })
-  return [data?.getRoles, {
-    loading: called ? false : loading,
-    buttonLoading: loading,
-    error,
-    refetch
-  }]
+
+  return [
+    data?.getRoles,
+    {
+      loading: called ? false : loading,
+      buttonLoading: loading,
+      error,
+      refetch
+    }
+  ]
 }

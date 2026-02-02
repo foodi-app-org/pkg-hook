@@ -1,14 +1,10 @@
-import { Product } from 'typesdefs'
+import { CatProductWithProduct } from '../../useCatWithProduct/types'
 
 /**
  * Filter objects with checked property equal to true.
  * @param {Array} products - Array of objects.
  * @returns {Array} - Array of objects with checked property equal to true.
  */
-export function filterChecked(products: Product[]) {
-    if (!Array.isArray(products)) {
-        return []
-    }
-
-    return products.filter(product => { return product?.checked === true })?.map(product => { return product?.carProId })
+export function filterChecked(categories: CatProductWithProduct[]): string[] {
+    return categories.filter(cat => cat.checked).map(cat => cat.carProId)
 }

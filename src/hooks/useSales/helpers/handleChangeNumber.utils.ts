@@ -177,8 +177,8 @@ function handleStockExceeded(safeValue: number, productExist: Product, sendNotif
 export const handleChangeNumber = (
     state: SalesState,
     action: SalesReducerAction,
+    productsFood: Product[] = [],
     sendNotification: SendNotificationFn,
-    productsFood: Product[] = []
 ) => {
     const event = getEventFromAction(action);
     const { value, index, id } = event;

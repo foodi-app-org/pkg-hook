@@ -6,7 +6,7 @@ export const useColorByLetters = (params?: { value?: string }) => {
   const key = randomNumber({ value, min: 0, max: 19 })
 
   const getCustomColors = (text: string) => {
-    const key = randomNumber({ text, min: 0, max: 19 })
+    const key = randomNumber({ value: text, min: 0, max: 19 })
     return {
       key,
       color: TEXT_COLORS[key],

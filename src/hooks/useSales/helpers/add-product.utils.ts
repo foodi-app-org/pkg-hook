@@ -26,7 +26,11 @@ export const addToCartFunc = ({
   sendNotification = () => { },
   sendAlertStock = () => { }
 }: AddToCartProps) => {
-  const payload = action?.payload ?? {}
+  if (!('payload' in action)) {
+    // If action does not have payload, return state or handle accordingly
+    return state
+  }
+  const payload = action.payload
   const {
     pId,
     pName,
@@ -106,7 +110,7 @@ export const addToCartFunc = ({
 
   newList[productExistIndex] = {
     ...productExist,
-    getOneTags: product.genderTags,
+    genderTags: product.genderTags,
     unitPrice,
     editing: false,
     oldQuantity: newQuantity,

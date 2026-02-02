@@ -1,124 +1,172 @@
-import debounce from 'lodash'
+// useUpdateCart.ts
+import debounce from 'lodash/debounce'
 import { useState, useEffect } from 'react'
 
 import { Cookies } from '../../cookies'
 import { getCurrentDomain } from '../../utils'
 import { trigger } from '../useEvent'
 
-// EXAMPLE
-// https://codesandbox.io/s/nextjs-cart-system-tfg1e?file=/pages/_app.js
+/**
+ * Single cart item
+ */
+export type CartItem = {
+  pId: string
+  price: number
+  quantity: number
+  // allow extra fields from the product object
+  [key: string]: unknown
+}
 
-// Method to execute the event to add all items of the app.cart cookie
-const updateCart = debounce.debounce((items = []) => {
-  trigger({ eventType: 'app.cart', data: { loading: true, items } })
-}, 3000)
+/**
+ * Cart shape
+ */
+export type Cart = {
+  items: CartItem[]
+  total: number
+}
 
-const EMPTY_CART = {
+const EMPTY_CART: Cart = {
   items: [],
   total: 0
 }
 
-export const useUpdateCart = () => {
-  const domain = getCurrentDomain()
+/**
+ * Debounced update that triggers an app event with items payload.
+ * The debounced function expects an array of CartItem.
+ */
+const updateCart = debounce((items: CartItem[] = []) => {
+  trigger({ eventType: 'app.cart', data: { loading: true, items } })
+}, 3000)
+
+/**
+ * Hook return shape
+ */
+export type UseUpdateCartReturn = {
+  saveDataState: CartItem[]
+  clearCart: () => void
+  deleteProductCart: (item: CartItem) => void
+  decreaseItemFromCart: (item: CartItem) => void
+  handleAdd: (item: CartItem) => void
+  cart: Cart
+}
+
+/**
+ * useUpdateCart
+ * Manages a small cart saved in cookie and triggers global events.
+ */
+export const useUpdateCart = (): UseUpdateCartReturn => {
+  const rawDomain = getCurrentDomain()
+  const domain = typeof rawDomain === 'string' ? rawDomain : undefined
   const keyToSaveData = 'app.cart'
-  const saveDataState = JSON.parse(Cookies.get(keyToSaveData) || '[]')
-  const [cart, setCart] = useState(EMPTY_CART)
 
-  useEffect(() => {
-    // restore cart from cookie, this could also be tracked in a db
-    const cart = Cookies.get(keyToSaveData)
-
-    // if items in cart, set items and total to state
-    if (typeof cart === 'string' && cart !== 'undefined') {
-      const cartData = JSON.parse(cart)
-      const total = cartData.reduce(
-        (total, item) => { return total + item.price * item.quantity },
-        0
-      )
-
-      setCart({ items: cartData, total })
+  // initial saved data (array of items) from cookie
+  const saveDataState: CartItem[] = (() => {
+    try {
+      const raw = Cookies.get(keyToSaveData)
+      return raw && raw !== 'undefined' ? JSON.parse(raw) : []
+    } catch {
+      return []
     }
+  })()
+
+  const [cart, setCart] = useState<Cart>(() => {
+    // initialize total from saved items
+    const total = saveDataState.reduce((acc, it) => acc + (it.price * (it.quantity ?? 1)), 0)
+    return { items: saveDataState, total }
+  })
+
+  // Restore cart from cookie (runs once)
+  useEffect(() => {
+      const cartRaw = Cookies.get(keyToSaveData)
+      if (typeof cartRaw === 'string' && cartRaw !== 'undefined') {
+        const cartData: CartItem[] = JSON.parse(cartRaw)
+        const total = cartData.reduce((total, item) => total + item.price * (item.quantity ?? 1), 0)
+        setCart({ items: cartData, total })
+      }
   }, [])
 
+  // Persist cart.items to cookie whenever cart changes
   useEffect(() => {
-    Cookies.set(keyToSaveData, JSON.stringify(cart.items), { domain, path: '/' })
+    try {
+      Cookies.set(keyToSaveData, JSON.stringify(cart.items), { domain, path: '/' })
+    } catch {
+      // ignore cookie errors - optionally setError or console.warn
+    }
   }, [cart, domain])
 
-  const handleAdd = (item) => {
-    // check for item already in cart
-    // if not in cart, add item else if item is found increment quantity
-    const itemExists = cart.items.find((i) => { return i.pId === item.pId })
+  /**
+   * Add item to cart. If exists, increments quantity.
+   */
+  const handleAdd = (item: CartItem): void => {
+    setCart(prevCart => {
+      const itemExists = prevCart.items.find(i => i.pId === item.pId)
 
-    if (!itemExists) {
-      setCart((prevCart) => {
-        return {
-          items: [...prevCart.items, { ...item, quantity: 1 }],
-          total: prevCart.total + item.price
+      if (!itemExists) {
+        const newItems = [...prevCart.items, { ...item, quantity: 1 }]
+        const newTotal = prevCart.total + item.price
+        const newState = { items: newItems, total: newTotal }
+        updateCart(newItems)
+        return newState
+      }
+
+      const newItems = prevCart.items.map(i => {
+        if (i.pId === item.pId) {
+          return { ...i, quantity: (i.quantity ?? 0) + 1 }
         }
+        return i
       })
+      const newTotal = prevCart.total + item.price
+      const newState = { items: newItems, total: newTotal }
+      updateCart(newItems)
+      return newState
+    })
+  }
 
-      return
-    }
+  /**
+   * Delete product from cart completely.
+   */
+  const deleteProductCart = (item: CartItem): void => {
+    setCart(prevCart => {
+      const items = prevCart.items.filter(i => i.pId !== item.pId)
+      const total = items.reduce((t, i) => t + (i.quantity ?? 0) * i.price, 0)
+      const newState = { items, total }
+      updateCart(items)
+      return newState
+    })
+  }
 
-    setCart((prevCart) => {
-      return {
-        items: prevCart.items.map((i) => {
-          if (i.pId === item.pId) {
-            return { ...i, quantity: i.quantity + 1 }
-          }
+  /**
+   * Decrease quantity of an item by one. If quantity becomes 0, remove item.
+   */
+  const decreaseItemFromCart = (item: CartItem): void => {
+    setCart(prevCart => {
+      const itemInCart = prevCart.items.find(i => i.pId === item.pId)
+      if (!itemInCart) return prevCart
 
-          return i
-        }),
-        total: prevCart.total + item.price
+      if ((itemInCart.quantity ?? 0) <= 1) {
+        const itemsAfterRemove = prevCart.items.filter(i => i.pId !== item.pId)
+        const totalAfterRemove = itemsAfterRemove.reduce((t, i) => t + (i.quantity ?? 0) * i.price, 0)
+        const newState = { items: itemsAfterRemove, total: totalAfterRemove }
+        updateCart(itemsAfterRemove)
+        return newState
       }
-    })
-    updateCart(cart)
-  }
 
-  const deleteProductCart = (item) => {
-    setCart((prevCart) => {
-      const items = prevCart.items
-      const index = items.findIndex((i) => { return i.pId === item.pId })
-
-      items.splice(index, 1)
-
-      const total = items.reduce((t, i) => { return t + i.quantity * i.price }, 0)
-
-      return { items, total }
+      const newItems = prevCart.items.map(i => {
+        if (i.pId === item.pId) {
+          return { ...i, quantity: (i.quantity ?? 0) - 1 }
+        }
+        return i
+      })
+      const newTotal = prevCart.total - item.price
+      const newState = { items: newItems, total: newTotal }
+      updateCart(newItems)
+      return newState
     })
   }
 
-  const decreaseItemFromCart = (item) => {
-    // check for item already in cart
-    // if quantity is more then  in cart, subtract item else remove item
-    const itemInCart = cart.items.find((i) => { return i.pId === item.pId })
-
-    if (!itemInCart) {
-      return
-    }
-
-    if (itemInCart.quantity === 1) {
-      deleteProductCart(item)
-
-      return
-    }
-
-    setCart((prevCart) => {
-      return {
-        items: prevCart.items.map((i) => {
-          if (i.pId === item.pId) {
-            return { ...i, quantity: item.quantity - 1 }
-          }
-
-          return i
-        }),
-        total: prevCart.total - item.price
-      }
-    })
-  }
-
-  const clearCart = () => {
+  const clearCart = (): void => {
     setCart(EMPTY_CART)
+    updateCart([])
   }
 
   return {
@@ -126,6 +174,7 @@ export const useUpdateCart = () => {
     clearCart,
     deleteProductCart,
     decreaseItemFromCart,
-    handleAdd
+    handleAdd,
+    cart
   }
 }

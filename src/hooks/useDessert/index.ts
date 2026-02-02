@@ -2,6 +2,7 @@ import {
   useState,
   useEffect
 } from 'react'
+import { SendNotificationFn } from 'typesdefs'
 
 import { MockData } from '../../mock'
 import { RandomCode, updateCacheMod } from '../../utils'
@@ -14,12 +15,16 @@ import { useUpdateExtProductFoodsSubOptional } from '../useUpdateExtProductFoods
 
 import { transformDataToDessert } from './helpers'
 
-
+interface UseDessertProps {
+  pId?: string | null
+  initialData?: any | null
+  sendNotification?: SendNotificationFn
+}
 export const useDessert = ({
   pId = null,
   initialData = null,
   sendNotification = (args) => { return args }
-}) => {
+}: UseDessertProps) => {
   const [selectedExtra, setSelectedExtra] = useState({})
   const [openModalEditExtra, setOpenModalEditExtra] = useState(false)
   const [selectedItem, setSelectedItem] = useState({})
@@ -30,8 +35,22 @@ export const useDessert = ({
   }) // State for checkboxes
   const [valueItems, setValueItems] = useState('') // State for input values
   const [title, setTitle] = useState('') // State for title input value
+  // Define a type for the lists object with an index signature
+  type ListType = {
+    id: string
+    title: string
+    numberLimit: number
+    required: number
+    value: string
+    cards: any[]
+  }
+  type DataType = {
+    listIds: string[]
+    lists: { [key: string]: ListType }
+  }
+
   // Initialize the data state with the transformedData or MockData
-  const [data, setData] = useState(MockData)
+  const [data, setData] = useState<DataType>(MockData)
   const handleCleanData = () => {
     setData(MockData)
   }
@@ -57,6 +76,9 @@ export const useDessert = ({
       // If list or list.cards is missing, assume the list is not complete
       return false
     } catch (e) {
+      if (e instanceof Error) {
+        return false
+      }
       return false
     }
   })
@@ -105,7 +127,7 @@ export const useDessert = ({
    * @throws {Error} Will throw an error if the provided index (i) is out of range.
    * @throws {Error} Will throw an error if the provided listID is invalid (optional validation).
    */
-  const handleRemoveList = (i, listID) => {
+  const handleRemoveList = (i: number, listID?: string) => {
     // Validate that the provided index (i) is a non-negative number
     if (typeof i !== 'number' || i < 0) {
       throw new Error('Invalid index provided. The index must be a non-negative number.')
@@ -286,7 +308,7 @@ export const useDessert = ({
     }
   }
 
-  const updateListById = (listId, updatedFields) => {
+  const updateListById = (listId: string, updatedFields: Partial<ListType>) => {
     setData((prevData) => {
       const updatedLists = {
         ...prevData.lists,
@@ -309,7 +331,7 @@ export const useDessert = ({
    * @param {string} options.id - ID del extra.
    * @param {number|null} options.numberLimit - Límite de número para el extra.
    * @param {string} options.title - Título del extra.
-   * @param {boolean} options.required - Indica si el extra es requerido.
+   * @param {boolean|number} options.required - Indica si el extra es requerido.
    * @throws {Error} Se lanza un error si no se proporciona un ID válido.
    * @returns {Promise<void>}
    */
@@ -317,7 +339,7 @@ export const useDessert = ({
     id = '',
     numberLimit = null,
     title,
-    required
+    required = false
   }) => {
     try {
       if (id) {
@@ -326,7 +348,7 @@ export const useDessert = ({
           code: id,
           OptionalProName: title,
           required: required ? 1 : 0,
-          numbersOptionalOnly: numberLimit
+          numbersOptionalOnly: Number(numberLimit)
         })
         const { data } = response || {}
         if (!data?.updateExtProductOptional) {
@@ -347,7 +369,7 @@ export const useDessert = ({
           })
           return updateListById(id, {
             title,
-            numberLimit,
+            numberLimit: Number(numberLimit),
             required: required ? 1 : 0
           })
         }
@@ -361,6 +383,13 @@ export const useDessert = ({
         })
       }
     } catch (error) {
+      if (error instanceof Error) {
+        return sendNotification({
+          description: error.message,
+          title: 'Error',
+          backgroundColor: 'warning'
+        })
+      }
       setSelectedExtra({})
       setOpenModalEditExtra(false)
       sendNotification({
@@ -371,7 +400,7 @@ export const useDessert = ({
     }
   }
 
-  const addCard = async (title, listId) => {
+  const addCard = async (title: string, listId: string) => {
     const id = RandomCode(9)
     const newCard = {
       id,
@@ -390,7 +419,7 @@ export const useDessert = ({
       }
     })
     handleMutateExtProductFoodsSubOptional({
-      pId,
+      pId: String(pId),
       title,
       listId,
       id,
@@ -398,7 +427,7 @@ export const useDessert = ({
     })
     setTitle('')
   }
-  const handleAdd = ({ listId }) => {
+  const handleAdd = ({ listId }: { listId: string }) => {
     if (valueItems !== '' && valueItems.trim() !== '') {
       addCard(valueItems, listId)
     }
@@ -426,7 +455,7 @@ export const useDessert = ({
    * @param {string} params.title - The title of the new list.
    * @param {number} params.numberLimit - The number limit for the new list.
    */
-  const handleAddList = async ({ title, numberLimit }) => {
+  const handleAddList = async ({ title, numberLimit }: { title: string; numberLimit: number }) => {
     // Check if the title is not empty
     if (title.trim() === '') {
       sendNotification({
@@ -460,7 +489,9 @@ export const useDessert = ({
     }})
 
     // Update the external product with the information of the new list
+    if (pId === null) return
     handleUpdateExtProduct({
+      opExPid: newListId,
       pId,
       code: newListId,
       OptionalProName: title,
@@ -478,7 +509,7 @@ export const useDessert = ({
    * @param {string} params.listID - The ID of the list where the change is happening.
    * @param {Object} params.value - The event object containing the new value for the list items.
    */
-  const handleChangeItems = ({ listID, value: e }) => {
+  const handleChangeItems = ({ listID, value: e }: { listID: string; value: React.ChangeEvent<HTMLInputElement> }) => {
     const value = e.target.value
     setValueItems(value)
 

@@ -18,7 +18,7 @@ export const useUpdateExtProductFoodsOptional = () => {
     code: string
     opExPid: string
     OptionalProName?: string
-    required?: boolean
+    required?: boolean | number
     numbersOptionalOnly?: number | string
   }) => {
     return await updateExtProductOptional({

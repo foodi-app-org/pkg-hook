@@ -1,4 +1,5 @@
 import { useMutation, gql } from '@apollo/client'
+import { SendNotificationFn } from 'typesdefs'
 
 const CREATE_DELIVERY_TIME = gql`
   mutation CreateDeliveryTime($minutes: Int!) {
@@ -9,41 +10,40 @@ const CREATE_DELIVERY_TIME = gql`
   }
 `
 
+
 export const useCreateDeliveryTime = ({
-  sendNotification = ({ description, title, backgroundColor }) => {
-    return { description, title, backgroundColor }
-  }
-}) => {
+  sendNotification
+}: { sendNotification?: (params: SendNotificationFn) => void }) => {
   const [createDeliveryTimeMutation, { loading, error }] =
     useMutation(CREATE_DELIVERY_TIME)
 
-  const createDeliveryTime = async (minutes) => {
+  const createDeliveryTime = async (minutes: number) => {
     try {
       if (!minutes) {
-        sendNotification({
-          backgroundColor: 'error',
-          title: 'Error',
-          description: 'The delivery time is required.'
-        })
+          sendNotification?.({
+            backgroundColor: 'error',
+            title: 'Error',
+            description: 'The delivery time is required.'
+          })
         return
       }
       const { data } = await createDeliveryTimeMutation({
-        variables: { minutes: parseInt(minutes) }
+        variables: { minutes: Number.parseInt(minutes.toString()) }
       })
       if (data?.createDeliveryTime?.success) {
-        sendNotification({
-          title: 'Delivery Time Created',
-          description: data.createDeliveryTime.message,
-          backgroundColor: 'success'
-        })
+          sendNotification?.({
+            title: 'Delivery Time Created',
+            description: data.createDeliveryTime.message,
+            backgroundColor: 'success'
+          })
       }
-      return data.createDeliveryTime
-    } catch (error) {
-      sendNotification({
-        backgroundColor: 'error',
-        title: 'Error',
-        description: 'An error occurred while creating the delivery time.'
-      })
+      // Do not return any value to satisfy consistent-return rule
+    } catch {
+        sendNotification({
+          backgroundColor: 'error',
+          title: 'Error',
+          description: 'An error occurred while creating the delivery time.'
+        })
     }
   }
 

@@ -93,7 +93,7 @@ export const useSales = ({
   const [inputValue, setInputValue] = useState<string>('')
 
   const [print, setPrint] = useState<boolean>(false)
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<Record<string, unknown>>({})
 
   const initialValuesState: ValuesState = {
     change: '',
@@ -109,7 +109,7 @@ export const useSales = ({
     createdAt: null,
     idStore: null
   }
-  const [code, setCode] = useState(null)
+  const [code, setCode] = useState<(null | string)>(null)
   const [openCurrentSale, setOpenCurrentSale] = useState(null)
   const [oneProductToComment, setOneProductToComment] = useState({})
   const { yearMonthDay } = useFormatDate({ date: createdAt })
@@ -118,7 +118,7 @@ export const useSales = ({
     return { fromDate: yearMonthDay, toDate: '' }
   })
 
-  const [product, setProduct] = useState({
+  const [product, setProduct] = useState<{ PRODUCT: { pId: string | null } }>({
     PRODUCT: {
       pId: null
     }
@@ -451,11 +451,11 @@ export const useSales = ({
 
       case SalesActionTypes.PUT_COMMENT:
         return handleCommentProduct({
-          state, 
-          action.payload,
-          false,
-          values.comment,}
-        )
+          state,
+          action: action.payload as unknown as { payload: string | number },
+          deleteValue: false,
+          value: values.comment
+        })
       case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
         return handleUpdateAllExtraAndOptional(state, {
           payload: action.payload,
@@ -581,7 +581,7 @@ export const useSales = ({
    * @param root0.Adicionales
    * @param root0.index
    */
-  function handleIncrementExtra({ Adicionales, index }) {
+  function handleIncrementExtra({ Adicionales, index }: { Adicionales: any; index: number }) {
     const { pId } = product?.PRODUCT || {}
     const exPid = Adicionales?.exPid || null
 
@@ -648,7 +648,7 @@ export const useSales = ({
   const handleList = (text: string) => {
     const inputText = text.toLowerCase()
     let dataList = []
-    dataList = finalFilter.filter((item) => {
+    dataList = (finalFilter || []).filter((item: { pName: string }) => {
       return item.pName.toLowerCase().includes(inputText)
     })
     return dataList
@@ -659,10 +659,10 @@ export const useSales = ({
   const arrayProduct = useMemo(() => {
     if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return []
     return data.PRODUCT.map((product: any) => {
-      const filteredDataExtra = (product?.dataExtra ?? []).map(({ __typename, ...rest }) => { return rest })
-      const dataOptional = (product?.dataOptional ?? []).map(({ __typename, ...rest }) => {
+      const filteredDataExtra = (product?.dataExtra ?? []).map(({ ...rest }) => { return rest })
+      const dataOptional = (product?.dataOptional ?? []).map(({ ...rest }) => {
         const { ExtProductFoodsSubOptionalAll, ...r } = rest
-        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ __typename, ...s }) => { return s })
+        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ ...s }) => { return s })
         return { ...r, ExtProductFoodsSubOptionalAll: adjusted }
       })
       return {
@@ -690,7 +690,7 @@ export const useSales = ({
    *
    * @param data
    */
-  function sumProPriceAndTotalExtra(data) {
+  function sumProPriceAndTotalExtra(data: { dataExtra: { newExtraPrice: string }[]; ProPrice: number }[]) {
     return data.map((item) => {
       const totalExtra = item.dataExtra.reduce((acc, curr) => {
         const newExtraPrice = parseFloat(curr.newExtraPrice)
@@ -705,7 +705,7 @@ export const useSales = ({
   }
   useEffect(() => {
     const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct)
-    dataCountTotal.forEach((a) => {
+    dataCountTotal.forEach((a: { total: number }) => {
       const { total } = a || {}
       totalSale += total
       setTotalProductPrice(Math.abs(totalSale))
@@ -755,7 +755,7 @@ export const useSales = ({
       })
     }
 
-    setCode(code)
+    setCode(code as string)
     /**
      *
      * @param cadena
@@ -823,9 +823,9 @@ export const useSales = ({
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only',
-              onCompleted: (data) => {
-                client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
-              }
+              // onCompleted: (data) => {
+              //   client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
+              // }
             })
             setValues(initialValuesState)
             handleChange({ target: { name: 'tableId', value: '' } }, false)
@@ -852,16 +852,16 @@ export const useSales = ({
                 // })
               }
             })
-            router.push(
-              {
-                query: {
-                  ...router.query,
-                  saleId: code
-                }
-              },
-              undefined,
-              { shallow: true }
-            )
+            // router.push(
+            //   {
+            //     query: {
+            //       ...router.query,
+            //       saleId: code
+            //     }
+            //   },
+            //   undefined,
+            //   { shallow: true }
+            // )
           }
         }
         setLoadingSale(false)
@@ -1036,7 +1036,7 @@ export const useSales = ({
   }
 
   useEffect(() => {
-    Cookies.set(keyToSaveData, JSON.stringify(data), { domain, path: '/' })
+    Cookies.set(keyToSaveData, JSON.stringify(data), { domain: typeof domain === 'string' ? domain : undefined, path: '/' })
   }, [data, domain])
 
   return {
@@ -1095,7 +1095,18 @@ export const useSales = ({
         dispatch,
         productsFood,
         sendNotification,
-        handleGetOneProduct
+        handleGetOneProduct: async ({ pId }: { pId: string }) => {
+          if (typeof handleGetOneProduct === 'function') {
+            const result = await handleGetOneProduct({ variables: { pId } });
+            // Ensure the return type matches the expected shape
+            if (result && result.data && 'productFoodsOne' in result.data) {
+              return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } };
+            }
+            // If result is undefined or does not have the expected shape, return a default object
+            return { data: { productFoodsOne: null } };
+          }
+          throw new Error('handleGetOneProduct is not a function');
+        }
       })
     },
     handleRemoveValue: handleRemoveComment,

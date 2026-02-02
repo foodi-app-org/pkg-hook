@@ -58,6 +58,7 @@ interface ResponseOrderStatusType {
  * 🧩 Hook personalizado para crear un OrderStatusType
  * @param root0
  * @param root0.sendNotification
+ * @returns {handleCreateStatus, {data, loading, error}}
  */
 export const useCreateOrderStatusType = ({
   sendNotification
@@ -73,14 +74,13 @@ export const useCreateOrderStatusType = ({
       CREATE_ORDER_STATUS_TYPE,
       {
         update(cache, { data }) {
-          console.log('🚀 ~ useCreateOrderStatusType ~ data:', data, cache)
           const newItem = data?.createOrderStatusType?.data
           if (!newItem) return
 
           cache.modify({
             fields: {
-              getAllOrderStatusTypes(existing = {}) {
-                console.log('🚀 ~ useCreateOrderStatusType ~ existing:', existing)
+              getAllOrderStatusTypes() {
+                // console.log('🚀 ~ useCreateOrderStatusType ~ existing:', existing)
               
               }
             }

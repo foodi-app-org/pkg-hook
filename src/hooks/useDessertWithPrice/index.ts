@@ -7,13 +7,27 @@ import {
   useState,
   createRef
 } from 'react'
+import {
+  AlertBoxType,
+  SendNotificationFn,
+  SetAlertBoxFn
+} from 'typesdefs'
 
 import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
 import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
 
-import { findNumbersExceedingRange, transformData, updateErrorFieldByIndex } from './helpers'
+import {
+  findNumbersExceedingRange,
+  transformData,
+  updateErrorFieldByIndex
+} from './helpers'
 import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
 
+interface UseDessertWithPriceProps {
+  dataExtra?: Array<any>
+  sendNotification?: SendNotificationFn
+  setAlertBox?: SetAlertBoxFn
+}
 
 export const useDessertWithPrice = ({
   dataExtra = [],
@@ -28,8 +42,8 @@ export const useDessertWithPrice = ({
       backgroundColor
     }
   },
-  setAlertBox = ({ message, duration = 10000, success = true }) => { return { message, duration, success } }
-} = {}) => {
+  setAlertBox
+}: UseDessertWithPriceProps = {}) => {
   const [selected, setSelected] = useState({
     loading: false,
     exPid: null
@@ -62,23 +76,31 @@ export const useDessertWithPrice = ({
     Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems
   )
 
-  const inputRefs = useRef(LineItems.Lines.map(() => {return createRef()}))
+  const inputRefs = useRef(LineItems.Lines.map(() => { return createRef() }))
 
-  const handleSelect = (item, index) => {
+  const handleSelect = (item: any, index: number): undefined => {
     try {
       const { exPid } = item || {}
       setSelected({ exPid, loading: false })
       if (inputRefs?.current[index]) {
         inputRefs.current[index].current.focus()
       }
+      return undefined
     } catch (error) {
-      return null
+      if (error instanceof Error) {
+        sendNotification({
+          title: error.message,
+          description: 'Error',
+          backgroundColor: 'error'
+        })
+      }
+      return undefined
     }
   }
 
   useEffect(() => {
     // Asegurándote de que las referencias se actualicen si LineItems cambia
-    inputRefs.current = LineItems.Lines.map((_, i) => {return inputRefs.current[i] || createRef()})
+    inputRefs.current = LineItems.Lines.map((_: unknown, i: number) => { return inputRefs.current[i] || createRef() })
   }, [LineItems])
 
   const handleCleanLines = useCallback(() => {
@@ -101,7 +123,7 @@ export const useDessertWithPrice = ({
 
       // Ensure that LineItems.Lines is an array
       if (!Array.isArray(LineItems.Lines)) {
-        throw new Error('Han ocurrido un error.')
+        throw new TypeError('Han ocurrido un error.')
       }
 
       // Clone the existing Lines array and add two new objects (clones of initialLine) to it
@@ -110,15 +132,17 @@ export const useDessertWithPrice = ({
       // Update the LineItems state with the new Lines array
       setLine((prevLineItems) => { return { ...prevLineItems, Lines } })
     } catch (error) {
-      sendNotification({
-        title: error.message,
-        description: 'Error',
-        backgroundColor: 'error'
-      })
+      if (error instanceof Error) {
+        sendNotification({
+          title: error.message,
+          description: 'Error',
+          backgroundColor: 'error'
+        })
+      }
     }
   }, [LineItems, initialLine, setLine])
 
-  const handleFocusChange = (index) => {
+  const handleFocusChange = (index: number): void => {
     const lastItem = LineItems.Lines.length - 1
     if (lastItem === index) {
       handleAdd()
@@ -131,8 +155,8 @@ export const useDessertWithPrice = ({
    * @param {string} name - The name of the attribute being changed.
    * @param {any} value - The new value of the attribute.
    */
-  const handleLineChange = (index, name, value) => {
-    const newLines = LineItems.Lines.map((line, i) => {
+  const handleLineChange = (index: number, name: string, value: any): void => {
+    const newLines = LineItems.Lines.map((line: any, i: number) => {
       if (i !== index) return { ...line }
 
       const newLine = { ...line }
@@ -155,10 +179,11 @@ export const useDessertWithPrice = ({
   /**
    * Filter out a specific line from the LineItems array.
    * @param {number} index - Index of the line to be filtered out.
+   * @returns {void}
    */
-  const filterOneLine = (index) => {
+  const filterOneLine = (index: number): void => {
     // Use optional chaining to safely access nested properties.
-    const Lines = LineItems?.Lines?.filter((_, i) => { return i !== index })
+    const Lines = LineItems?.Lines?.filter((_: unknown, i: number) => i !== index)
     // Use spread operator to create a new object with the filtered Lines array.
     return setLine({ ...LineItems, Lines })
   }
@@ -166,17 +191,35 @@ export const useDessertWithPrice = ({
   /**
    * Removes a product extra by index or external product ID.
    *
+   * @param dataOld
    * @param {number} i - Index of the item in the list.
    * @param {string} [exPid] - External product ID to remove (optional).
    * @returns {Promise<void>}
    */
-  const handleRemove = async (i, exPid) => {
+  // Helper function to handle cache modification logic
+  function handleCacheModification(dataOld: any[], i: number) {
+    if (!Array.isArray(dataOld)) return dataOld
+
+    const transformedData = transformData(dataOld)
+    const Lines = transformedData.filter((_item: any, index: number) => index !== i)
+    const newCache = dataOld.filter((_item: any, index: number) => index !== i)
+
+    setLine(prev => ({
+      ...prev,
+      Lines
+    }))
+
+    return newCache
+  }
+
+  const handleRemove = async (i: number, exPid?: string): Promise<void> => {
     try {
       if (!exPid) {
-        return filterOneLine(i)
+        filterOneLine(i)
+        return
       }
 
-      const findDataExtra = dataExtra?.find(x => {return x?.exPid === exPid})
+      const findDataExtra = dataExtra?.find(x => x?.exPid === exPid)
       if (!findDataExtra) return
 
       await deleteExtraProductFoods({
@@ -184,17 +227,18 @@ export const useDessertWithPrice = ({
           state: 1,
           id: exPid
         },
-        update: (cache, { data }) => {
-          const res = data?.deleteExtraProduct
+        update: (cache: any, result: { data?: any }) => {
+          const res = result.data?.deleteExtraProduct
           const success = res?.success
           const message = res?.message || ''
 
           if (!success) {
-            return sendNotification({
+            sendNotification({
               title: 'Error',
               description: message,
               backgroundColor: 'error'
             })
+            return null
           }
 
           sendNotification({
@@ -205,31 +249,27 @@ export const useDessertWithPrice = ({
 
           cache.modify({
             fields: {
-              ExtProductFoodsAll: (dataOld = []) => {
-                if (!Array.isArray(dataOld)) return dataOld
-
-                const transformedData = transformData(dataOld)
-                const Lines = transformedData.filter((_, index) => {return index !== i})
-                const newCache = dataOld.filter((_, index) => {return index !== i})
-
-                setLine(prev => {return {
-                  ...prev,
-                  Lines
-                }})
-
-                return newCache
-              }
+              ExtProductFoodsAll: (dataOld: any[] = []) => handleCacheModification(dataOld, i)
             }
           })
+          return null
         }
       })
+      return
     } catch (error) {
-      console.log('🚀 ~ handleRemove ~ error:', error)
+      if (error instanceof Error) {
+        sendNotification({
+          title: error.message,
+          description: 'Ocurrió un error al eliminar el producto',
+          backgroundColor: 'error'
+        })
+      }
       sendNotification({
         title: 'Error',
         description: 'Ocurrió un error al eliminar el producto',
         backgroundColor: 'error'
       })
+      return
     }
   }
 
@@ -237,28 +277,31 @@ export const useDessertWithPrice = ({
     setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
   }, [dataExtra.length])
 
-  const prepareAndValidateData = useCallback((pId) => {
-    const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }) => {return {
-      extraPrice,
-      exState: exState === true ? 1 : 0,
-      extraName,
-      pId
-    }})
-    console.log(dataArr)
+  const prepareAndValidateData = useCallback((pId: string) => {
+    const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }: { extraPrice: number; exState: boolean; extraName: string }) => {
+      return {
+        extraPrice,
+        exState: exState === true ? 1 : 0,
+        extraName,
+        pId
+      }
+    })
     const message = 'Complete los campos vacíos'
-    const findInputEmpty = dataArr?.find(({ extraName }) => {return extraName === ''})
-    const findInputEmptyPrice = dataArr?.find(({ extraPrice }) => {return isNaN(extraPrice) || extraPrice === ''})
+    const findInputEmpty = dataArr?.find(({ extraName }: { extraName: string }) => { return extraName === '' })
+    const findInputEmptyPrice = dataArr?.find(({ extraPrice }: { extraPrice: number }) => {
+      return isNaN(Number(extraPrice)) || String(extraPrice).trim() === ''
+    })
 
     if (findInputEmpty || findInputEmptyPrice) {
-      setAlertBox({ message })
+      setAlertBox?.({ message, type: AlertBoxType.WARNING })
       return null
     }
     return dataArr
   }, [LineItems])
 
-  const handleEdit = async (i, exPid) => {
+  const handleEdit = async (i: number, exPid: string) => {
     setSelected({ exPid: null, loading: true })
-    const findOneExtra = LineItems?.Lines?.find((x, i) => { return x?.exPid === exPid })
+    const findOneExtra = LineItems?.Lines?.find((x: { exPid: string }) => { return x?.exPid === exPid })
     const { extraName, extraPrice: price } = findOneExtra || {}
     const extraPrice = price
     const { data } = await editExtraProductFoods({
@@ -278,28 +321,32 @@ export const useDessertWithPrice = ({
       }
     })
     if (!data?.editExtraProductFoods?.success) {
-      return sendNotification({
+      sendNotification({
         title: 'Error',
         description: data?.editExtraProductFoods?.message || '',
         backgroundColor: 'error'
       })
+      return null
     }
 
     if (data?.editExtraProductFoods?.success) {
-      return sendNotification({
+      sendNotification({
         title: 'Producto actualizado',
         description: data?.editExtraProductFoods?.message || '',
         backgroundColor: 'success'
       })
+      return null
     }
+    return null
   }
 
   /**
    *
    * @param items
    * @param pId
+   * @returns Array of filtered and transformed items
    */
-  function filterItemsWithValidExPid (items, pId) {
+  function filterItemsWithValidExPid(items: Array<{ exPid: string; extraPrice: number; exState: boolean; extraName: string }>, pId: string) {
     // Primero, filtrar los elementos basados en exPid
     const filteredItems = items.filter(({ exPid }) => {
       const isExPidValid = !exPid
@@ -307,25 +354,28 @@ export const useDessertWithPrice = ({
     })
 
     // Luego, transformar los elementos filtrados
-    return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => {return {
-      exPid,
-      extraPrice,
-      exState: exState === true ? 1 : 0,
-      extraName,
-      pId
-    }})
+    return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => {
+      return {
+        exPid,
+        extraPrice,
+        exState: exState === true ? 1 : 0,
+        extraName,
+        pId
+      }
+    })
   }
 
-  const handleSubmit = ({ pId }) => {
+  const handleSubmit = ({ pId }: { pId: string }): Promise<void> => {
     try {
       const checkNumberRange = findNumbersExceedingRange(LineItems?.Lines)
       updateErrorFieldByIndex({ checkNumberRange, setLine })
       if (checkNumberRange?.length > 0) {
-        return setAlertBox({ message: 'El precio no puede ser tan alto', duration: 10000 })
+        setAlertBox?.({ message: 'El precio no puede ser tan alto', type: AlertBoxType.WARNING })
+        return Promise.resolve()
       }
 
-      if (!prepareAndValidateData(pId)) return
-      const dataArr = LineItems?.Lines?.map(x => {
+      if (!prepareAndValidateData(pId)) return Promise.resolve()
+      const dataArr = LineItems?.Lines?.map((x: { extraPrice: number; extraName: string; exState: boolean }) => {
         const extraPrice = x.extraPrice
         const extraName = x.extraName
         return {
@@ -343,7 +393,7 @@ export const useDessertWithPrice = ({
             setData: filteredItems
           }
         },
-        update: (cache) => {
+        update: (cache: any) => {
           cache.modify({
             fields: {
               ExtProductFoodsAll: () => {
@@ -352,11 +402,10 @@ export const useDessertWithPrice = ({
             }
           })
         }
-      }).then((res) => {
-        setAlertBox({ message: 'Se ha creado correctamente', duration: 7000, success: true })
       })
     } catch (error) {
-      setAlertBox({ message: `${error}`, duration: 7000 })
+      if (error instanceof Error) setAlertBox?.({ message: `${error.message}`, type: AlertBoxType.ERROR })
+      return Promise.resolve()
     }
   }
   const isLoading = loading

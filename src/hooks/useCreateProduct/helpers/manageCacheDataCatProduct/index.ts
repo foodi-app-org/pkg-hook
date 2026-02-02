@@ -1,3 +1,5 @@
+import { Product } from 'typesdefs'
+
 /**
  * Updates category and products data with a new product.
  * @param {object} dataOld - The old data containing category and product information.
@@ -14,7 +16,7 @@ export function getCatProductsWithProduct (dataOld = {}, carProId = '') {
     const catProductsWithProduct = copyDataOld?.catProductsWithProduct || []
 
     // Find the index of the product to update
-    const indexToUpdate = catProductsWithProduct?.findIndex(product => {return product?.carProId === carProId})
+    const indexToUpdate = catProductsWithProduct?.findIndex((product: Product) => {return product?.carProId === carProId})
 
     if (indexToUpdate !== -1) {
       // Create a new product

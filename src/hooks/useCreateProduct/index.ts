@@ -50,7 +50,6 @@ export const useCreateProduct = ({
   const [names, setName] = useLocalStorage('namefood', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
-  const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [active, setActive] = useState(STEPS.PRODUCT)
   const [pId, setPid] = useState<string | null>(null)
 
@@ -58,7 +57,7 @@ export const useCreateProduct = ({
   const [filter, setFilter] = useState({ gender: [], desc: [], speciality: [] })
   const initialState = { alt: '/ images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
   const [{ alt, src }, setPreviewImg] = useState(initialState)
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [arrTags, setTags] = useState<string[]>([])
   const [stock, setStock] = useState(1)
   // Manage stock optional value boolean
@@ -150,7 +149,7 @@ export const useCreateProduct = ({
       : setFilter({ ...filter, [name]: [...filter[name], value] })
     setSearchFilter({ ...filter })
   }
-  const handleCheckFreeShipping = e => {
+  const handleCheckFreeShipping = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCheck(e)
     setValues({
       ...values,

@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@apollo/client'
+import { useQuery, useMutation, ApolloError } from '@apollo/client'
 
 import {
   GET_ONE_SCHEDULE_STORE,
@@ -7,44 +7,67 @@ import {
   SET_STATUS_ALL_SCHEDULE_STORE
 } from './queries'
 
-export const useSchedule = ({ day = null, idStore = '' }) => {
-  const {
-    data,
-    loading,
-    error
-  } = useQuery(GET_ONE_SCHEDULE_STORE, { variables: { schDay: day, idStore } })
+import {
+  Schedule,
+  GetOneScheduleResponse,
+  GetSchedulesResponse,
+  BasicMutationResponse,
+  UseScheduleParams,
+  UseSchedulesParams
+} from './types'
+
+/**
+ * Get one schedule by day and store
+ */
+export const useSchedule = ({
+  day = null,
+  idStore
+}: UseScheduleParams): [
+  Schedule | null | undefined,
+  { loading: boolean; error?: ApolloError }
+] => {
+  const { data, loading, error } = useQuery<GetOneScheduleResponse>(
+    GET_ONE_SCHEDULE_STORE,
+    {
+      variables: { schDay: day, idStore }
+    }
+  )
 
   return [data?.getOneStoreSchedules, { loading, error }]
 }
 
-export const useSetScheduleOpenAll = () => {
-  const [setStoreSchedule, { loading, error }] = useMutation(SET_STATUS_ALL_SCHEDULE_STORE, {
+/**
+ * Set scheduleOpenAll flag for store
+ */
+export const useSetScheduleOpenAll = (): [
+  (scheduleOpenAll: boolean) => void,
+  { loading: boolean; error?: ApolloError }
+] => {
+  const [setStoreSchedule, { loading, error }] = useMutation<
+    { setScheduleOpenAll: BasicMutationResponse },
+    { scheduleOpenAll: boolean }
+  >(SET_STATUS_ALL_SCHEDULE_STORE, {
     onError: (e) => {
       console.error(e)
     }
   })
 
-  const handleSetStoreSchedule = (scheduleOpenAll) => {
+  const handleSetStoreSchedule = (scheduleOpenAll: boolean): void => {
     setStoreSchedule({
-      variables: {
-        scheduleOpenAll
-      },
+      variables: { scheduleOpenAll },
       update: (cache, { data }) => {
-        const success = data?.setScheduleOpenAll?.success
-        if (success) {
-          cache.modify({
-            fields: {
-              getStore (_, { readField }) {
-                const store = readField('getStore')
-                const updatedCart = {
-                  ...store,
-                  scheduleOpenAll
-                }
-                return updatedCart
+        if (!data?.setScheduleOpenAll?.success) return
+
+        cache.modify({
+          fields: {
+            getStore(existingStore = {}) {
+              return {
+                ...existingStore,
+                scheduleOpenAll
               }
             }
-          })
-        }
+          }
+        })
       }
     })
   }
@@ -52,24 +75,38 @@ export const useSetScheduleOpenAll = () => {
   return [handleSetStoreSchedule, { loading, error }]
 }
 
-export const useSchedules = ({ schDay = 1, idStore = '', onCompleted = (data) => { return data } }) => {
-  const {
-    data,
-    loading,
-    error
-  } = useQuery(GET_SCHEDULE_STORE, {
-    variables: { schDay, idStore },
-    onCompleted: (data) => {
-      onCompleted(data)
+/**
+ * Get all schedules for a store
+ */
+export const useSchedules = ({
+  schDay = 1,
+  idStore,
+  onCompleted = () => {}
+}: UseSchedulesParams): [
+  Schedule[] | undefined,
+  { loading: boolean; error?: ApolloError }
+] => {
+  const { data, loading, error } = useQuery<GetSchedulesResponse>(
+    GET_SCHEDULE_STORE,
+    {
+      variables: { schDay, idStore },
+      onCompleted
     }
-  }
   )
 
   return [data?.getStoreSchedules, { loading, error }]
 }
 
-export const useCreateSchedules = () => {
-  const [setStoreSchedule, { loading, error }] = useMutation(CREATE_STORE_CALENDAR, {
+/**
+ * Create schedules
+ */
+export const useCreateSchedules = (): [
+  (options: { variables: { input: unknown } }) => void,
+  { loading: boolean; error?: ApolloError }
+] => {
+  const [setStoreSchedule, { loading, error }] = useMutation<
+    { setStoreSchedule: BasicMutationResponse }
+  >(CREATE_STORE_CALENDAR, {
     onError: (e) => {
       console.error(e)
     }

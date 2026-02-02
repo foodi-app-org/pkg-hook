@@ -1,25 +1,21 @@
 import { useMutation } from '@apollo/client'
-
 import { CREATE_ROLE_MUTATION } from './queries'
-/**
- * Custom hook para crear un nuevo rol
- * @param root0
- * @param root0.sendNotification
- * @returns {Object} - Estado de la mutación, incluyendo loading, error, data y la función createRoleMutation
- */
-export const useCreateRole = ({
-  sendNotification = () => {
-    return {
-      title: '',
-      description: '',
-      backgroundColor: ''
-    }
-  }
-} = {
-  sendNotification: () => {
-  }
-}) => {
-  const [createRoleMutation, { loading, error, data }] = useMutation(CREATE_ROLE_MUTATION, {
+import {
+  UseCreateRoleParams,
+  UseCreateRoleReturn,
+  CreateRoleResponse,
+  CreateRoleVars
+} from './useCreateRole.types'
+
+export const useCreateRole = (
+  {
+    sendNotification = () => {}
+  }: UseCreateRoleParams = {}
+): UseCreateRoleReturn => {
+  const [createRoleMutation, { loading, error, data }] = useMutation<
+    CreateRoleResponse,
+    CreateRoleVars
+  >(CREATE_ROLE_MUTATION, {
     onError: () => {
       sendNotification({
         title: 'Error',
@@ -27,14 +23,15 @@ export const useCreateRole = ({
         backgroundColor: 'error'
       })
     },
-    onCompleted: () => {
-      return null
-    }
+    onCompleted: () => null
   })
 
-  return [createRoleMutation, {
-    loading,
-    error,
-    data: data?.createRoleMutation ?? null
-  }]
+  return [
+    createRoleMutation,
+    {
+      loading,
+      error,
+      data: data?.createRoleMutation ?? null
+    }
+  ]
 }

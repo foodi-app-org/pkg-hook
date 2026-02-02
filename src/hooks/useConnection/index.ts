@@ -1,23 +1,19 @@
-export const useConnection = ({ setConnectionStatus }) => {
+export const useConnection = ({ setConnectionStatus }: { setConnectionStatus: React.Dispatch<React.SetStateAction<boolean>> }) => {
   /**
    *
    */
   async function updateConnectionStatus () {
-    if (navigator.onLine) {
-      setConnectionStatus(navigator.onLine)
-    } else {
-      setConnectionStatus(navigator.onLine)
-    }
+    setConnectionStatus(navigator.onLine)
   }
 
-  if (typeof window !== 'undefined') {
+  if (globalThis.window !== undefined) {
     // Attaching event handler for the online event
-    window.addEventListener('online', function () {
+    globalThis.window.addEventListener('online', function () {
       updateConnectionStatus()
     })
 
     // Attaching event handler for the offline event
-    window.addEventListener('offline', function () {
+    globalThis.window.addEventListener('offline', function () {
       updateConnectionStatus()
     })
   }

@@ -9,7 +9,7 @@ import { GET_ALL_CATEGORIES_WITH_PRODUCT_CLIENTS } from './queries'
  * @param {string} idStore - The ID of the store.
  * @returns {object} - The hook result containing filtered data, loading state, and fetch function.
  */
-export const useCatWithProductClient = (idStore) => {
+export const useCatWithProductClient = (idStore: string) => {
   const { data, loading, error, fetchMore } = useQuery(GET_ALL_CATEGORIES_WITH_PRODUCT_CLIENTS, {
     fetchPolicy: 'cache-and-network',
     variables: {

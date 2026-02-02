@@ -1,5 +1,5 @@
 import js from '@eslint/js'
-import { defineConfig } from 'eslint/config'
+import { defineConfig, globalIgnores } from 'eslint/config'
 import importPlugin from 'eslint-plugin-import'
 import jsdoc from 'eslint-plugin-jsdoc'
 import react from 'eslint-plugin-react'
@@ -8,6 +8,16 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
+
+  globalIgnores([
+    'src/**/*',
+    'dist/**/*',
+    'build/**/*',
+    'node_modules/**/*',
+    '**/*.min.js',
+    '!.github/**/*', // do not ignore GitHub config files
+    '!.vscode/**/*', // do not ignore VSCode config files
+  ]),
   // base JS/TS files
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],

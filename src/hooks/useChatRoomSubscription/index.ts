@@ -1,4 +1,10 @@
-import { useSubscription, gql } from '@apollo/client'
+import {
+  useSubscription,
+  gql,
+  SubscriptionResult
+} from '@apollo/client'
+
+/* ---------- GraphQL ---------- */
 
 const NEW_CHAT_ROOM_MESSAGE_SUBSCRIPTION = gql`
   subscription NewChatRoomMessage($codeRoom: String!) {
@@ -12,17 +18,62 @@ const NEW_CHAT_ROOM_MESSAGE_SUBSCRIPTION = gql`
   }
 `
 
-export const chatRoomSubscription = (codeRoom, onMessageReceived) => {
-  const subscription = useSubscription(NEW_CHAT_ROOM_MESSAGE_SUBSCRIPTION, {
+/* ---------- Types ---------- */
+
+/**
+ * Chat room message shape
+ */
+export type ChatRoomMessage = {
+  uuid: string
+  content: string
+  aDatCre: string
+  from: string
+  to: string
+}
+
+/**
+ * Subscription response
+ */
+type NewChatRoomMessageResponse = {
+  newChatRoomMessage?: ChatRoomMessage
+}
+
+/**
+ * Subscription variables
+ */
+type NewChatRoomMessageVars = {
+  codeRoom: string
+}
+
+/**
+ * Callback invoked when a new message is received
+ */
+type OnMessageReceived = (message: ChatRoomMessage) => void
+
+/* ---------- Hook ---------- */
+
+/**
+ * Chat room subscription hook
+ * @param codeRoom
+ * @param onMessageReceived
+ * @returns {SubscriptionResult<NewChatRoomMessageResponse>} Subscription result
+ */
+export const chatRoomSubscription = (
+  codeRoom: string,
+  onMessageReceived: OnMessageReceived
+): SubscriptionResult<NewChatRoomMessageResponse> => {
+  const subscription = useSubscription<
+    NewChatRoomMessageResponse,
+    NewChatRoomMessageVars
+  >(NEW_CHAT_ROOM_MESSAGE_SUBSCRIPTION, {
     variables: { codeRoom },
-    onSubscriptionData: ({ client, subscriptionData }) => {
-      if (subscriptionData.data && subscriptionData.data.newChatRoomMessage) {
-        // Llama a la función proporcionada cuando se recibe un nuevo mensaje
-        onMessageReceived(subscriptionData.data.newChatRoomMessage)
+    onSubscriptionData: ({ subscriptionData }) => {
+      const message = subscriptionData.data?.newChatRoomMessage
+      if (message) {
+        onMessageReceived(message)
       }
     }
   })
 
-  // Puedes ajustar lo que devuelve el hook según tus necesidades
   return subscription
 }
