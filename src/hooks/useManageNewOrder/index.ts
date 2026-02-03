@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { SendNotificationFn } from 'typesdefs'
 
 import {
   useGetSale,
@@ -8,6 +7,8 @@ import {
 } from '..'
 
 import { findOrderByCodeRef, isDateInRange } from './helpers'
+
+import type { SendNotificationFn } from 'typesdefs'
 
 type UseManageNewOrderProps = {
   client: any
@@ -36,8 +37,8 @@ export const useManageNewOrder = ({
   })
 
   useEffect(() => {
-    if (data) {
-      const dataOrder = data[KEY_STATUS_ORDER]
+    if (data && typeof data === 'object' && KEY_STATUS_ORDER in data) {
+      const dataOrder = (data as Record<string, any[]>)[KEY_STATUS_ORDER]
       if (Array.isArray(dataOrder) && dataOrder) {
         const filteredOrders = dataOrder.filter((order: any) =>
           isDateInRange(order?.pDatCre) && order?.pSState === 1
@@ -51,31 +52,33 @@ export const useManageNewOrder = ({
   const { getOneSalesStore } = useGetSale()
 
   const handleNewOrder = (order: any) => {
-    const dataOrder = data[KEY_STATUS_ORDER]
-    setOrders(dataOrder)
-    const { pCodeRef } = order || {}
-    if (pCodeRef) {
-      const isCodeRefExists = findOrderByCodeRef(data, pCodeRef)
-      if (isCodeRefExists) {
-        return
-      }
-      setIsOpenOrder?.(true)
-      getOneSalesStore({
-        variables: {
-          pCodeRef: pCodeRef ?? ''
+    if (data && typeof data === 'object' && KEY_STATUS_ORDER in data) {
+      const dataOrder = (data as Record<string, any[]>)[KEY_STATUS_ORDER]
+      setOrders(dataOrder)
+      const { pCodeRef } = order || {}
+      if (pCodeRef) {
+        const isCodeRefExists = findOrderByCodeRef(data as Record<string, { [key: string]: any; pCodeRef: string; }[]>, pCodeRef)
+        if (isCodeRefExists) {
+          return
         }
-      }).then((response: any) => {
-        console.error(response)
-        client.cache.modify({
-          fields: {
+        setIsOpenOrder?.(true)
+        getOneSalesStore({
+          variables: {
+            pCodeRef: pCodeRef ?? ''
           }
+        }).then((response: any) => {
+          console.error(response)
+          client.cache.modify({
+            fields: {
+            }
+          })
         })
-      })
-      sendNotification?.({
-        title: 'Pedido',
-        description: 'Nuevo pedido',
-        backgroundColor: 'success'
-      })
+        sendNotification?.({
+          title: 'Pedido',
+          description: 'Nuevo pedido',
+          backgroundColor: 'success'
+        })
+      }
     }
   }
 

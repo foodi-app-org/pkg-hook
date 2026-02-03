@@ -27,10 +27,10 @@ export const getTotalHours = (days: ScheduleDay[] = []): string => {
 
     // Convert hours and minutes to integers for calculations
     let totalHoursInt =
-      parseInt(endHours, 10) - parseInt(startHours, 10)
+      Number.parseInt(endHours, 10) - Number.parseInt(startHours, 10)
 
     const totalMinutesInt =
-      parseInt(endMinutes, 10) - parseInt(startMinutes, 10)
+      Number.parseInt(endMinutes, 10) - Number.parseInt(startMinutes, 10)
 
     // Handle negative total minutes
     let totalMinutes = totalMinutesInt

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { Product } from 'typesdefs'
 import * as XLSX from 'xlsx'
 
 import { RandomCode } from '../../utils'
 
 import { validateProductDataExcel } from './helpers/validateProductDataExcel'
+
+import type { Product } from 'typesdefs'
 
 const STEPS = {
   UPLOAD_FILE: 0,

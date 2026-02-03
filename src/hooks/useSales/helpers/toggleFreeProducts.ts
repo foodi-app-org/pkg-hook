@@ -1,6 +1,7 @@
+import { SalesState } from '../types'
+
 import type { Product } from 'typesdefs'
 
-import { SalesState } from '../types'
 
 /**
  * Toggles free mode for a product and recalculates its price

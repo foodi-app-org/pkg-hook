@@ -53,6 +53,7 @@ export type UseUpdateCartReturn = {
 /**
  * useUpdateCart
  * Manages a small cart saved in cookie and triggers global events.
+ * @returns {UseUpdateCartReturn} Cart management functions and state.
  */
 export const useUpdateCart = (): UseUpdateCartReturn => {
   const rawDomain = getCurrentDomain()
@@ -96,6 +97,7 @@ export const useUpdateCart = (): UseUpdateCartReturn => {
 
   /**
    * Add item to cart. If exists, increments quantity.
+   * @param item
    */
   const handleAdd = (item: CartItem): void => {
     setCart(prevCart => {
@@ -124,6 +126,7 @@ export const useUpdateCart = (): UseUpdateCartReturn => {
 
   /**
    * Delete product from cart completely.
+   * @param item
    */
   const deleteProductCart = (item: CartItem): void => {
     setCart(prevCart => {
@@ -137,6 +140,7 @@ export const useUpdateCart = (): UseUpdateCartReturn => {
 
   /**
    * Decrease quantity of an item by one. If quantity becomes 0, remove item.
+   * @param item
    */
   const decreaseItemFromCart = (item: CartItem): void => {
     setCart(prevCart => {

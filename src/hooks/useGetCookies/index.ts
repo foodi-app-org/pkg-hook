@@ -1,10 +1,10 @@
 import Cookies from 'js-cookie'
 
 export const useGetCookies = () => {
-  const getCookies = (cookieNames) => {
+  const getCookies = (cookieNames: string[]) => {
     try {
       if (!Array.isArray(cookieNames)) {
-        throw new Error('Input cookie names should be an array.')
+        throw new TypeError('Input cookie names should be an array.')
       }
 
       const cookiesData = []
@@ -22,10 +22,10 @@ export const useGetCookies = () => {
     }
   }
 
-  const getCookie = (cookieName) => {
+  const getCookie = (cookieName: string) => {
     try {
       if (typeof cookieName !== 'string') {
-        throw new Error('Input cookie name should be a string.')
+        throw new TypeError('Input cookie name should be a string.')
       }
 
       const cookieValue = Cookies.get(cookieName)

@@ -18,6 +18,8 @@ export const useSetImageProducts = () => {
    * Updates product image and manually updates Apollo cache.
    *
    * @param {Object} variables - Requires pId and image
+   * @param variables.pId
+   * @param variables.image
    * @returns {Promise<any>}
    */
   const updateImageProducts = async (variables: { pId: number; image: string }) => {

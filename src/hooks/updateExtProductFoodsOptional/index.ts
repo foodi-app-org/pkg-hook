@@ -21,7 +21,7 @@ export const useUpdateExtProductFoodsOptional = () => {
     required?: boolean | number
     numbersOptionalOnly?: number | string
   }) => {
-    return await updateExtProductOptional({
+    return updateExtProductOptional({
       variables: {
         input: {
           pId,

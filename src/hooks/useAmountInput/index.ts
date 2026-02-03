@@ -6,6 +6,7 @@ const formatCurrency = (
   number: number,
   groupSeparator: string,
   decimalSeparator: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   allowDecimals: boolean = false,
   decimalsLimit: number = 0
 ): string => {

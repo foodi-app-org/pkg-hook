@@ -10,10 +10,10 @@ const NEW_STORE_ORDER_SUBSCRIPTION = gql`
   }
 `
 
-export const newStoreOrderSubscription = (idStore, onOrderReceived) => {
+export const newStoreOrderSubscription = (idStore: string, onOrderReceived: (order: { id: string; idStore: string; pCodeRef: string }) => void) => {
   const subscription = useSubscription(NEW_STORE_ORDER_SUBSCRIPTION, {
     variables: { idStore },
-    onSubscriptionData: ({ client, subscriptionData }) => {
+    onSubscriptionData: ({ subscriptionData }) => {
       if (subscriptionData.data && subscriptionData.data.newStoreOrder) {
         // Llama a la función proporcionada cuando se recibe una nueva orden
         onOrderReceived(subscriptionData.data.newStoreOrder)

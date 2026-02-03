@@ -4,6 +4,7 @@ import crypto from 'crypto'
  *
  * @param password
  * @param salt
+ * @returns {string}
  */
 function generateEncryptionKey(password: string, salt: string): string {
   return crypto

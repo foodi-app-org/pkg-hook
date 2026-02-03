@@ -1,8 +1,9 @@
-import type { Product, SendNotificationFn } from 'typesdefs'
 
 import { SalesReducerAction, SalesState } from '../types'
 
 import { isStockInsufficient } from './isStockInsufficient'
+
+import type { Product, SendNotificationFn } from 'typesdefs'
 
 interface AddToCartProps {
   state: SalesState

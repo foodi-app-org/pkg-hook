@@ -1,4 +1,5 @@
 import { gql, useMutation } from '@apollo/client'
+
 import type { SendNotificationFn } from 'typesdefs'
 
 interface OrderStatusPriorityInput {

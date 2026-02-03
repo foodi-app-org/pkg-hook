@@ -1,33 +1,40 @@
 import { useEffect, useState } from 'react'
 
-export const useLazyScript = (src, delay = null) => {
-  const [status, setStatus] = useState(src ? 'loading' : 'idle')
+export const useLazyScript = (src: string | undefined, delay: number | null = null) => {
+  const [status, setStatus] = useState<string>(src ? 'loading' : 'idle')
 
   useEffect(() => {
     if (!src) {
       setStatus('idle')
-      return 'idle'
+      return
     }
 
-    let script = document.querySelector(`script[src='${src}']`)
-    let timeout = null
+    let script = document.querySelector<HTMLScriptElement>(`script[src='${src}']`)
+    let timeout: ReturnType<typeof setTimeout> | null = null
 
-    if (!script) {
+    if (script === null) {
       if (delay) {
         timeout = setTimeout(() => {
           injectScript()
           // Add event listener after the script is added
-          script.addEventListener('load', setStateStatus)
-          script.addEventListener('error', setStateStatus)
+          if (script) {
+            script.addEventListener('load', setStateStatus)
+            script.addEventListener('error', setStateStatus)
+          }
         }, delay)
       } else {
         injectScript()
       }
     } else {
-      setStatus(script.getAttribute('data-status'))
+      // Prefer .dataset over getAttribute and handle null
+      setStatus(script.dataset.status ?? 'idle')
     }
 
-    const setStateStatus = (event) => {
+    /**
+     *
+     * @param event
+     */
+    function setStateStatus(event: Event) {
       setStatus(event.type === 'load' ? 'ready' : 'error')
     }
 
@@ -37,16 +44,19 @@ export const useLazyScript = (src, delay = null) => {
      */
     function injectScript () {
       script = document.createElement('script')
-      script.src = src
+      script.src = src!
       script.async = true
-      script.setAttribute('data-status', 'loading')
+      script.dataset.status = 'loading'
       document.body.appendChild(script)
 
-      const setDataStatus = (event) => {
-        script.setAttribute(
-          'data-status',
-          event.type === 'load' ? 'ready' : 'error'
-        )
+      /**
+       *
+       * @param event
+       */
+      function setDataStatus(event: Event) {
+        if (script) {
+          script.dataset.status = event.type === 'load' ? 'ready' : 'error'
+        }
       }
 
       script.addEventListener('load', setDataStatus)
@@ -54,11 +64,12 @@ export const useLazyScript = (src, delay = null) => {
     }
 
     if (script) {
-      // script will be be undefined available when its delayed hence check it before adding listener
+      // script will be undefined when it's delayed, hence check it before adding listener
       script.addEventListener('load', setStateStatus)
       script.addEventListener('error', setStateStatus)
     }
 
+    // eslint-disable-next-line
     return () => {
       if (script) {
         script.removeEventListener('load', setStateStatus)
@@ -68,7 +79,7 @@ export const useLazyScript = (src, delay = null) => {
         clearTimeout(timeout)
       }
     }
-  }, [src])
+  }, [src, delay])
 
   return status
 }

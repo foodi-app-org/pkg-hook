@@ -15,13 +15,15 @@ export const GET_ALL_STORES_PENDING_TO_REGISTER = gql`
 `
 
 /**
+ * Hook to fetch all stores pending to register.
  *
+ * @returns An object containing loading state, stores data, and any fetch error.
  */
-export function useAllStoresPendingToRegister () {
+export function useAllStoresPendingToRegister() {
   const { loading, error, data } = useQuery(GET_ALL_STORES_PENDING_TO_REGISTER)
 
   const [stores, setStores] = useState([])
-  const [fetchError, setFetchError] = useState(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && data) {
@@ -29,7 +31,7 @@ export function useAllStoresPendingToRegister () {
     }
 
     if (error) {
-      setFetchError(error.message)
+      setFetchError(error.message as string)
     }
   }, [loading, data, error])
 

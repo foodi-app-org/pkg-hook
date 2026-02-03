@@ -1,11 +1,13 @@
-import { gql, useLazyQuery, ApolloError } from '@apollo/client'
+import { useLazyQuery, ApolloError } from '@apollo/client'
+
+import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useProductsFood/queriesStore'
+
 import {
   GetExtrasProductFoodOptionalResponse,
   GetExtrasProductFoodOptionalVars,
   ExtProductFoodOptional
 } from './types'
 
-import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useProductsFood/queriesStore'
 
 interface UseGetExtProductFoodsSubOptionalAllParams {
   setDataOptional?: (data: ExtProductFoodOptional[]) => void

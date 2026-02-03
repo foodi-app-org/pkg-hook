@@ -5,7 +5,7 @@ import {
   useQuery
 } from '@apollo/client'
 import { useCallback, useMemo, useState } from 'react'
-import { Product } from 'typedefs'
+
 
 import { useStockUpdatedAllSubscription } from '../useStock'
 
@@ -16,6 +16,8 @@ import {
   GET_ONE_PRODUCTS_FOOD,
   UPDATE_PRODUCT_FOOD
 } from './queriesStore'
+
+import type { Product } from 'typesdefs'
 export * from './useEditProduct'
 
 interface UseProductsFoodOptions {
@@ -195,18 +197,16 @@ export const useDeleteProductsFood = ({
       update(cache) {
         cache.modify({
           fields: {
-            productFoodsAll(dataOld: any[] = []) {
-              if (Array.isArray(dataOld) && dataOld?.length) {
-                const foundProduct = dataOld?.find((product: any) => {
+            productFoodsAll(dataOld: readonly Product[] = []) {
+              if (Array.isArray(dataOld) && dataOld.length) {
+                const foundProduct = dataOld.find((product: Product) => {
                   return product.pId === pId;
                 });
                 if (foundProduct) {
-                  const newProductList = dataOld?.filter((product: any) => {
-                    return product?.pId !== pId;
-                  });
-                  return newProductList;
+                  // Return a new array, do not mutate dataOld
+                  return dataOld.filter((product: Product) => product?.pId !== pId);
                 }
-                return dataOld;
+                return dataOld.slice();
               }
               return [];
             }

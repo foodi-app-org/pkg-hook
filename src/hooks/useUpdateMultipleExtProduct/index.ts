@@ -1,7 +1,9 @@
 import { useMutation } from '@apollo/client'
-import type { SendNotificationFn } from 'typesdefs'
 
 import { UPDATE_MULTI_EXTRAS_PRODUCT_FOOD } from './queries'
+
+import type { SendNotificationFn } from 'typesdefs'
+
 
 /**
  * Custom hook para manejar la actualización de múltiples extras de productos alimenticios.

@@ -7,7 +7,6 @@ import {
   MutationFunction,
   LazyQueryExecFunction
 } from '@apollo/client'
-import type { SendNotificationFn } from 'typesdefs'
 
 import {
   CREATE_CLIENTS,
@@ -16,6 +15,9 @@ import {
   GET_ONE_CLIENT,
   EDIT_ONE_CLIENT
 } from './queries'
+
+import type { SendNotificationFn } from 'typesdefs'
+
 
 /* ---------- GraphQL-related Types ---------- */
 

@@ -1,6 +1,7 @@
+import { SalesReducerAction, SalesState } from '../types'
+
 import type { Product, SendNotificationFn } from 'typesdefs'
 
-import { SalesReducerAction, SalesState } from '../types'
 
 /**
  * handleChangeNumber

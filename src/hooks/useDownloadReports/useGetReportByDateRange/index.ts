@@ -54,7 +54,7 @@ export const useGetReportByDateRange = ({
    * @param {string} endDate - End date in YYYY-MM-DD format
    * @returns {Promise<any>}
    */
-  const getReport = async (startDate, endDate) => {
+  const getReport = async (startDate: string, endDate: string) => {
     try {
       setLoading(true)
       const response = await getReportQuery({
@@ -96,14 +96,14 @@ export const useGetReportByDateRange = ({
         setLoading(false)
       }
       return reportResult
-    } catch (err) {
+    } catch (err: unknown) {
       setLoading(false)
       sendNotification({
-        description: err.message || 'Unexpected error',
+        description: err instanceof Error ? err.message : 'Unexpected error',
         title: 'Error',
         backgroundColor: 'error'
       })
-      return { success: false, message: err.message, data: null }
+      return { success: false, message: err instanceof Error ? err.message : 'Unexpected error', data: null }
     }
   }
 

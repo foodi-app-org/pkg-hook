@@ -34,8 +34,8 @@ export const getTodayTimestamps = () => {
  * @param {number} daysAgo - The number of days ago.
  * @returns {string} The start timestamp for the specified number of days ago.
  */
-export const getStartTimestampDaysAgo = (daysAgo) => {
-  if (isNaN(daysAgo) || daysAgo < 0) {
+export const getStartTimestampDaysAgo = (daysAgo: number) => {
+  if (Number.isNaN(daysAgo) || daysAgo < 0) {
     throw new Error('Invalid input. Provide a valid number of days.')
   }
 
@@ -51,8 +51,9 @@ export const getStartTimestampDaysAgo = (daysAgo) => {
  * @param root0
  * @param root0.dateString
  * @param root0.start
+ * @returns {string}
  */
-export function convertDateFormat ({ dateString, start }) {
+export function convertDateFormat ({ dateString, start }: { dateString?: string, start?: boolean }) {
   const parsedDate = dateString ? new Date(dateString) : new Date()
   const year = parsedDate.getFullYear()
   const month = `0${parsedDate.getMonth() + 1}`.slice(-2)

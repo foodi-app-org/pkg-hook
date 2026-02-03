@@ -18,8 +18,6 @@ type UseOrdersProps = {
 
 export const useOrders = ({
   refetchWritePolicy = 'merge',
-  refetchReadPolicy,
-  refetch,
   statusOrder,
   fromDate,
   toDate,
@@ -30,12 +28,10 @@ export const useOrders = ({
 }: UseOrdersProps) => {
   const { data, loading, error, fetchMore } = useQuery(GET_ALL_ORDER, {
     notifyOnNetworkStatusChange: true,
-    refetchWritePolicy: refetchWritePolicy as RefetchWritePolicy,
+    refetchWritePolicy,
     pollInterval,
-    fetchPolicy: fetchPolicy as WatchQueryFetchPolicy,
-    refetch,
-    refetchReadPolicy: refetchReadPolicy as RefetchWritePolicy | undefined,
-    nextFetchPolicy: nextFetchPolicy as WatchQueryFetchPolicy,
+    fetchPolicy,
+    nextFetchPolicy,
     onError: onError || (() => {
 
     }),

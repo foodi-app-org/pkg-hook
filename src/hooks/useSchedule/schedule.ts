@@ -6,7 +6,6 @@ import {
   CREATE_STORE_CALENDAR,
   SET_STATUS_ALL_SCHEDULE_STORE
 } from './queries'
-
 import {
   Schedule,
   GetOneScheduleResponse,
@@ -18,14 +17,18 @@ import {
 
 /**
  * Get one schedule by day and store
+ * @param root0
+ * @param root0.day
+ * @param root0.idStore
+ * @returns {Array} Schedule data and query state
  */
 export const useSchedule = ({
   day = null,
   idStore
 }: UseScheduleParams): [
-  Schedule | null | undefined,
-  { loading: boolean; error?: ApolloError }
-] => {
+    Schedule | null | undefined,
+    { loading: boolean; error?: ApolloError }
+  ] => {
   const { data, loading, error } = useQuery<GetOneScheduleResponse>(
     GET_ONE_SCHEDULE_STORE,
     {
@@ -38,6 +41,8 @@ export const useSchedule = ({
 
 /**
  * Set scheduleOpenAll flag for store
+ *  @param scheduleOpenAll
+ * @returns {Object} Mutation handler and its states
  */
 export const useSetScheduleOpenAll = (): [
   (scheduleOpenAll: boolean) => void,
@@ -77,15 +82,20 @@ export const useSetScheduleOpenAll = (): [
 
 /**
  * Get all schedules for a store
+ * @param root0
+ * @param root0.schDay
+ * @param root0.idStore
+ * @param root0.onCompleted
+ *  @returns {Array} Schedules data and query state
  */
 export const useSchedules = ({
   schDay = 1,
   idStore,
-  onCompleted = () => {}
+  onCompleted = () => { }
 }: UseSchedulesParams): [
-  Schedule[] | undefined,
-  { loading: boolean; error?: ApolloError }
-] => {
+    Schedule[] | undefined,
+    { loading: boolean; error?: ApolloError }
+  ] => {
   const { data, loading, error } = useQuery<GetSchedulesResponse>(
     GET_SCHEDULE_STORE,
     {
@@ -99,6 +109,7 @@ export const useSchedules = ({
 
 /**
  * Create schedules
+ * @returns {Object} Mutation handler and its states
  */
 export const useCreateSchedules = (): [
   (options: { variables: { input: unknown } }) => void,

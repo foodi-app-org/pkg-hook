@@ -20,7 +20,9 @@ type CustomLocation = {
 export const useRestaurant = ({
   location = {
     query: {},
-    push: (url: string) => { }
+    push: (url: string) => { 
+      return url
+    }
   }
 }: { location?: CustomLocation } = {}) => {
   const [loadingFilter, setLoadingFilter] = useState(false)

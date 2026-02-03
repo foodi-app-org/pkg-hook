@@ -1,8 +1,9 @@
-import type { Product, SendNotificationFn } from 'typesdefs'
 
 import { SalesReducerAction } from '../types';
 
 import { SalesActionTypes } from './constants';
+
+import type { Product, SendNotificationFn } from 'typesdefs'
 
 interface HandleAddProductParams {
     product: Product | null;

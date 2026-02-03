@@ -1,7 +1,9 @@
 import { useQuery } from '@apollo/client'
-import type { DeviceUser, GetAllDevicesData } from 'typesdefs'
 
 import { GET_ALL_DEVICES } from './queries'
+
+import type { DeviceUser, GetAllDevicesData } from 'typesdefs'
+
 
 export const useDevices = () => {
   const { data, loading } = useQuery<GetAllDevicesData>(GET_ALL_DEVICES, {

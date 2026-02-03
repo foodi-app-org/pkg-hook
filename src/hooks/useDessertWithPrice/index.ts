@@ -7,11 +7,7 @@ import {
   useState,
   createRef
 } from 'react'
-import type {
-  AlertBoxType,
-  SendNotificationFn,
-  SetAlertBoxFn
-} from 'typesdefs'
+
 
 import { useDeleteExtraProductFoods } from '../useDeleteExtraProductFoods'
 import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
@@ -22,6 +18,12 @@ import {
   updateErrorFieldByIndex
 } from './helpers'
 import { EDIT_EXTRA_PRODUCT_FOODS } from './queries'
+
+import type {
+  AlertBoxType,
+  SendNotificationFn,
+  SetAlertBoxFn
+} from 'typesdefs'
 
 interface UseDessertWithPriceProps {
   dataExtra?: Array<any>
@@ -83,7 +85,7 @@ export const useDessertWithPrice = ({
       const { exPid } = item || {}
       setSelected({ exPid, loading: false })
       if (inputRefs?.current[index]) {
-        inputRefs.current[index].current.focus()
+        (inputRefs.current[index].current as HTMLInputElement | null)?.focus()
       }
       return undefined
     } catch (error) {
@@ -278,30 +280,31 @@ export const useDessertWithPrice = ({
   }, [dataExtra.length])
 
   const prepareAndValidateData = useCallback((pId: string) => {
-    const dataArr = LineItems?.Lines?.map(({ extraPrice, exState, extraName }: { extraPrice: number; exState: boolean; extraName: string }) => {
-      return {
-        extraPrice,
-        exState: exState === true ? 1 : 0,
-        extraName,
-        pId
+      const dataArr = LineItems?.Lines?.map((line: any) => {
+        const { extraPrice, exState, extraName } = line
+        return {
+          extraPrice: Number(extraPrice),
+          exState: exState === true ? 1 : 0,
+          extraName,
+          pId
+        }
+      })
+      const message = 'Complete los campos vacíos'
+      const findInputEmpty = dataArr?.find((item: any) => { return item.extraName === '' })
+      const findInputEmptyPrice = dataArr?.find((item: any) => {
+        return Number.isNaN(Number(item.extraPrice)) || String(item.extraPrice).trim() === ''
+      })
+  
+      if (findInputEmpty || findInputEmptyPrice) {
+        setAlertBox?.({ message, type: AlertBoxType.WARNING })
+        return null
       }
-    })
-    const message = 'Complete los campos vacíos'
-    const findInputEmpty = dataArr?.find(({ extraName }: { extraName: string }) => { return extraName === '' })
-    const findInputEmptyPrice = dataArr?.find(({ extraPrice }: { extraPrice: number }) => {
-      return isNaN(Number(extraPrice)) || String(extraPrice).trim() === ''
-    })
-
-    if (findInputEmpty || findInputEmptyPrice) {
-      setAlertBox?.({ message, type: AlertBoxType.WARNING })
-      return null
-    }
-    return dataArr
-  }, [LineItems])
+      return dataArr
+    }, [LineItems])
 
   const handleEdit = async (i: number, exPid: string) => {
     setSelected({ exPid: null, loading: true })
-    const findOneExtra = LineItems?.Lines?.find((x: { exPid: string }) => { return x?.exPid === exPid })
+    const findOneExtra = LineItems?.Lines?.find(x => { return x?.exPid === exPid })
     const { extraName, extraPrice: price } = findOneExtra || {}
     const extraPrice = price
     const { data } = await editExtraProductFoods({
@@ -375,8 +378,8 @@ export const useDessertWithPrice = ({
       }
 
       if (!prepareAndValidateData(pId)) return Promise.resolve()
-      const dataArr = LineItems?.Lines?.map((x: { extraPrice: number; extraName: string; exState: boolean }) => {
-        const extraPrice = x.extraPrice
+      const dataArr = LineItems?.Lines?.map((x: any) => {
+        const extraPrice = Number(x.extraPrice)
         const extraName = x.extraName
         return {
           extraPrice,

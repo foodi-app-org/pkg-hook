@@ -1,33 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, CSSProperties } from 'react'
+
+type DropHandler = (files: FileList | null, event: DragEvent) => void
+
+type DragHandler = {
+  dragEnter?: (e: DragEvent, cb: () => void) => void
+  dragLeave?: (e: DragEvent, cb: () => void) => void
+  dragBegin?: (e: DragEvent) => void
+  drop?: (e: DragEvent, cb: (files: FileList | null) => void) => void
+  body?: {
+    dragEnter?: (e: DragEvent, cb: () => void) => void
+    dragLeave?: (e: DragEvent, cb: () => void) => void
+    dragEnd?: (e: DragEvent) => void
+    drop?: (e: DragEvent, cb: () => void) => void
+  }
+}
+
+const defaultDraggingStyle: CSSProperties = { border: 'dashed grey 3px' }
+const defaultDragOverStyle: CSSProperties = { border: 'dashed grey 3px' }
 
 export const useDropzone = (
-  onDrop,
-  dragHandler = {},
-  draggingStyle = { border: 'dashed grey 3px' },
-  dragOverStyle = {
-    border: 'dashed grey 3px'
-  }
+  onDrop: DropHandler,
+  dragHandler: DragHandler = {},
+  draggingStyle: CSSProperties = defaultDraggingStyle,
+  dragOverStyle: CSSProperties = defaultDragOverStyle
 ) => {
-  const ref = useRef(null)
+  const ref = useRef<HTMLDivElement | null>(null)
   const [cleanup, setCleanup] = useState(false)
   const [isDragging, setDragging] = useState(false)
   const [dragOver, setDragOver] = useState(false)
-  const handle = useMemo(dragHandler, [])
+  const handle = useMemo<DragHandler>(() => dragHandler, [dragHandler])
 
-  const eventListeners = {
-    dragenter: e => {
-      return handle.dragEnter(e, () => {
+  const eventListeners: {
+    [key: string]: ((e: DragEvent) => void) | undefined
+  } = {
+    dragenter: (e: DragEvent) => {
+      handle.dragEnter?.(e, () => {
         if (!dragOver) setDragOver(true)
       })
     },
-    dragleave: e => {
-      return handle.dragLeave(e, () => {
+    dragleave: (e: DragEvent) => {
+      handle.dragLeave?.(e, () => {
         setDragOver(false)
       })
     },
-    dragover: handle.dragBegin,
-    drop: e => {
-      return handle.drop(e, files => {
+    dragover: handle.dragBegin
+      ? (e: DragEvent) => handle.dragBegin?.(e)
+      : undefined,
+    drop: (e: DragEvent) => {
+      handle.drop?.(e, (files: FileList | null) => {
         if (typeof onDrop === 'function') onDrop(files, e)
         setDragOver(false)
         setDragging(false)
@@ -35,23 +55,24 @@ export const useDropzone = (
     }
   }
 
-  const windowListeners = {
-    dragenter: e => {
-      return handle.body.dragEnter(e, () => {
+  const windowListeners: {
+    [key: string]: (e: DragEvent) => void | (() => void)
+  } = {
+    dragenter: (e: DragEvent) => {
+      handle.body?.dragEnter?.(e, () => {
         if (!isDragging) setDragging(true)
       })
     },
-    dragleave: e => {
-      return handle.body.dragLeave(e, () => {
-       
-              if (isDragging) setDragging(false)
+    dragleave: (e: DragEvent) => {
+      handle.body?.dragLeave?.(e, () => {
+        if (isDragging) setDragging(false)
       })
     },
-    dragend: () => {
-       
-          },
-    drop: e => {
-      return handle.body.drop(e, () => {
+    dragend: (e: DragEvent) => {
+      handle.body?.dragEnd?.(e)
+    },
+    drop: (e: DragEvent) => {
+      handle.body?.drop?.(e, () => {
         setDragging(false)
         setDragOver(false)
       })
@@ -61,10 +82,18 @@ export const useDropzone = (
   useEffect(() => {
     if (ref.current) {
       const { current } = ref
-      Object.keys(eventListeners).forEach(key => { return current.addEventListener(key, eventListeners[key]) }
-      )
-      Object.keys(windowListeners).forEach(key => { return window.addEventListener(key, windowListeners[key]) }
-      )
+      Object.keys(eventListeners).forEach(key => {
+        const listener = eventListeners[key as keyof typeof eventListeners]
+        if (listener) {
+          current.addEventListener(key, listener as EventListener)
+        }
+      })
+      Object.keys(windowListeners).forEach(key => {
+        const listener = windowListeners[key]
+        if (listener) {
+          globalThis.addEventListener(key, listener as EventListener)
+        }
+      })
       setCleanup(true)
     }
 
@@ -72,23 +101,33 @@ export const useDropzone = (
       if (cleanup) {
         const { current } = ref
         if (current) {
-          Object.keys(eventListeners).forEach(key => { return current.removeEventListener(key, eventListeners[key]) }
-          )
+          Object.keys(eventListeners).forEach(key => {
+            const listener = eventListeners[key as keyof typeof eventListeners]
+            if (listener) {
+              current.removeEventListener(key, listener as EventListener)
+            }
+          })
         }
-        Object.keys(windowListeners).forEach(key => { return window.removeEventListener(key, windowListeners[key]) }
-        )
+        Object.keys(windowListeners).forEach(key => {
+          const listener = windowListeners[key]
+          if (listener) {
+            globalThis.removeEventListener(key, listener as EventListener)
+          }
+        })
       }
     }
   }, [ref, windowListeners, cleanup, eventListeners, isDragging, dragOver])
 
+  let style: CSSProperties | undefined
+  if (isDragging || dragOver) {
+    style = dragOver ? dragOverStyle : draggingStyle
+  } else {
+    style = undefined
+  }
+
   const dropProps = {
     ref,
-    style:
-        isDragging || dragOver
-          ? dragOver
-            ? dragOverStyle
-            : draggingStyle
-          : undefined
+    style
   }
   return { isDragging, dragOver, dropProps }
 }

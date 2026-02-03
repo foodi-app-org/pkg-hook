@@ -1,10 +1,11 @@
+import { SalesState } from '../types'
+
 import type {
     ExtProductFoodOptional,
     ExtProductFoodsAll,
     Product
 } from 'typesdefs'
 
-import { SalesState } from '../types'
 
 /**
  *

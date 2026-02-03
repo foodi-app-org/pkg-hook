@@ -56,6 +56,7 @@ export const statusOpenStores = (
 
   const getNextDaySchedule = (
     schedules: StoreSchedule[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     currentDayOfWeek: number
   ) => {
     const today = new Date()
@@ -198,8 +199,8 @@ export const statusOpenStores = (
 
     existStoreSchedule.forEach((schedule) => {
       const openingKey = getOpeningKeyFromDay(schedule.schDay)
-      const schHoSta = getTimeString(schedule?.schHoSta)
-      const schHoEnd = getTimeString(schedule?.schHoEnd)
+      const schHoSta = getTimeString(schedule?.schHoSta as string)
+      const schHoEnd = getTimeString(schedule?.schHoEnd as string)
 
       openings[openingKey] = `${schHoSta} - ${schHoEnd}`
     })

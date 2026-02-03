@@ -1,6 +1,7 @@
+import { SalesState } from '../types'
+
 import type { Product } from 'typesdefs'
 
-import { SalesState } from '../types'
 
 /**
  * Toggles editing state of a product with maximum performance.

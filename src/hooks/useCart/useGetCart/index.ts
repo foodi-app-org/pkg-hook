@@ -1,13 +1,16 @@
 import { useQuery } from '@apollo/client'
 
 import { GET_ALL_SHOPPING_CARD } from '../queries'
-
+interface UseGetCartProps {
+  setAlertBox?: ({ message }: { message: string }) => { message: string }
+  setCountItemProduct?: (number: number) => number
+}
 export const useGetCart = ({
   setAlertBox = ({
     message
-  }) => { return { message } },
-  setCountItemProduct = (number) => { return number }
-} = {}) => {
+  }: { message: string }) => { return { message } },
+  setCountItemProduct = (number: number) => { return number }
+}: UseGetCartProps = {}) => {
   const {
     data,
     loading,

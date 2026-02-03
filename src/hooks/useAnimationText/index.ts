@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 const fullText =
-  ' this is full text it\'ll be animated again! Writing a really huge senetence here so that I can see the animation happen. I know it\'s fast but that\'s how it goes.'
+  ' this is full text it\'ll be animated again! Writing a really huge sentence here so that I can see the animation happen. I know it\'s fast but that\'s how it goes.'
 
 export const useAnimatedText = (textMessage: string) => {
   const fullTextRef = useRef(textMessage)
@@ -10,7 +10,7 @@ export const useAnimatedText = (textMessage: string) => {
 
   useEffect(() => {
     if (index < fullText.length) {
-      window.requestAnimationFrame(() => {
+      globalThis.requestAnimationFrame(() => {
          
                 setText(text => text + fullTextRef.current[index]);
         setIndex(() => {return index + 1})
@@ -18,14 +18,9 @@ export const useAnimatedText = (textMessage: string) => {
     }
   }, [index])
   useEffect(() => {
-    fullText.current = textMessage
+    fullTextRef.current = textMessage
   }, [textMessage])
 
   return text
 }
 
-// export default function TextHook() {
-//   const text = useAnimatedText(fullText)
-
-//   return <span>{text} </span>
-// }

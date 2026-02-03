@@ -1,34 +1,55 @@
-export const transformData = (dataExtra) => {
-  const transformedData = dataExtra?.map(item => {return {
-    extraName: item.extraName || '',
-    extraPrice: item?.extraPrice?.toString() || '',
-    exState: Boolean(item.exState),
-    forEdit: true,
-    ...item
-  }})
+type ExtraItem = {
+  extraName?: string
+  extraPrice?: number | string
+  exState?: boolean
+  forEdit?: boolean
+  [key: string]: any
+}
+
+type LineItem = {
+  error?: boolean
+  messageError?: string
+  [key: string]: any
+}
+
+type LineItemsState = {
+  Lines: LineItem[]
+  [key: string]: any
+}
+
+type CheckNumberRangeItem = {
+  index: number
+  item: ExtraItem
+}
+
+export const transformData = (dataExtra: ExtraItem[]): ExtraItem[] => {
+  const transformedData = dataExtra?.map((item: ExtraItem) => {
+    return {
+      extraName: item.extraName || '',
+      extraPrice: item?.extraPrice?.toString() || '',
+      exState: Boolean(item.exState),
+      forEdit: true,
+      ...item
+    }
+  })
 
   return transformedData
 }
 
 export const MAX_INTEGER = 999999999999.99
-/**
- * Validate if a number is within a specified range.
- * @param {number} num - The number to validate.
- * @returns {boolean} - True if the number is within the range, false otherwise.
- */
-export const isWithinRange = (num) => {
+
+export const isWithinRange = (num: number): boolean => {
   // Verificar si el número está dentro del rango permitido.
   return num >= MAX_INTEGER
 }
 
-/**
- * Find objects in the array where the value of 'extraPrice' exceeds the specified range.
- * @param {array} arr - The array to search.
- * @returns {array} - An array containing the indices and objects of the items exceeding the range.
- */
-export const findNumbersExceedingRange = (arr) => {
-  return arr.reduce((acc, item, index) => {
-    const extraPrice = typeof item.extraPrice === 'number' ? item.extraPrice : parseFloat(item.extraPrice.replace(/\./g, ''))
+export const findNumbersExceedingRange = (arr: ExtraItem[]): { index: number; item: ExtraItem }[] => {
+  return arr.reduce((acc: { index: number; item: ExtraItem }[], item: ExtraItem, index: number) => {
+    const extraPrice = typeof item.extraPrice === 'number'
+      ? item.extraPrice
+      : Number.parseFloat(
+          (item.extraPrice as string).replaceAll('.', '')
+        )
     if (isWithinRange(extraPrice)) {
       acc.push({ index, item })
     }
@@ -36,25 +57,23 @@ export const findNumbersExceedingRange = (arr) => {
   }, [])
 }
 
+type UpdateErrorFieldByIndexParams = {
+  setLine: (array: any) => any
+  checkNumberRange: CheckNumberRangeItem[]
+}
+
 export const updateErrorFieldByIndex = ({
-  setLine = (array) => {
-    return array
-  },
-  checkNumberRange = []
-} = {
-  setLine: (array) => {
-    return array
-  },
-  checkNumberRange: []
-}) => {
-  setLine(prevLineItems => {
+  setLine,
+  checkNumberRange
+}: UpdateErrorFieldByIndexParams): void => {
+  setLine((prevLineItems: LineItemsState) => {
     // Crea una copia del estado anterior de LineItems
     const updatedLineItems = { ...prevLineItems }
 
     // Utiliza map para iterar sobre cada elemento en checkNumberRange
-    const updatedLines = updatedLineItems.Lines.map((line, index) => {
+    const updatedLines = updatedLineItems.Lines.map((line: LineItem, index: number) => {
       // Verifica si el índice está dentro del rango de LineItems.Lines
-      if (checkNumberRange.some(item => {return item.index === index})) {
+      if (checkNumberRange.some((item: CheckNumberRangeItem) => item.index === index)) {
         // Crea una copia del elemento actual
         const updatedLine = { ...line }
 

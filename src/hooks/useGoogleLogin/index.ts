@@ -3,11 +3,50 @@ import { useState, useEffect } from 'react'
 import loadScript from './loadScript'
 import removeScript from './removeScript'
 
+// Extend globalThis to include gapi
+declare global {
+  interface GapiAuth2 {
+    getAuthInstance: () => any;
+    init: (params: any) => Promise<any>;
+  }
+  interface Gapi {
+    auth2: GapiAuth2;
+    load: (name: string, callback: () => void) => void;
+  }
+  interface Window {
+    gapi: Gapi;
+  }
+  var gapi: Gapi;
+}
+
+type UseGoogleLoginParams = {
+  onSuccess?: (res: any) => void;
+  onAutoLoadFinished?: (signedIn?: boolean) => void;
+  onFailure?: (err?: any) => void;
+  onRequest?: () => void;
+  onScriptLoadFailure?: (err?: any) => void;
+  clientId?: string;
+  cookiePolicy?: string;
+  loginHint?: string;
+  hostedDomain?: string;
+  autoLoad?: boolean;
+  isSignedIn?: boolean;
+  fetchBasicProfile?: boolean;
+  redirectUri?: string;
+  discoveryDocs?: string[];
+  uxMode?: string;
+  scope?: string;
+  accessType?: string;
+  responseType?: string;
+  jsSrc?: string;
+  prompt?: string;
+};
+
 export const useGoogleLogin = ({
-  onSuccess = () => {},
-  onAutoLoadFinished = () => {},
-  onFailure = () => {},
-  onRequest = () => {},
+  onSuccess = () => { },
+  onAutoLoadFinished = () => { },
+  onFailure = () => { },
+  onRequest = () => { },
   onScriptLoadFailure,
   clientId,
   cookiePolicy,
@@ -24,14 +63,14 @@ export const useGoogleLogin = ({
   responseType,
   jsSrc = 'https://apis.google.com/js/api.js',
   prompt
-}) => {
+}: UseGoogleLoginParams) => {
   const [loaded, setLoaded] = useState(false)
 
   /**
    *
    * @param res
    */
-  function handleSigninSuccess (res) {
+  function handleSigninSuccess(res: any) {
     /*
       offer renamed response keys to names that match use
     */
@@ -49,33 +88,33 @@ export const useGoogleLogin = ({
       givenName: basicProfile.getGivenName(),
       familyName: basicProfile.getFamilyName()
     }
-    onSuccess(res)
+    if (typeof onSuccess === 'function') onSuccess(res)
   }
 
   /**
    *
    * @param e
    */
-  function signIn (e) {
+  function signIn(e?: React.MouseEvent<HTMLButtonElement> | Event) {
     if (e) {
-      e.preventDefault() // to prevent submit if used within form
+      e.preventDefault(); // to prevent submit if used within form
     }
     if (loaded) {
-      const GoogleAuth = window.gapi.auth2.getAuthInstance()
+      const GoogleAuth = globalThis.gapi.auth2.getAuthInstance();
       const options = {
         prompt
-      }
-      onRequest()
+      };
+      if (typeof onRequest === 'function') onRequest();
       if (responseType === 'code') {
         GoogleAuth.grantOfflineAccess(options).then(
-          res => {return onSuccess(res)},
-          err => {return onFailure(err)}
-        )
+          (res: any) => { return typeof onSuccess === 'function' && onSuccess(res); },
+          (err: any) => { return typeof onFailure === 'function' && onFailure(err); }
+        );
       } else {
         GoogleAuth.signIn(options).then(
-          res => {return handleSigninSuccess(res)},
-          err => {return onFailure(err)}
-        )
+          (res: any) => { return handleSigninSuccess(res); },
+          (err: any) => { return typeof onFailure === 'function' && onFailure(err); }
+        );
       }
     }
   }
@@ -89,7 +128,36 @@ export const useGoogleLogin = ({
       'google-login',
       jsSrc,
       () => {
-        const params = {
+        interface AuthInitParams {
+          client_id?: string;
+          cookie_policy?: string;
+          login_hint?: string;
+          hosted_domain?: string;
+          fetch_basic_profile?: boolean;
+          discoveryDocs?: string[];
+          ux_mode?: string;
+          redirect_uri?: string;
+          scope?: string;
+          access_type?: string;
+        }
+
+        interface GoogleAuthIsSignedIn {
+          get: () => boolean;
+        }
+
+        interface GoogleAuthCurrentUser {
+          get: () => any;
+        }
+
+        interface GoogleAuthInstance {
+          isSignedIn: GoogleAuthIsSignedIn;
+          currentUser: GoogleAuthCurrentUser;
+          signIn: (options?: { prompt?: string }) => Promise<any>;
+          grantOfflineAccess: (options?: { prompt?: string }) => Promise<any>;
+          then: (onFulfilled: () => void, onRejected?: (err: any) => void) => void;
+        }
+
+        const params: AuthInitParams = {
           client_id: clientId,
           cookie_policy: cookiePolicy,
           login_hint: loginHint,
@@ -106,49 +174,48 @@ export const useGoogleLogin = ({
           params.access_type = 'offline'
         }
 
-        window.gapi.load('auth2', () => {
-          const GoogleAuth = window.gapi.auth2.getAuthInstance()
-          if (!GoogleAuth) {
-            window.gapi.auth2.init(params).then(
-              res => {
-                if (!unmounted) {
-                  setLoaded(true)
-                  const signedIn = isSignedIn && res.isSignedIn.get()
-                  onAutoLoadFinished(signedIn)
-                  if (signedIn) {
-                    handleSigninSuccess(res.currentUser.get())
-                  }
-                }
-              },
-              err => {
-                setLoaded(true)
-                onAutoLoadFinished(false)
-                onLoadFailure(err)
+        globalThis.gapi.load('auth2', () => {
+          const GoogleAuth = globalThis.gapi.auth2.getAuthInstance() as GoogleAuthInstance | undefined;
+          const handleAuthInit = (res: GoogleAuthInstance) => {
+            if (!unmounted) {
+              setLoaded(true);
+              const signedIn: boolean | undefined = isSignedIn && res.isSignedIn.get()
+              if (typeof onAutoLoadFinished === 'function') onAutoLoadFinished(signedIn);
+              if (signedIn) {
+                handleSigninSuccess(res.currentUser.get());
               }
-            )
-          } else {
+            }
+          };
+          const handleAuthError = (err: any) => {
+            setLoaded(true);
+            if (typeof onAutoLoadFinished === 'function') onAutoLoadFinished(false);
+            if (typeof onLoadFailure === 'function') onLoadFailure(err);
+          };
+          if (GoogleAuth) {
             GoogleAuth.then(
               () => {
                 if (unmounted) {
-                  return
+                  return;
                 }
                 if (isSignedIn && GoogleAuth.isSignedIn.get()) {
-                  setLoaded(true)
-                  onAutoLoadFinished(true)
-                  handleSigninSuccess(GoogleAuth.currentUser.get())
+                  setLoaded(true);
+                  if (typeof onAutoLoadFinished === 'function') onAutoLoadFinished(true);
+                  handleSigninSuccess(GoogleAuth.currentUser.get());
                 } else {
-                  setLoaded(true)
-                  onAutoLoadFinished(false)
+                  setLoaded(true);
+                  if (typeof onAutoLoadFinished === 'function') onAutoLoadFinished(false);
                 }
               },
-              err => {
-                onFailure(err)
+              (err: any) => {
+                if (typeof onFailure === 'function') onFailure(err);
               }
-            )
+            );
+          } else {
+            globalThis.gapi.auth2.init(params).then(handleAuthInit, handleAuthError);
           }
-        })
+        });
       },
-      err => {
+      (err: any) => {
         onLoadFailure(err)
       }
     )
@@ -161,7 +228,7 @@ export const useGoogleLogin = ({
 
   useEffect(() => {
     if (autoLoad) {
-      signIn()
+      signIn(undefined)
     }
   }, [loaded])
 

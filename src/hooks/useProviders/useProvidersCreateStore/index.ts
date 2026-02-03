@@ -2,10 +2,18 @@ import { useMutation } from '@apollo/client'
 
 import { CREATE_PROVIDERS } from '../queries'
 
-export const useProvidersCreateStore = ({ setAlertBox = () => { } } = {}) => {
+import type { AlertBoxType, SetAlertBoxFn } from 'typesdefs'
+
+interface UseProvidersCreateStoreOptions {
+  setAlertBox?: SetAlertBoxFn
+}
+export const useProvidersCreateStore = ({ setAlertBox = () => { } }: UseProvidersCreateStoreOptions = {}) => {
   const [registerProviders, { loading, error }] = useMutation(CREATE_PROVIDERS, {
     onCompleted: (data) => {
-      setAlertBox({ message: `${data.registerProviders.message}` })
+      setAlertBox({
+        type: AlertBoxType.SUCCESS,
+        message: `${data.registerProviders.message}`
+      })
     }
   })
 

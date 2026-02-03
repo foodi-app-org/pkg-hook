@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
 
 import { filterAndSortByDate } from '../useRestaurant/helpers'
 import { getStatusForStores } from '../useRestaurant/helpers/manageStatusOpen'
@@ -13,14 +14,16 @@ export const useFavoriteStores = () => {
   } = useQuery(GET_ALL_FAV_STORE, {
     fetchPolicy: 'cache-and-network'
   })
-  const newArray = data?.getFavorite?.map((store: { getOneStore }) => {
+  type StoreType = { getOneStore: IStore }
+
+  const newArray = data?.getFavorite?.map((store: StoreType) => {
     return {
       ...store.getOneStore
     }
   }) || []
   const dataSort = filterAndSortByDate(newArray)
 
-  const statuses = getStatusForStores(dataSort)
+  const statuses = getStatusForStores(dataSort as any)
 
   const favoriteStores = statuses || []
 

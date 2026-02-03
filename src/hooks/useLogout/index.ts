@@ -1,11 +1,13 @@
 import { useApolloClient } from '@apollo/client'
 import { useState } from 'react'
-import type { SetAlertBoxFn } from 'typesdefs'
+
 
 import { Cookies } from '../../cookies/index'
 import { getCurrentDomain } from '../../utils'
 
 import { signOutAuth } from './helpers'
+
+import type { SetAlertBoxFn } from 'typesdefs'
 
 /**
  * Options for the hook.

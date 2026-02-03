@@ -4,7 +4,6 @@ import {
   useLazyQuery
 } from '@apollo/client'
 import { useState } from 'react'
-import type { SendNotificationFn } from 'typesdefs'
 
 import {
   GET_ALL_CONTACTS,
@@ -12,6 +11,9 @@ import {
   CREATE_CONTACTS,
   GET_ONE_CONTACT
 } from './queries'
+
+import type { SendNotificationFn } from 'typesdefs'
+
 
 interface UseStoreContactsParams {
   sendNotification?: SendNotificationFn

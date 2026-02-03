@@ -1,6 +1,7 @@
+import { SalesState } from '../types'
+
 import type { Product, SendNotificationFn } from 'typesdefs';
 
-import { SalesState } from '../types'
 
 // You may need to import or define sendNotification, setOpenCommentModal, and openCommentModal
 // For now, we'll define them as placeholders to avoid errors
@@ -28,7 +29,9 @@ interface ICommentProductProps {
  * @param comment
  * @param state.deleteValue
  * @param state.value
+ * @param state.openCommentModal
  * @param state.setOpenCommentModal
+ * @param state.sendNotification
  * @returns {any}  Updated state.
  */
 export const handleCommentProduct = ({

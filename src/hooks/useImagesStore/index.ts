@@ -14,16 +14,26 @@ import {
 import { GET_ONE_STORE } from '../useStore/queries'
 
 import { color } from './utils'
+
+import type { SendNotificationFn } from 'typesdefs'
 export * from './queries'
 
-export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) => {
+type UseImageStoreProps = {
+  idStore?: string
+  sendNotification?: SendNotificationFn
+}
+
+export const useImageStore = ({
+  idStore,
+  sendNotification = () => {}
+}: UseImageStoreProps = {}) => {
   // STATES
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const initialState = { alt: '/images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
   const initialStateLogo = { altLogo: '/images/DEFAULTLOGO.png', srcLogo: '/images/DEFAULTLOGO.png' }
   const [{ altLogo, srcLogo }, setPreviewImgLogo] = useState(initialStateLogo)
   const [{ alt, src }, setPreviewImg] = useState(initialState)
-  const fileInputRefLogo = useRef(null)
+  const fileInputRefLogo = useRef<HTMLInputElement | null>(null)
 
   // HOOKS
   const [registerBanner] = useMutation(CREATE_BANNER_STORE, {
@@ -56,7 +66,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       }
 
       sendNotification({
-        title: success ? 'Logo creado con exito' : color.error,
+        title: success ? 'Logo creado con éxito' : color.error,
         description: message,
         backgroundColor: success ? color.success : color.error
       })
@@ -66,7 +76,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     onCompleted: (data) => {
       const { deleteOneBanner } = data || {}
       const { message = '', success = false } = deleteOneBanner || {}
-      return sendNotification({
+      sendNotification({
         title: success ? 'Logo subido' : color.error,
         description: message,
         backgroundColor: success ? color.success : color.error
@@ -103,44 +113,45 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
     })
   }
 
-  const handleUpdateBanner = event => {
+  const handleUpdateBanner = (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const { files } = event.target
       setPreviewImg(
-        files.length
+        files && files.length
           ? {
             src: URL.createObjectURL(files[0]),
             alt: files[0].name
           }
           : initialState
       )
-      registerBanner({
-        variables: {
-          input: {
-            bnImage: files[0],
-            idStore
-          }
-        },
-        update (cache) {
-          cache.modify({
-            fields: {
-              getStore (dataOld = {}) {
-                return cache.writeQuery({ query: GET_ONE_STORE, data: dataOld })
-              }
+      if (files && files.length) {
+        registerBanner({
+          variables: {
+            input: {
+              bnImage: files[0],
+              idStore
             }
-          })
-        }
-      })
+          },
+          update (cache) {
+            cache.modify({
+              fields: {
+                getStore (dataOld = {}) {
+                  return cache.writeQuery({ query: GET_ONE_STORE, data: dataOld })
+                }
+              }
+            })
+          }
+        })
+      }
     } catch {
       setPreviewImg(initialState)
     }
   }
   /**
    * Handle store logo upload and update cache Image field
-   * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
-   * @returns {void}
+   * @param event
    */
-  const handleInputChangeLogo = async (event) => {
+  const handleInputChangeLogo = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = event.target
 
     if (!files || files.length === 0) {
@@ -180,7 +191,7 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
   }
 
   const HandleDeleteBanner = async () => {
-    setPreviewImg(initialStateLogo)
+    setPreviewImg(initialState)
     deleteOneBanner({
       variables: {
         idStore
@@ -198,13 +209,17 @@ export const useImageStore = ({ idStore, sendNotification = () => { } } = {}) =>
       setPreviewImg(initialState)
     })
   }
-  const onTargetClickLogo = e => {
+  const onTargetClickLogo = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    fileInputRefLogo.current.click()
+    if (fileInputRefLogo.current) {
+      fileInputRefLogo.current.click()
+    }
   }
-  const onTargetClick = e => {
+  const onTargetClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    fileInputRef.current.click()
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
   }
 
   return {

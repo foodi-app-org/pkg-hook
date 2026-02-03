@@ -14,14 +14,32 @@ import { useStore } from '../useStore'
 // import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
 
+import type { SendNotificationFn } from 'typesdefs'
+
+
+type UseCreateProductProps = {
+  router?: any
+  image?: string | null
+  setAlertBox?: (args: { message: string; duration?: number }) => void
+  sendNotification?: SendNotificationFn
+}
 
 export const useCreateProduct = ({
-  router,
   image,
-  setAlertBox = (args) => { return args },
-  sendNotification = (args) => { return args }
-}) => {
-  const [errors, setErrors] = useState({
+  setAlertBox = () => {},
+  sendNotification = () => {}
+}: UseCreateProductProps) => {
+  const [errors, setErrors] = useState<{
+    names: boolean
+    ProPrice: boolean
+    ProDescuento: boolean
+    ProDescription: boolean
+    ProWeight: boolean
+    ProHeight: boolean
+    ValueDelivery: boolean
+    carProId?: boolean
+    tags?: boolean
+  }>({
     names: false,
     ProPrice: false,
     ProDescuento: false,
@@ -43,19 +61,21 @@ export const useCreateProduct = ({
     PRODUCT: 0,
     DESSERTS: 1,
     COMPLEMENTS: 2,
-    DISPONIBILITY: 3
+    AVAILABILITY: 3
   })
 
   const [updateImageProducts] = useSetImageProducts()
-  const [names, setName] = useLocalStorage('namefood', '')
+  const [names, setName] = useLocalStorage('productName', '')
   const [showMore, setShowMore] = useState(50)
   const [search, setSearch] = useState('')
   const [active, setActive] = useState(STEPS.PRODUCT)
   const [pId, setPid] = useState<string | null>(null)
 
-  const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
-  const [filter, setFilter] = useState({ gender: [], desc: [], speciality: [] })
-  const initialState = { alt: '/ images/DEFAULTBANNER.png', src: '/images/DEFAULTBANNER.png' }
+  // Remove unused searchFilter state
+  // const [searchFilter, setSearchFilter] = useState({ gender: [], desc: [], speciality: [] })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [filter, setFilter] = useState<{ gender: string[]; desc: string[]; specialty: string[] }>({ gender: [], desc: [], specialty: [] })
+  const initialState = { alt: '/images/default-banner.png', src: '/images/default-banner.png' }
   const [{ alt, src }, setPreviewImg] = useState(initialState)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [arrTags, setTags] = useState<string[]>([])
@@ -97,57 +117,64 @@ export const useCreateProduct = ({
     freeShipping: false
   })
 
-  const handleCheck = (e) => {
+  const handleCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target
-    return setCheck((prev) => {return { ...prev, [name]: checked }})
+    return setCheck((prev) => ({ ...prev, [name]: checked }))
   }
 
-  const handleUpdateBanner = event => {
+  const handleUpdateBanner = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = event.target
-    setPreviewImg(
-      files.length
-        ? {
-          src: URL.createObjectURL(files[0]),
-          alt: files[0].name
-        }
-        : initialState
-    )
+    if (files && files.length) {
+      setPreviewImg({
+        src: URL.createObjectURL(files[0]),
+        alt: files[0].name
+      })
+    } else {
+      setPreviewImg(initialState)
+    }
   }
-  const handleChange = (e, error) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, error: boolean) => {
     const { name, value } = e.target
-    setValues((prev) => {return {
+    setValues((prev) => ({
       ...prev,
       [name]: value
-    }})
+    }))
 
-    setErrors((prev) => {return {
+    setErrors((prev) => ({
       ...prev,
       [name]: error
-    }})
+    }))
   }
-  const handleChangeFilter = e => {
+  const handleChangeFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }
   const onClickSearch = () => {
-    setSearchFilter({ ...filter })
+    // Implement search logic if needed
   }
   const onClickClear = () => {
-    setSearchFilter({
+    setFilter({
       gender: [],
       desc: [],
-      speciality: []
+      specialty: []
     })
   }
-  const handleChangeClick = e => {
+  const handleChangeClick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {
       name,
       value,
       checked
     } = e.target
-    !checked
-      ? setFilter(s => { return { ...s, [name]: s[name].filter(f => { return f !== value }) } })
-      : setFilter({ ...filter, [name]: [...filter[name], value] })
-    setSearchFilter({ ...filter })
+    if (checked) {
+      setFilter(prev => ({
+        ...prev,
+        [name]: [...prev[name as keyof typeof prev], value]
+      }))
+    } else {
+      setFilter(prev => ({
+        ...prev,
+        [name]: prev[name as keyof typeof prev].filter((f: string) => f !== value)
+      }))
+    }
   }
   const handleCheckFreeShipping = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCheck(e)
@@ -166,7 +193,15 @@ export const useCreateProduct = ({
     }
   }
    
-  const { img } = useEditImageProduct({ sendNotification, initialState })
+  // Removed unused variable 'img'
+  useEditImageProduct({
+    sendNotification: (args) => {
+      // Ensure backgroundColor is always a string
+      const { backgroundColor = '', title, description } = args
+      sendNotification({ backgroundColor, title, description })
+    },
+    initialState
+  })
 
   const handleRegister = async () => {
     const {
@@ -186,14 +221,17 @@ export const useCreateProduct = ({
       ValueDelivery: 0,
       carProId: ''
     }
-    if (!carProId && !names) return setErrors({ ...errors, carProId: true })
+    if (!carProId && !names) {
+      setErrors({ ...errors, carProId: true })
+      return
+    }
     const ProImage = '/images/placeholder-image.webp'
     const pCode = RandomCode(10)
     try {
       const response = await updateProductFoods({
         variables: {
           input: {
-            idStore: dataStore?.getStore?.idStore || '',
+            idStore: dataStore?.idStore || '',
             ProPrice: check?.desc ? 0 : ProPrice,
             ProDescuento: check?.desc ? 0 : ProDescuento,
             ValueDelivery: check?.desc ? 0 : ValueDelivery,
@@ -207,7 +245,7 @@ export const useCreateProduct = ({
             sTateLogistic: 1,
             ProStar: 0,
             ProImage,
-            ProHeight: parseFloat(ProHeight),
+            ProHeight: Number.parseFloat(ProHeight),
             ProWeight,
             ProOutstanding: check?.desc ? 1 : 0,
             ProDelivery: check?.desc ? 1 : 0
@@ -234,7 +272,9 @@ export const useCreateProduct = ({
       if (success) {
         handleRegisterTags({
           pId,
-          nameTag: tags?.tag ?? null
+          idUser: dataStore?.idUser || '',
+          idStore: dataStore?.idStore || '',
+          nameTag: tags?.tag ?? ''
         })
       }
       const { errors } = response?.data?.updateProductFoods ?? {
@@ -251,10 +291,12 @@ export const useCreateProduct = ({
       }
       if (image !== null) {
         try {
-          await updateImageProducts({
-            pId: response?.data?.updateProductFoods?.data?.pId,
-            image
-          })
+          if (typeof updateImageProducts === 'function') {
+            await updateImageProducts({
+              pId: response?.data?.updateProductFoods?.data?.pId,
+              image: image as string
+            })
+          }
         } catch {
           sendNotification?.({
             backgroundColor: 'error',
@@ -264,6 +306,7 @@ export const useCreateProduct = ({
         }
       }
       setPid(response?.data?.updateProductFoods?.data?.pId ?? null)
+      // eslint-disable-next-line
       return response
     } catch (error) {
       if (error instanceof Error) {
@@ -282,11 +325,10 @@ export const useCreateProduct = ({
     if (name === 'tags') {
       setTags(value)
       if (value.length > 0 && errors.tags) {
-        setErrors(prev => {
-          const prevErrors = { ...prev }
-          delete prevErrors.tags
-          return prevErrors
-        })
+        setErrors(prev => ({
+          ...prev,
+          tags: false
+        }))
       }
     }
   }

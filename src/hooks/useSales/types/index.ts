@@ -1,7 +1,8 @@
-import type { Product } from 'typesdefs'
 
 import { TypeDiscount } from '../helpers/apply-discount-to-cart.utils'
 import { SalesActionTypes } from '../helpers/constants'
+
+import type { Product } from 'typesdefs'
 /**
  * Basic notification payload used across hook
  */

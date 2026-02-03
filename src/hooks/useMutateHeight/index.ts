@@ -6,7 +6,7 @@ import {
 
 export const useMutateHeight = ({ isCollapsed = false }) => {
   const [collapsed, setCollapsed] = useState(isCollapsed)
-  const childrenContainerRef = useRef(null)
+  const childrenContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setCollapsed(isCollapsed)
@@ -18,7 +18,7 @@ export const useMutateHeight = ({ isCollapsed = false }) => {
     }
   }, [isCollapsed])
 
-  const handleCollapsed = visible => {
+  const handleCollapsed = (visible: boolean) => {
     setCollapsed(visible)
     if (childrenContainerRef.current !== null) {
       const height = visible ? childrenContainerRef.current.scrollHeight : 0

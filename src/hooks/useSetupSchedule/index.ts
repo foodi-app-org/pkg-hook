@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { SendNotificationFn } from 'typesdefs'
+
 
 import { days as NameDays } from '../../utils'
 import { convertToMilitaryTime } from '../convertToMilitaryTime'
@@ -11,6 +11,8 @@ import {
   initialDays,
   timeSuggestions
 } from './helpers'
+
+import type { SendNotificationFn } from 'typesdefs'
 export * from './helpers/index'
 
 interface IuseSetupScheduleProps {

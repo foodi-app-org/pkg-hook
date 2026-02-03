@@ -15,7 +15,7 @@ interface NextAuthConfig {
  * @returns The base URL for API requests.
  */
 export function apiBaseUrl(__NEXTAUTH: NextAuthConfig): string {
-  if (typeof window === 'undefined') {
+  if (globalThis.window === undefined) {
     // Return absolute path when called server side
     return `${__NEXTAUTH.baseUrlServer}${__NEXTAUTH.basePathServer}`;
   }

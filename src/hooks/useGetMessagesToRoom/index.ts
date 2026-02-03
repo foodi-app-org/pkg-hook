@@ -13,7 +13,7 @@ const GET_MESSAGES = gql`
   }
 `
 
-export const useGetMessagesToRoom = (codeRoom, id) => {
+export const useGetMessagesToRoom = (codeRoom: string, id: string) => {
   const { loading, error, data } = useQuery(GET_MESSAGES, {
     context: { clientName: 'web-socket-chat' },
     variables: { codeRoom, id }

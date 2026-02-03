@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const data = [
   { x: '2021-10-17T14:38:45.540Z', y: 2 }
 ]
@@ -8,6 +9,7 @@ export const getDateParts = (isString: string) => {
 /**
  *
  * @param arr
+ * @returns sum of hours
  */
 export function groupDates(arr: Array<{ x: string; y: number }>) {
   const total = arr.reduce((a: number, b: { x: string; y: number }) => {

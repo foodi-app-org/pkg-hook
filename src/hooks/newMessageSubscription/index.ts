@@ -12,10 +12,21 @@ const NEW_MESSAGE_SUBSCRIPTION = gql`
   }
 `
 
-export const newMessageSubscription = (idStore, onMessageReceived) => {
+type NewMessage = {
+  uuid: string
+  content: string
+  aDatCre: string
+  from: string
+  to: string
+}
+
+export const newMessageSubscription = (
+  idStore: string,
+  onMessageReceived: (message: NewMessage) => void
+) => {
   const subscription = useSubscription(NEW_MESSAGE_SUBSCRIPTION, {
     variables: { idStore },
-    onSubscriptionData: ({ client, subscriptionData }) => {
+    onSubscriptionData: ({ subscriptionData }) => {
       if (subscriptionData.data && subscriptionData.data.newMessage) {
         // Llama a la función proporcionada cuando se recibe un nuevo mensaje
         onMessageReceived(subscriptionData.data.newMessage)

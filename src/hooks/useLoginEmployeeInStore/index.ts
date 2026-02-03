@@ -15,18 +15,13 @@ export const useLoginEmployeeInStore = () => {
   const [loginEmployeeInStore, { data, loading, error }] = useMutation(LOGIN_EMPLOYEE_IN_STORE)
 
   const loginEmployee = async (idStore: string, eEmail: string) => {
-    try {
-      const response = await loginEmployeeInStore({
-        variables: {
-          idStore,
-          eEmail
-        }
-      })
-      return response.data.loginEmployeeInStore
-    } catch (err) {
-      console.error('Error during loginEmployeeInStore mutation:', err)
-      throw err
-    }
+    const response = await loginEmployeeInStore({
+      variables: {
+        idStore,
+        eEmail
+      }
+    })
+    return response.data.loginEmployeeInStore
   }
 
   return {

@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react'
 
+interface UseDeliveryTimeProps {
+  initialTime?: string
+}
+
+interface UseDeliveryTimeResult {
+  deliveryTime: string
+  handleDeliveryTimeChange: (value: string) => void
+}
+
 /**
  * Custom hook to handle delivery time input validation and formatting.
  * @param root0
  * @param root0.initialTime
- * @returns {Object} An object containing state and functions for handling delivery time.
+ * @returns {UseDeliveryTimeResult}
  */
-export const useDeliveryTime = ({ initialTime = '' }) => {
+export const useDeliveryTime = ({
+  initialTime = ''
+}: UseDeliveryTimeProps): UseDeliveryTimeResult => {
   const [deliveryTime, setDeliveryTime] = useState(initialTime)
   useEffect(() => {
     if (initialTime) {
@@ -14,10 +25,6 @@ export const useDeliveryTime = ({ initialTime = '' }) => {
     }
   }, [initialTime])
 
-  /**
-   * Handles changes to the delivery time input.
-   * @param {String} value - The input change value.
-   */
   const handleDeliveryTimeChange = (value: string) => {
     setDeliveryTime(value)
   }

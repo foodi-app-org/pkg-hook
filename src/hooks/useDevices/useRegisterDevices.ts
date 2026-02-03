@@ -39,37 +39,53 @@ const REGISTER_DEVICE_USER = gql`
 
 /**
  * Custom hook para la mutación RegisterDeviceUser
- * @returns {Object} - Función para registrar el dispositivo y el estado de la operación
+ * @returns {[handleRegisterDeviceUser, { loading: boolean, error: any, data: any }]} - Función para registrar el dispositivo y el estado de la operación
  */
-export const useRegisterDeviceUser = () => {
-  const [registerDeviceUser, { loading, error, data }] = useMutation(REGISTER_DEVICE_USER)
+type DeviceUserInput = {
+  // Define the properties of DeviceUserInput according to your GraphQL schema
+  // Example:
+  // deviceId: string;
+  // deviceName: string;
+  // ...etc
+  [key: string]: any;
+};
 
-  /**
-   * Función para manejar la mutación
-   * @param {Object} input - Datos del dispositivo a registrar
-   * @returns {Promise<Object>} - Resultado de la operación
-   */
-  const handleRegisterDeviceUser = async (input) => {
+type RegisterDeviceUserResult = {
+  success: boolean;
+  data?: any;
+  errors?: Array<{ message: string }>;
+};
+
+export const useRegisterDeviceUser = (): [
+  (input: DeviceUserInput) => Promise<RegisterDeviceUserResult>,
+  { loading: boolean; error: any; data: any }
+] => {
+  const [registerDeviceUser, { loading, error, data }] = useMutation(REGISTER_DEVICE_USER);
+
+  const handleRegisterDeviceUser = async (input: DeviceUserInput): Promise<RegisterDeviceUserResult> => {
     try {
-      const result = await registerDeviceUser({ variables: { input } })
+      const result = await registerDeviceUser({ variables: { input } });
 
       if (result.data?.newRegisterDeviceUser?.success) {
-        return { success: true, data: result.data.newRegisterDeviceUser.data }
-      } 
+        return { success: true, data: result.data.newRegisterDeviceUser.data };
+      }
       return {
         success: false,
         errors: result.data?.newRegisterDeviceUser?.errors || []
+      };
+
+    } catch (err: unknown) {
+      console.error('Error while registering device user:', err);
+      if (err instanceof Error) {
+        return { success: false, errors: [{ message: err.message }] };
       }
-      
-    } catch (err) {
-      console.error('Error while registering device user:', err)
-      return { success: false, errors: [{ message: err.message }] }
+      return { success: false, errors: [{ message: 'Unknown error' }] };
     }
-  }
+  };
 
   return [handleRegisterDeviceUser, {
     loading,
     error,
     data
-  }]
-}
+  }];
+};

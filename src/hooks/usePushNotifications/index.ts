@@ -1,5 +1,6 @@
 // usePushNotifications.tsx
 import { useEffect, useState } from 'react'
+
 import {
   isPushNotificationSupported,
   post,
@@ -68,7 +69,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       })
       .finally(() => setLoading(false))
     // run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   // Get existing subscription if any
@@ -87,7 +88,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       }
     })()
     // run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   /**

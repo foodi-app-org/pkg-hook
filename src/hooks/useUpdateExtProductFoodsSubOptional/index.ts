@@ -1,20 +1,12 @@
 import { useMutation, ApolloCache, FetchResult } from '@apollo/client'
 
-/**
- * Local override for SendNotificationFn type to include required properties.
- * Remove this if you can update the original type in 'typesdefs'.
- */
-type SendNotificationArgs = {
-  title: string
-  backgroundColor: string
-  description: string
-}
 
-import { updateCacheMod } from '../../utils'
 import {
   // GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
   GET_EXTRAS_PRODUCT_FOOD_SUB_OPTIONAL
 } from '../useProductsFood/queriesStore'
+
+import type { SendNotificationFn } from 'typesdefs'
 
 /**
  * Arguments required to execute the mutation
@@ -60,23 +52,18 @@ type UpdateExtProductSubOptionalResponse = {
   }
 }
 
-/**
- * Cache query response used in update()
- */
-type ExtProductFoodsOptionalAllResponse = {
-  ExtProductFoodsOptionalAll: unknown
+interface UseUpdateExtProductFoodsSubOptionalProps {
+  sendNotification?: SendNotificationFn
 }
-
 /**
  * Hook for updating sub optional extras of food products
+ * @param root0
+ * @param root0.sendNotification
+ * @returns {Object} Contains the mutation handler function
  */
-export const useUpdateExtProductFoodsSubOptional = (
-  {
-    sendNotification = (args: SendNotificationArgs) => args
-  }: {
-    sendNotification?: (args: SendNotificationArgs) => void
-  } = {}
-) => {
+export const useUpdateExtProductFoodsSubOptional = ({
+  sendNotification
+}: UseUpdateExtProductFoodsSubOptionalProps) => {
   const [updateExtProductSubOptional] = useMutation<
     UpdateExtProductSubOptionalResponse,
     { input: UpdateExtProductSubOptionalInput }
@@ -109,6 +96,12 @@ export const useUpdateExtProductFoodsSubOptional = (
 
   /**
    * Executes the mutation with the provided arguments
+   * @param root0
+   * @param root0.pId
+   * @param root0.title
+   * @param root0.listId
+   * @param root0.id
+   * @param root0.state
    */
   const handleMutateExtProductFoodsSubOptional = ({
     pId,

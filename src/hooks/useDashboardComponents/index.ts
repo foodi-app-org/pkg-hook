@@ -14,17 +14,29 @@ const GET_DASHBOARD_COMPONENTS = gql`
   }
 `
 
-/**
- * Custom hook to fetch dashboard components
- * @returns {{
- *   data: Array,
- *   loading: boolean,
- *   error: any,
- *   refetch: () => void
- * }}
- */
+type DashboardComponent = {
+  id: string
+  idStore: string
+  idUser: string
+  coordinates: string
+}
 
-export const useDashboardComponents = ({ callback = () => {} }) => {
+type UseDashboardComponentsResult = {
+  data: DashboardComponent[]
+  loading: boolean
+  error: any
+  refetch: () => void
+}
+
+type UseDashboardComponentsProps = {
+  callback?: (components: DashboardComponent[]) => void
+}
+
+export const useDashboardComponents = (
+  { callback = (args: DashboardComponent[]) => {
+    return args
+  } }: UseDashboardComponentsProps
+): UseDashboardComponentsResult => {
   const {
     data,
     loading,

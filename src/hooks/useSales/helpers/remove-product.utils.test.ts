@@ -1,5 +1,6 @@
-import { handleRemoveProduct } from './remove-product.utils'
 import { expect } from '@jest/globals';
+
+import { handleRemoveProduct } from './remove-product.utils'
 
 describe('handleRemoveProduct', () => {
   test('decrements product quantity and updates price when ProQuantity > 1', () => {

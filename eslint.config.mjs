@@ -10,9 +10,11 @@ import tseslint from 'typescript-eslint'
 export default defineConfig([
 
   globalIgnores([
-    'src/**/*',
+    'src/hooks/useSales/index.ts',
+    'src/hooks/useDessert/index.ts',
     'dist/**/*',
     'build/**/*',
+    'docs/**/*',
     'node_modules/**/*',
     '**/*.min.js',
     '!.github/**/*', // do not ignore GitHub config files

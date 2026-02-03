@@ -16,9 +16,53 @@ import {
 } from './helpers'
 
 
+// Define types for product, extra, optional, etc.
+type Extra = {
+  exPid: string
+  quantity?: number
+  extraPrice?: number
+  newExtraPrice?: number
+  [key: string]: any
+}
+type SubOptional = {
+  opSubExPid: string
+  check?: boolean
+  [key: string]: any
+}
+type Optional = {
+  code: string
+  opExPid: string
+  ExtProductFoodsSubOptionalAll: SubOptional[]
+  [key: string]: any
+}
+type Product = {
+  pId: string
+  [key: string]: any
+}
+type ShoppingCartItem = {
+  productFood?: Product
+  salesExtProductFoodOptional?: any[]
+  ExtProductFoodsAll?: Extra[]
+  comments?: string
+  cantProducts?: number
+  ShoppingCard?: string
+  [key: string]: any
+}
+type LocationType = {
+  push: (props: any, state: any, opts: { shallow: any }) => any
+  query: { plato: string }
+}
+type UseCartProps = {
+  location?: LocationType
+  openModalProduct?: boolean
+  handleMenu?: (number: number) => any
+  setOpenModalProduct?: (open: boolean) => any
+  setAlertBox?: (args: any) => any
+}
+
 export const useCart = ({
   location = {
-    push: (props, state, { shallow }) => {
+    push: (props: any, state: any, { shallow }: { shallow: any }) => {
       return { ...props, state, shallow }
     },
     query: {
@@ -26,38 +70,38 @@ export const useCart = ({
     }
   },
   openModalProduct = false,
-  handleMenu = (number) => { return number },
-  setOpenModalProduct = (boolean) => { return boolean },
-  setAlertBox = (args) => { return args }
-} = {}) => {
+  handleMenu = (number: number) => { return number },
+  setOpenModalProduct = (open: boolean) => { return open },
+  setAlertBox = (args: any) => { return args }
+}: UseCartProps = {}) => {
   // sub products
   const { handleCleanQuery } = useManageQueryParams({
     location
   })
-  const [loadingButton, setLoadingButton] = useState(false)
-  const [dataOptional, setDataOptional] = useState([])
-  const [dataExtra, setDataExtra] = useState([])
-  const [quantity, setQuantity] = useState(1)
-  const [comments, setComments] = useState('')
+  const [loadingButton, setLoadingButton] = useState<boolean>(false)
+  const [dataOptional, setDataOptional] = useState<Optional[]>([])
+  const [dataExtra, setDataExtra] = useState<Extra[]>([])
+  const [quantity, setQuantity] = useState<number>(1)
+  const [comments, setComments] = useState<string>('')
   const queryParamProduct = location.query.plato
   const [registerShoppingCard] = useMutation(CREATE_SHOPPING_CARD, {
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error registering shopping card:', error)
     }
   })
   // CUSTOM HOOKS
-  const [dataShoppingCard, { loading }] = useGetCart()
-  const [handleExtProductFoodsAll] = useExtProductFoodsAll()
+  const [dataShoppingCard, { loading }]: [ShoppingCartItem[], { loading: boolean }] = useGetCart()
+  const [handleExtProductFoodsAll]: [(pId: string) => Promise<any>] = useExtProductFoodsAll()
 
-  const [ExtProductFoodsSubOptionalAll] = useGetExtProductFoodsSubOptionalAll()
-  const [dataOneProduct, setDataOneProduct] = useState({})
+  const [ExtProductFoodsSubOptionalAll]: [(args: any) => Promise<any>] = useGetExtProductFoodsSubOptionalAll()
+  const [dataOneProduct, setDataOneProduct] = useState<Product | Record<string, any>>({})
   const [handleGetOneProduct,
     {
       loading: loadingProduct
     }
   ] = useGetOneProductsFood({ fetchOnlyProduct: true })
 
-  const getOneProduct = async food => {
+  const getOneProduct = async (food: Product) => {
     const { pId } = food || {}
 
     if (!pId) return {}
@@ -66,7 +110,7 @@ export const useCart = ({
     const productFoodsOne = product?.data?.productFoodsOne || {}
     setDataOneProduct(productFoodsOne)
 
-    const matchingItemInShoppingCart = dataShoppingCard?.find((item) => {
+    const matchingItemInShoppingCart = dataShoppingCard?.find((item: ShoppingCartItem) => {
       return item?.productFood && item?.productFood?.pId === pId
     })
     const matchingItemInShoppingCartOptional = matchingItemInShoppingCart?.salesExtProductFoodOptional || []
@@ -80,9 +124,7 @@ export const useCart = ({
         setComments(comments)
       }
       const quantityProduct = matchingItemInShoppingCart?.cantProducts
-      if (quantityProduct) {
-        setQuantity(quantityProduct || 1)
-      }
+      setQuantity(typeof quantityProduct === 'number' && quantityProduct > 0 ? quantityProduct : 1)
     }
     const optionalAll = await ExtProductFoodsSubOptionalAll({
       variables: { pId }
@@ -92,9 +134,9 @@ export const useCart = ({
     if (Array.isArray(optionalFetch)) {
       // Filtra y procesa los objetos de optionalFetch
       const filteredDataOptional = optionalFetch
-        .map((obj) => {
+        .map((obj: Optional) => {
           const filteredSubOptions = (obj.ExtProductFoodsSubOptionalAll || []).filter(
-            (subObj) => {return subObj.check !== false}
+            (subObj: SubOptional) => subObj.check !== false
           )
 
           if (filteredSubOptions.length === 0) {
@@ -106,7 +148,7 @@ export const useCart = ({
             ExtProductFoodsSubOptionalAll: filteredSubOptions
           }
         })
-        .filter((obj) => {return obj !== null})
+        .filter(Boolean)
 
       if (matchingItemInShoppingCartOptional?.length === 0) {
         setDataOptional(filteredDataOptional || [])
@@ -114,9 +156,9 @@ export const useCart = ({
 
       if (matchingItemInShoppingCartOptional?.length) {
         // Actualiza los objetos de filteredDataOptional con información de matchingItemInShoppingCartOptional
-        const updateOption = filteredDataOptional?.map((obj) => {
+        const updateOption = filteredDataOptional?.map((obj: Optional) => {
           const matchingArray = matchingItemInShoppingCartOptional?.find(
-            (o) => {return o && o.opExPid === obj.opExPid}
+            (o: any) => o && o.opExPid === obj.opExPid
           )
 
           if (!matchingArray) {
@@ -124,8 +166,8 @@ export const useCart = ({
           }
 
           // Actualiza las propiedades específicas
-          const updatedExtProductFoodsSubOptionalAll = (obj.ExtProductFoodsSubOptionalAll || []).map((subObj) => {
-            const newItem = matchingArray.saleExtProductFoodsSubOptionalAll?.find((newItem) => {return newItem && newItem.opSubExPid === subObj.opSubExPid})
+          const updatedExtProductFoodsSubOptionalAll = (obj.ExtProductFoodsSubOptionalAll || []).map((subObj: SubOptional) => {
+            const newItem = matchingArray.saleExtProductFoodsSubOptionalAll?.find((newItem: any) => newItem && newItem.opSubExPid === subObj.opSubExPid)
 
             if (newItem) {
               return {
@@ -141,18 +183,18 @@ export const useCart = ({
             ...obj,
             ExtProductFoodsSubOptionalAll: updatedExtProductFoodsSubOptionalAll
           }
-        }).filter((obj) => {return obj})
+        }).filter(Boolean)
 
         setDataOptional(updateOption || [])
       }
     }
-    if (!pId || pId === '') return
+    if (!pId || pId === '') return {}
     const resultExtra = await handleExtProductFoodsAll(pId)
     const originalArray = resultExtra?.data?.ExtProductFoodsAll
 
     if (Array.isArray(originalArray) && originalArray?.length) {
-      const fetchedDataExtra = originalArray?.map(extra => {
-        const updatedExtra = shoppingCartOptionalAll?.find(updatedItem => {return updatedItem.exPid === extra.exPid})
+      const fetchedDataExtra = originalArray?.map((extra: Extra) => {
+        const updatedExtra = shoppingCartOptionalAll?.find((updatedItem: Extra) => updatedItem.exPid === extra.exPid)
         if (updatedExtra) {
           return {
             ...extra,
@@ -168,6 +210,7 @@ export const useCart = ({
 
       setDataExtra(fetchedDataExtra)
     }
+    return {}
   }
 
   /**
@@ -177,20 +220,15 @@ export const useCart = ({
    * @param root0.extra
    * @param root0.index
    */
-  function handleIncrementExtra ({ extra, index }) {
-    // Desestructura las propiedades necesarias de dataOneProduct
-    const { pId } = dataOneProduct || {}
+  function handleIncrementExtra ({ extra }: { extra: Extra, index?: number }) {
+    const { pId } = dataOneProduct as Product
 
-    // Desestructura exPid de extra o establece un valor predeterminado si no existe
     const { exPid = null } = extra
 
     if (exPid && pId) {
-      const newExtra = dataExtra.map((producto) => {
+      const newExtra = dataExtra.map((producto: Extra) => {
         if (exPid === producto.exPid) {
-          // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
           const { quantity = 0, extraPrice = 0 } = producto
-
-          // Calcula la nueva cantidad y el nuevo precio extra
           const newQuantity = quantity + 1
           const newExtraPrice = extraPrice * newQuantity
 
@@ -203,7 +241,6 @@ export const useCart = ({
         return producto
       })
 
-      // Actualiza el estado de dataExtra con el nuevo array
       setDataExtra(newExtra)
     }
   }
@@ -214,26 +251,18 @@ export const useCart = ({
    * @param root0.extra
    * @param root0.index
    */
-  function handleDecrementExtra ({ extra, index }) {
-    // Desestructura las propiedades necesarias de dataOneProduct
-    const { pId } = dataOneProduct || {}
+  function handleDecrementExtra ({ extra }: { extra: Extra, index?: number }) {
+    const { pId } = dataOneProduct as Product
 
-    // Desestructura exPid de extra o establece un valor predeterminado si no existe
     const { exPid = null } = extra
 
-    // Encuentra el índice del objeto extra en dataExtra
-    const extraIndex = dataExtra.findIndex((item) => {return item.exPid === exPid})
+    const extraIndex = dataExtra.findIndex((item: Extra) => item.exPid === exPid)
 
     if (pId && exPid && extraIndex !== -1) {
-      const newExtra = dataExtra.map((producto, i) => {
+      const newExtra = dataExtra.map((producto: Extra) => {
         if (exPid === producto.exPid) {
-          // Desestructura la cantidad y el precio extra del producto o establece valores predeterminados
           const { quantity = 0, extraPrice = 0 } = producto
-
-          // Calcula la nueva cantidad, evitando que sea negativa
           const newQuantity = Math.max(quantity - 1, 0)
-
-          // Calcula el nuevo precio extra
           const newExtraPrice = newQuantity === 0 ? extraPrice : extraPrice * newQuantity
 
           return {
@@ -245,7 +274,6 @@ export const useCart = ({
         return producto
       })
 
-      // Actualiza el estado de dataExtra con el nuevo array
       setDataExtra(newExtra)
     }
   }
@@ -258,32 +286,32 @@ export const useCart = ({
     return setQuantity((prev) => { return prev - 1 })
   }
 
-  const handleCountProducts = useCallback((ProPrice, quantity) => {
+  const handleCountProducts = useCallback((ProPrice: string | number, quantity: string | number) => {
     if (!ProPrice || !quantity) {
-      return 0 // Manejo de valores nulos o no numéricos
+      return 0
     }
 
-    const price = parseFloat(ProPrice)
-    const numericQuantity = parseInt(quantity, 10)
+    const price = Number.parseFloat(ProPrice as string)
+    const numericQuantity = Number.parseInt(quantity as string, 10)
 
-    if (isNaN(price) || isNaN(numericQuantity)) {
-      return 0 // Manejo de valores no numéricos
+    if (Number.isNaN(price) || Number.isNaN(numericQuantity)) {
+      return 0
     }
 
     if (numericQuantity <= 0 || price <= 0) {
-      return price // Manejo de cantidades o precios no positivos
+      return price
     }
 
     const totalPrice = Math.abs(numericQuantity * price)
-    return numberFormat(totalPrice) // Si es necesario, aplicar formateo aquí
+    return numberFormat(totalPrice)
   }, [dataOneProduct])
 
-  const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
+  const handleAddOptional = ({ exOptional = null, codeCategory = null }: { exOptional?: string | null, codeCategory?: string | null }) => {
     if (!exOptional || !codeCategory) return
-    const item = dataOptional.find((item) => {return item.code === codeCategory})
+    const item = dataOptional.find((item: Optional) => item.code === codeCategory)
     if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el) => {return el.opSubExPid === exOptional}
+      (el: SubOptional) => el.opSubExPid === exOptional
     )
     if (item && idx !== -1) {
       const updatedItem = {
@@ -297,32 +325,31 @@ export const useCart = ({
           ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1)
         ]
       }
-      const newData = dataOptional.map((el) =>
-      {return el.code === codeCategory ? updatedItem : el}
+      const newData = dataOptional.map((el: Optional) =>
+        el.code === codeCategory ? updatedItem : el
       )
-      setDataOptional((prevData) => {return [...newData]})
+      setDataOptional([...newData])
     }
   }
 
-  const isValidDataExtra = (!dataExtra.length && !dataOneProduct?.pId) ? false : !validateExtraProducts(dataExtra)
+  const isValidDataExtra = (!dataExtra.length && !(dataOneProduct as Product)?.pId) ? false : !validateExtraProducts(dataExtra)
 
-  const isValid = (!dataOptional.length && !dataOneProduct?.pId) ? false : validateRequirements(dataOptional)
+  const isValid = (!dataOptional.length && !(dataOneProduct as Product)?.pId) ? false : validateRequirements(dataOptional)
 
   const disabled = isValid || isValidDataExtra
 
   /**
    * Handles the addition of products to the cart.
-   *
-   * @param {Object} food - The selected food item.
+   * @param food
    */
-  const handleAddProducts = async (food) => {
+  const handleAddProducts = async (food: Product) => {
     if (!food) return
-    const idStore = food?.getStore?.idStore
+    const idStore = (food as any)?.getStore?.idStore
     if (!idStore) {
       return
     }
     setLoadingButton(true)
-    const isExistItemInShoppingCart = dataShoppingCard?.find((item) => {
+    const isExistItemInShoppingCart = dataShoppingCard?.find((item: ShoppingCartItem) => {
       return item?.productFood && item?.productFood?.pId === food.pId
     }) ?? null
     if (!isExistItemInShoppingCart) handleMenu(1)
@@ -334,7 +361,7 @@ export const useCart = ({
 
     const idShoppingCart = isExistItemInShoppingCart?.ShoppingCard
     try {
-      const idStore = food?.getStore?.idStore
+      const idStore = (food as any)?.getStore?.idStore
       const response = await registerShoppingCard({
         variables: {
           input: {
@@ -354,12 +381,13 @@ export const useCart = ({
             setID: []
           }
         },
-        update: (cache, { data: { getAllShoppingCard } }) => {
-          return updateCacheMod({
+        update: (cache: any, { data }: any) => {
+          updateCacheMod({
             cache,
             query: GET_ALL_SHOPPING_CARD,
             nameFun: 'getAllShoppingCard',
-            dataNew: getAllShoppingCard
+            dataNew: data.getAllShoppingCard,
+            type: 1
           })
         }
       })
@@ -371,9 +399,8 @@ export const useCart = ({
         if (idShoppingCart) {
           setAlertBox({ message: 'producto actualizado' })
         }
-        // Perform actions after adding products to cart
       }
-    } catch (error) {
+    } catch {
       setAlertBox({ message: 'Ocurrió un error al añadir el producto al carrito' })
     }
     setLoadingButton(false)

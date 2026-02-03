@@ -2,7 +2,7 @@ import {
   useState,
   useEffect
 } from 'react'
-import type { SendNotificationFn } from 'typesdefs'
+
 
 import { MockData } from '../../mock'
 import { RandomCode, updateCacheMod } from '../../utils'
@@ -15,9 +15,11 @@ import { useUpdateExtProductFoodsSubOptional } from '../useUpdateExtProductFoods
 
 import { transformDataToDessert } from './helpers'
 
+import type { SendNotificationFn } from 'typesdefs'
+
 interface UseDessertProps {
   pId?: string | null
-  initialData?: any | null
+  initialData?: any
   sendNotification?: SendNotificationFn
 }
 export const useDessert = ({
@@ -30,9 +32,11 @@ export const useDessert = ({
   const [selectedItem, setSelectedItem] = useState({})
 
   // Initialize state variables using the useState hook
-  const [setCheck, setChecker] = useState({
+  const [setCheck, setChecker] = useState<{ exState: boolean }>({
     exState: false
   }) // State for checkboxes
+  // eslint-disable-next-line
+  const [check, setCheckState] = useState<{ exState: boolean }>({ exState: false }) // Correct destructuring
   const [valueItems, setValueItems] = useState('') // State for input values
   const [title, setTitle] = useState('') // State for title input value
   // Define a type for the lists object with an index signature
@@ -68,9 +72,9 @@ export const useDessert = ({
       }
       const list = data.lists[listID]
       // If list or list.cards is missing, assume the list is not complete
-      const verifiEmpyRequireCard = list?.cards?.length
+      const verifyEmptyRequireCard = list?.cards?.length
       if (list && list?.cards) {
-        return Number(verifiEmpyRequireCard) === Number(list.numberLimit)
+        return Number(verifyEmptyRequireCard) === Number(list.numberLimit)
       }
 
       // If list or list.cards is missing, assume the list is not complete
@@ -89,7 +93,20 @@ export const useDessert = ({
       // Only update the data state if it's different from initialData
       if (JSON.stringify(data) !== JSON.stringify(transformDataToDessert(initialData))) {
         const transformedInitialData = transformDataToDessert(initialData)
-        setData(transformedInitialData)
+        // Ensure 'required' is a number, not boolean
+        const fixedLists = Object.fromEntries(
+          Object.entries(transformedInitialData.lists).map(([key, list]) => [
+            key,
+            {
+              ...list,
+              required: typeof list.required === 'boolean' ? (list.required ? 1 : 0) : list.required
+            }
+          ])
+        )
+        setData({
+          ...transformedInitialData,
+          lists: fixedLists
+        })
       }
     }
   }, [initialData]) // Include data as a dependency
@@ -104,14 +121,20 @@ export const useDessert = ({
   const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional()
   const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional()
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
-  const [editExtFoodSubsOptional, { loading: loadingEditSubOptional }] = useEditSubProductOptional()
+  const editSubProductOptionalResult = useEditSubProductOptional()
+  const editExtFoodSubsOptional = Array.isArray(editSubProductOptionalResult)
+    ? editSubProductOptionalResult[0]
+    : editSubProductOptionalResult
+  const loadingEditSubOptional = Array.isArray(editSubProductOptionalResult)
+    ? editSubProductOptionalResult[1]?.loading
+    : undefined
 
   // HANDLESS
   /**
    * Handles checkbox changes and updates the setCheck state accordingly.
    * @param {Event} e - The checkbox change event object.
    */
-  const handleCheck = (e) => {
+  const handleCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Extract the 'name' and 'checked' properties from the event target (checkbox)
     const { name, checked } = e.target
 
@@ -163,11 +186,12 @@ export const useDessert = ({
             isCustomOpExPid: true
           },
           update: (cache, { data: { ExtProductFoodsOptionalAll } }) => {
-            return updateCacheMod({
+            updateCacheMod({
               cache,
               query: GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
               nameFun: 'ExtProductFoodsOptionalAll',
-              dataNew: ExtProductFoodsOptionalAll
+              dataNew: ExtProductFoodsOptionalAll,
+              type: 2 // Provide the required 'type' property (set to appropriate value)
             })
           }
         })
@@ -195,13 +219,13 @@ export const useDessert = ({
     try {
       const forRemove = Boolean(listID && id)
       if (forRemove) {
-        DeleteExtFoodSubsOptional({
-          variables: {
+        if (typeof DeleteExtFoodSubsOptional === 'function') {
+          DeleteExtFoodSubsOptional({
             isCustomSubOpExPid,
             opSubExPid: id,
             state: 1
-          }
-        })
+          })
+        }
       }
       // Ensure the provided listID exists in the data state
       if (!data.lists[listID]) {
@@ -210,7 +234,7 @@ export const useDessert = ({
 
       // Ensure the list has a cards array
       if (!Array.isArray(data.lists[listID].cards)) {
-        throw new Error(`List with ID "${listID}" does not have a valid cards array.`)
+        throw new TypeError(`List with ID "${listID}" does not have a valid cards array.`)
       }
 
       // Get the current list from the data state using the provided listID
@@ -265,43 +289,45 @@ export const useDessert = ({
       const findItem = currentList?.cards?.find(item => { return item.id === id })
       const checkDifferentText = findItem?.title !== title
       if (title && checkDifferentText) {
-        editExtFoodSubsOptional({
-          variables: {
-            isCustomSubOpExPid: false,
-            opSubExPid: id,
-            OptionalSubProName: title
-          }
-        }).then(({ data: response }) => {
-          const { editExtFoodSubsOptional } = response || {}
-          const { success } = editExtFoodSubsOptional || { success: false }
-          if (success) {
-            sendNotification({
-              description: 'El sub item actualizado con éxito',
-              title: 'Actualizado',
-              backgroundColor: 'success'
-            })
-            const currentList = data.lists[listID]
-            const updatedCards = currentList?.cards?.map((card) => {
-              if (card.id === id) {
-                return {
-                  ...card,
-                  title
+        if (typeof editExtFoodSubsOptional === 'function') {
+          editExtFoodSubsOptional({
+            variables: {
+              isCustomSubOpExPid: false,
+              opSubExPid: id,
+              OptionalSubProName: title
+            }
+          }).then((response: any) => {
+            const { editExtFoodSubsOptional } = response?.data || {}
+            const { success } = editExtFoodSubsOptional || { success: false }
+            if (success) {
+              sendNotification({
+                description: 'El sub item actualizado con éxito',
+                title: 'Actualizado',
+                backgroundColor: 'success'
+              })
+              const currentList = data.lists[listID]
+              const updatedCards = currentList?.cards?.map((card) => {
+                if (card.id === id) {
+                  return {
+                    ...card,
+                    title
+                  }
                 }
-              }
-              return card
-            })
-            setData({
-              listIds: [...data.listIds],
-              lists: {
-                ...data.lists,
-                [listID]: {
-                  ...currentList,
-                  cards: updatedCards
+                return card
+              })
+              setData({
+                listIds: [...data.listIds],
+                lists: {
+                  ...data.lists,
+                  [listID]: {
+                    ...currentList,
+                    cards: updatedCards
+                  }
                 }
-              }
-            })
-          }
-        })
+              })
+            }
+          })
+        }
       }
     } catch (error) {
       console.error(error)
@@ -340,10 +366,16 @@ export const useDessert = ({
     numberLimit = null,
     title,
     required = false
+  }: {
+    id?: string
+    numberLimit?: number | null
+    title: string
+    required?: boolean | number
   }) => {
     try {
       if (id) {
         const response = await handleUpdateExtProduct({
+          pId: pId ?? '', // Ensure pId is provided as required by the mutation
           opExPid: id,
           code: id,
           OptionalProName: title,
@@ -382,7 +414,7 @@ export const useDessert = ({
           backgroundColor: 'warning'
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Error) {
         return sendNotification({
           description: error.message,

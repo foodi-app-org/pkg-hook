@@ -1,6 +1,7 @@
 /**
  *
  * @param time12Hour
+ * @returns {string} Time in 24-hour format (military time).
  */
 export function convertToMilitaryTime(time12Hour: string): string {
   const [time, period]: [string, string] = time12Hour.split(' ') as [string, string]

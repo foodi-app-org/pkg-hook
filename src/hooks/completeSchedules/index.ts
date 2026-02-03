@@ -13,7 +13,7 @@ export const completeSchedules = (dataSchedules: { schDay: number; schHoSta: str
   }, {} as Record<string, { horaInicio: string; horaFin: string }[]>)
 
   // Completar los días que faltan y formatear el objeto
-  const horariosFormateados = daysSemana.map((day, index) => {return {
+  const horariosFormateados = daysSemana.map((day) => {return {
     day,
     horarios: horariosPorDia[day] || [{ horaInicio: '', horaFin: '' }]
   }})

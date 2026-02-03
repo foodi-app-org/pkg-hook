@@ -26,14 +26,20 @@ export const useUpdateManageStock = () => {
   /**
    * Function to call the mutation with given input
    * @param {Object} input - { pId, stock, manageStock }
+   * @param input.pId
+   * @param input.stock
+   * @param input.manageStock
    * @returns {Promise<Object>} Mutation response
    */
-  const updateManageStock = async (input) => {
+  const updateManageStock = async (input: { pId: string; stock: number; manageStock: boolean }) => {
     try {
       const { data } = await updateManageStockMutation({ variables: { input } })
       return data?.updateManageStock
     } catch (err) {
-      return { success: false, message: err.message }
+      if (err instanceof Error) {
+        return { success: false, message: err.message }
+      }
+      return { success: false, message: 'An unknown error occurred' }
     }
   }
 

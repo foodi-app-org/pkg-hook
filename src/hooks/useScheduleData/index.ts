@@ -5,6 +5,12 @@
 type ScheduleData = { schDay: number; schHoSta: string; schHoEnd: string };
 type CombinedDay = { schDay?: number; day?: number; schHoSta: string; schHoEnd: string };
 
+/**
+ *
+ * @param startTime
+ * @param endTime
+ * @returns {number} Duración en horas
+ */
 function calculateDurationInHours(startTime: string, endTime: string): number {
   const startHour = new Date(`2000-01-01T${startTime}:00`);
   const endHour = new Date(`2000-01-01T${endTime}:00`);
@@ -12,6 +18,11 @@ function calculateDurationInHours(startTime: string, endTime: string): number {
   return Number(duration.toFixed(2)); // Redondear a 2 decimales
 }
 
+/**
+ *
+ * @param data
+ * @returns {Object} Datos procesados del horario
+ */
 export function useScheduleData(data: ScheduleData[]) {
   const days = {
     1: 'Lunes',

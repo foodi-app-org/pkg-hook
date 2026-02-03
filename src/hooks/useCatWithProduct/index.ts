@@ -30,7 +30,7 @@ export const useCatWithProduct = (
     loading: boolean
     error?: ApolloError | null
     fetchMore: (opts?: any) => Promise<ApolloQueryResult<GetCatProductsWithProductResponse>>
-    totalCount?: number | undefined
+    totalCount?: number
   }
 ] => {
   const {

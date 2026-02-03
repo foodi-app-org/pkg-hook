@@ -1,10 +1,12 @@
 import { useMutation } from '@apollo/client'
 import { useState } from 'react'
-import { SendNotificationFn } from 'typedefs'
+
 
 import { useDeleteOneTag, useGetAllTags } from '../useTagProducts'
 
 import { REGISTER_TAGS_PRODUCT } from './queriesStore'
+
+import type { SendNotificationFn } from 'typesdefs'
 
 interface UseTagsProductsProps {
   sendNotification?: SendNotificationFn

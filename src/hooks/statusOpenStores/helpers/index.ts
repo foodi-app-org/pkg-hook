@@ -1,4 +1,6 @@
-export const getDayFromOpeningKey = (key) => {
+export const getDayFromOpeningKey = (
+  key: 'openingSun' | 'openingMon' | 'openingTue' | 'openingWed' | 'openingThu' | 'openingFri' | 'openingSat'
+) => {
   const days = {
     openingSun: 0,
     openingMon: 1,
@@ -8,30 +10,41 @@ export const getDayFromOpeningKey = (key) => {
     openingFri: 5,
     openingSat: 6
   }
-  return days[key] !== undefined ? days[key] : -1
+  if (days[key] === undefined) {
+    return -1
+  }
+  return days[key]
 }
 
 // Función para convertir el objeto de tiempo en una cadena de tiempo
 /**
  *
  * @param timeStr
+ * @returns time string
  */
-export function getTimeString (timeStr) {
+export function getTimeString(timeStr: string) {
   return timeStr || '00:00' // Return '00:00' for empty time strings
 }
 
 /**
- *
+ * @returns current day of week and time in minutes
  */
-export function getCurrentDayAndTime () {
+export function getCurrentDayAndTime() {
   try {
     const date = new Date()
     const currentTime = date.getHours() * 60 + date.getMinutes()
     const currentDayOfWeek = date.getDay()
     return { currentTime, currentDayOfWeek }
   } catch (error) {
+    if (error instanceof Error) {
+      return {
+        currentTime: 0,
+        currentDayOfWeek: 0
+      }
+    }
     return {
-
+      currentTime: 0,
+      currentDayOfWeek: 0
     }
   }
 }
@@ -39,15 +52,19 @@ export function getCurrentDayAndTime () {
 /**
  *
  * @param timeStr
+ * @returns time object with hours and minutes
  */
-export function getTimeObject (timeStr) {
+export function getTimeObject(timeStr: string) {
   try {
     if (!timeStr || !/\d{2}:\d{2}/.test(timeStr)) {
       return { hours: 0, minutes: 0 } // Return default values for invalid input
     }
-    const [hours, minutes] = timeStr.split(':').map(str => {return parseInt(str)})
+    const [hours, minutes] = timeStr.split(':').map(str => { return Number.parseInt(str) })
     return { hours, minutes }
   } catch (e) {
+    if (e instanceof Error) {
+      return { hours: 0, minutes: 0 } // Return default values on error
+    }
     return { hours: 0, minutes: 0 } // Return default values on error
   }
 }
@@ -55,8 +72,9 @@ export function getTimeObject (timeStr) {
 /**
  *
  * @param openings
+ * @returns sorted openings by day
  */
-export function sortOpeningsByDay (openings) {
+export function sortOpeningsByDay(openings: Record<string, string>) {
   const days = [
     'openingSun',
     'openingMon',
@@ -66,7 +84,7 @@ export function sortOpeningsByDay (openings) {
     'openingFri',
     'openingSat'
   ]
-  const sortedOpenings = {}
+  const sortedOpenings: Record<string, string> = {}
 
   days.forEach((day) => {
     sortedOpenings[day] = openings[day] || '00:00 - 00:00' // Agregar horario vacío para los días faltantes
@@ -79,9 +97,10 @@ export function sortOpeningsByDay (openings) {
 /**
  *
  * @param day
+ * @returns opening key from day
  */
-export function getOpeningKeyFromDay (day) {
-  const days = {
+export function getOpeningKeyFromDay(day: number) {
+  const days: Record<number, string> = {
     0: 'openingSun',
     1: 'openingMon',
     2: 'openingTue',
@@ -106,10 +125,11 @@ export const weekDays = [
 /**
  *
  * @param text
+ * @returns time in integer minutes
  */
-export function timeToInt (text) {
-  const hour = parseInt(text.substring(0, 2))
-  const minute = parseInt(text.substring(3))
+export function timeToInt(text: string) {
+  const hour = Number.parseInt(text.substring(0, 2))
+  const minute = Number.parseInt(text.substring(3))
   return hour * 60 + minute
 }
 

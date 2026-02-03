@@ -2,11 +2,16 @@ import { useMutation } from '@apollo/client'
 
 import { EDIT_PRODUCT } from './queriesStore'
 
+import type { SendNotificationFn } from 'typesdefs'
+
+interface UseEditProductOptions {
+  sendNotification?: SendNotificationFn
+}
 export const useEditProduct = ({
-  sendNotification = () => {
-    return null
+  sendNotification = (args?: any) => {
+    return args 
   }
-} = {}) => {
+}: UseEditProductOptions = {}) => {
   const [editProductFoods, { loading, error }] = useMutation(EDIT_PRODUCT, {
     onCompleted: (data) => {
       const { editProductFoods } = data

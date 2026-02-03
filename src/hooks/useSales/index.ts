@@ -10,7 +10,7 @@ import {
   useMemo,
   useState
 } from 'react'
-import type { Product, ExtProductFoodOptional, ExtProductFoodsAll, AlertBoxType } from 'typesdefs'
+
 
 import { Cookies } from '../../cookies'
 import { RandomCode, getCurrentDomain } from '../../utils'
@@ -56,10 +56,11 @@ import { SalesReducerAction, SalesState, ValuesState } from './types'
 import { UseSalesProps } from './types/use-sales.types'
 import { useGetSale } from './useGetSale'
 
-// eslint-disable-next-line
+import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
+
 export const useSales = ({
   disabled = false,
-  router,
+  // router,
   sendNotification = (args) => { return args },
   setAlertBox = (args) => { return args }
 }: UseSalesProps) => {
@@ -188,7 +189,7 @@ export const useSales = ({
     fromDate: valuesDates?.fromDate,
     max: showMore,
     min: 0,
-    isShopppingCard: true,
+    isShoppingCard: true,
     idStore: idStore ?? '',
     dataSale: (Array.isArray(saveDataState?.PRODUCT) && saveDataState?.PRODUCT) ?? [],
     callback: () => { return }
@@ -493,7 +494,7 @@ export const useSales = ({
     const item = dataOptional.find((item) => { return item.code === codeCategory })
     if (!item) return
     const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el) => { return el.opSubExPid === exOptional }
+      (el: any) => { return el.opSubExPid === exOptional }
     )
     if (item && idx !== -1) {
       const updatedItem = {
@@ -520,58 +521,47 @@ export const useSales = ({
   }
 
   /**
+   * Updates all extra and optional products for the current product.
    * @returns {void}
    */
-  function handleUpdateAllExtra() {
-    try {
-      if (!product?.PRODUCT?.pId) {
-        return sendNotification({
-          title: 'Error',
-          backgroundColor: 'error',
-          description: 'Ha ocurrido un error'
-        })
-      }
-      const filteredDataOptional = dataOptional
-        .map((obj) => {
-
-          const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
-            (subObj) => { return subObj?.check === true }
-          )
-          // Excluya todo el objeto padre si filteredSubOptions está vacío
-          if (filteredSubOptions?.length === 0) {
-            return null
-          }
-
-          return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
-        })
-        .filter((obj) => { return obj !== null }) // Elimine todos los objetos nulos del arreglo
-
-      const filteredDataExtra = dataExtra?.filter((p) => { return p?.quantity !== undefined && p?.quantity !== 0 })
-      if (product?.PRODUCT?.pId) {
-
-        dispatch({
-          type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
-          payload: product.PRODUCT.pId,
-          dataOptional: filteredDataOptional,
-          dataExtra: filteredDataExtra
-        })
-        const updatesOccurred = (
-          (dataExtra && dataExtra.length > 0)
-        )
-        if (updatesOccurred) {
-          return sendNotification({
-            title: 'Success',
-            backgroundColor: 'success',
-            description: 'Items subidos al producto'
-          })
-        }
-      }
-    } catch (_error) {
-      return sendNotification({
+  function handleUpdateAllExtra(): void {
+    if (!product?.PRODUCT?.pId) {
+      sendNotification({
         title: 'Error',
         backgroundColor: 'error',
-        description: 'No se puedo actualizar el producto'
+        description: 'Ha ocurrido un error'
       })
+      return
+    }
+    const filteredDataOptional = dataOptional
+      .map((obj) => {
+        const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
+          (subObj: any) => subObj?.check === true
+        )
+        // Exclude parent object if filteredSubOptions is empty
+        if (!filteredSubOptions || filteredSubOptions.length === 0) {
+          return null
+        }
+        return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
+      })
+      .filter(Boolean) // Remove all null objects from array
+
+    const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0)
+    if (product?.PRODUCT?.pId) {
+      dispatch({
+        type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
+        payload: product.PRODUCT.pId,
+        dataOptional: filteredDataOptional,
+        dataExtra: filteredDataExtra
+      })
+      const updatesOccurred = (dataExtra && dataExtra.length > 0)
+      if (updatesOccurred) {
+        sendNotification({
+          title: 'Success',
+          backgroundColor: 'success',
+          description: 'Items subidos al producto'
+        })
+      }
     }
   }
 
@@ -581,22 +571,17 @@ export const useSales = ({
    * @param root0.Adicionales
    * @param root0.index
    */
-  function handleIncrementExtra({ Adicionales, index }: { Adicionales: any; index: number }) {
+  function handleIncrementExtra({ Adicionales }: { Adicionales: any }) {
     const { pId } = product?.PRODUCT || {}
     const exPid = Adicionales?.exPid || null
 
     if (exPid && pId) {
       const newExtra = dataExtra.map((producto) => {
-
         if (exPid === producto.exPid) {
-
           const initialQuantity = producto?.quantity ? producto?.quantity : 0
           const newQuantity = initialQuantity + 1
-
           const newExtraPrice = producto.extraPrice * newQuantity
-
           return {
-
             ...producto,
             quantity: newQuantity,
             newExtraPrice
@@ -645,31 +630,24 @@ export const useSales = ({
 
   const finalFilter = PriceRangeFunc(sortedProduct, data.priceRange)
 
-  const handleList = (text: string) => {
-    const inputText = text.toLowerCase()
-    let dataList = []
-    dataList = (finalFilter || []).filter((item: { pName: string }) => {
-      return item.pName.toLowerCase().includes(inputText)
-    })
-    return dataList
-  }
+  // Removed unused handleList function
 
 
 
   const arrayProduct = useMemo(() => {
     if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return []
     return data.PRODUCT.map((product: any) => {
-      const filteredDataExtra = (product?.dataExtra ?? []).map(({ ...rest }) => { return rest })
+      const filteredDataExtra = (product?.dataExtra ?? []).map(({ ...rest }) => ({ ...rest }))
       const dataOptional = (product?.dataOptional ?? []).map(({ ...rest }) => {
         const { ExtProductFoodsSubOptionalAll, ...r } = rest
-        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map(({ ...s }) => { return s })
+        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map((s: any) => ({ ...s }))
         return { ...r, ExtProductFoodsSubOptionalAll: adjusted }
       })
       return {
         pId: product.pId,
         refCodePid: RandomCode(20),
         id: values?.cliId,
-        cantProducts: parseInt(String(product?.ProQuantity ?? 0)),
+        cantProducts: Number.parseInt(String(product?.ProQuantity ?? 0)),
         comments: product?.comment ?? '',
         dataOptional: dataOptional ?? [],
         dataExtra: filteredDataExtra,
@@ -685,16 +663,16 @@ export const useSales = ({
     })
   }, [arrayProduct])
 
-  let totalSale = 0
   /**
-   *
+   * Sums ProPrice and totalExtra for each item.
    * @param data
+   * @returns Array with totalExtra and total for each item.
    */
   function sumProPriceAndTotalExtra(data: { dataExtra: { newExtraPrice: string }[]; ProPrice: number }[]) {
     return data.map((item) => {
       const totalExtra = item.dataExtra.reduce((acc, curr) => {
-        const newExtraPrice = parseFloat(curr.newExtraPrice)
-        if (isNaN(newExtraPrice)) {
+        const newExtraPrice = Number.parseFloat(curr.newExtraPrice)
+        if (Number.isNaN(newExtraPrice)) {
           return acc
         }
         return acc + newExtraPrice
@@ -705,19 +683,27 @@ export const useSales = ({
   }
   useEffect(() => {
     const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct)
+    let runningTotal = 0
     dataCountTotal.forEach((a: { total: number }) => {
       const { total } = a || {}
-      totalSale += total
-      setTotalProductPrice(Math.abs(totalSale))
+      runningTotal += total
     })
+    setTotalProductPrice(Math.abs(runningTotal))
     if (data.PRODUCT.length === 0) {
       setTotalProductPrice(0)
     }
-  }, [totalProductPrice, totalSale, data, finalArrayProduct])
+  }, [data, finalArrayProduct])
 
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
-  console.log(data)
+  // Removed console.log(data)
+  const convertInteger = (cadena: string | number): number => {
+    if (typeof cadena === 'string') {
+      const numeroEntero = Number.parseInt(cadena.replace('.', ''))
+      return numeroEntero
+    }
+    return (typeof cadena === 'number' ? cadena : 0)
+  }
   const handleSubmit = () => {
 
     if (errors?.change || errors?.valueDelivery) {
@@ -755,18 +741,8 @@ export const useSales = ({
       })
     }
 
-    setCode(code as string)
-    /**
-     *
-     * @param cadena
-     */
-    function convertInteger(cadena: string | number) {
-      if (typeof cadena === 'string') {
-        const numeroEntero = parseInt(cadena?.replace('.', ''))
-        return numeroEntero
-      }
-      return cadena || 0
-    }
+    setCode(code)
+    // convertInteger moved to outer scope above
     const {
       change,
       valueDelivery,
@@ -837,7 +813,7 @@ export const useSales = ({
               if (responseSale?.data?.getOneSalesStore) {
                 const currentSale = responseSale?.data?.getOneSalesStore || {}
                 const inComingCodeRef = currentSale?.pCodeRef || null
-                if (!inComingCodeRef) return null
+                if (!inComingCodeRef) return
                 // client.cache.modify({
                 //   fields: {
                 //     getAllOrdersFromStore (existingOrders = []) {
@@ -886,9 +862,7 @@ export const useSales = ({
     setLoadingExtraProduct(true)
     const { pId } = PRODUCT || {}
     try {
-      const originalArray = data.PRODUCT.find((item: Product) => {
-        return item.pId === pId
-      })
+      const originalArray = data.PRODUCT.find((item: Product) => item.pId === pId)
       // OPTIONAL
       productFoodsOne({ variables: { pId } })
       const optionalAll = await ExtProductFoodsSubOptionalAll({
@@ -902,10 +876,10 @@ export const useSales = ({
           ?.map((obj: any) => {
             const filteredSubOptions =
               obj.ExtProductFoodsSubOptionalAll.filter(
-                (subObj: any) => { return subObj.check === true }
+                (subObj: any) => subObj.check === true
               )
-            // Excluya todo el objeto padre si filteredSubOptions está vacío
-            if (filteredSubOptions.length === 0) {
+            // Exclude parent object if filteredSubOptions is empty
+            if (!filteredSubOptions || filteredSubOptions.length === 0) {
               return null
             }
             return {
@@ -913,15 +887,15 @@ export const useSales = ({
               ExtProductFoodsSubOptionalAll: filteredSubOptions
             }
           })
-          .filter((obj: any) => { return obj !== null })
+          .filter(Boolean)
         : []
 
-      // Actualizar optionalAll.data.ExtProductFoodsSubOptionalAll con los valores actualizados de originalArray2.ExtProductFoodsSubOptionalAll
+      // Update optionalAll.data.ExtProductFoodsSubOptionalAll with updated values from originalArray2.ExtProductFoodsSubOptionalAll
       if (optionalFetch && filteredDataOptional) {
         const updateOption = optionalFetch
           .map((obj: any) => {
             const matchingArray = filteredDataOptional.find(
-              (o: any) => { return o && o.opExPid === obj.opExPid }
+              (o: any) => o && o.opExPid === obj.opExPid
             )
             if (!matchingArray) {
               return obj
@@ -932,7 +906,7 @@ export const useSales = ({
               extProductFoodsSubOptionalAll.map((subObj: any) => {
                 const newItem =
                   matchingArray.ExtProductFoodsSubOptionalAll.find(
-                    (newItem: any) => { return newItem && newItem.opSubExPid === subObj.opSubExPid }
+                    (newItem: any) => newItem && newItem.opSubExPid === subObj.opSubExPid
                   )
                 if (newItem) {
                   return {
@@ -948,7 +922,7 @@ export const useSales = ({
                 updateExtProductSubOptionalAll
             }
           })
-          .filter((obj: any) => { return obj })
+          .filter(Boolean)
         if (existOptionalCookies) {
           setDataOptional(updateOption || [])
         } else {
@@ -958,24 +932,23 @@ export const useSales = ({
       // NO OPTIONAL
       const extProduct = await ExtProductFoodsAll({ variables: { pId } })
       let finalData
-      if (!originalArray?.dataExtra) {
-        finalData = extProduct?.data?.ExtProductFoodsAll
-      } else {
+      if (originalArray?.dataExtra) {
         const filteredData = originalArray.dataExtra.filter((item: any) => {
           return extProduct?.data?.ExtProductFoodsAll.some(
-            (newItem: any) => { return newItem.exPid === item.exPid }
+            (newItem: any) => newItem.exPid === item.exPid
           )
-        }
-        )
+        })
         finalData = originalArray?.dataExtra?.concat(
           extProduct?.data?.ExtProductFoodsAll?.filter(
             (item: any) => {
               return !filteredData?.some(
-                (filteredItem: any) => { return filteredItem.exPid === item.exPid }
+                (filteredItem: any) => filteredItem.exPid === item.exPid
               )
             }
           )
         )
+      } else {
+        finalData = extProduct?.data?.ExtProductFoodsAll
       }
       setDataExtra(finalData)
       setProduct(() => {
@@ -987,7 +960,7 @@ export const useSales = ({
     } catch (error) {
       setLoadingExtraProduct(false)
       if (error instanceof Error) {
-        return sendNotification({
+        sendNotification({
           title: 'error',
           backgroundColor: 'error',
           description: error.message ?? 'Lo sentimos, ocurrió un error'
@@ -1097,15 +1070,13 @@ export const useSales = ({
         sendNotification,
         handleGetOneProduct: async ({ pId }: { pId: string }) => {
           if (typeof handleGetOneProduct === 'function') {
-            const result = await handleGetOneProduct({ variables: { pId } });
-            // Ensure the return type matches the expected shape
+            const result = await handleGetOneProduct({ variables: { pId } } as any)
             if (result && result.data && 'productFoodsOne' in result.data) {
-              return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } };
+              return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } }
             }
-            // If result is undefined or does not have the expected shape, return a default object
-            return { data: { productFoodsOne: null } };
+            return { data: { productFoodsOne: null } }
           }
-          throw new Error('handleGetOneProduct is not a function');
+          throw new Error('handleGetOneProduct is not a function')
         }
       })
     },

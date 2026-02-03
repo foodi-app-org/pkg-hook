@@ -1,8 +1,9 @@
-import type { SendNotificationFn } from 'typesdefs';
 
 import { SalesReducerAction, ValuesState } from '../types';
 
 import { SalesActionTypes } from './constants';
+
+import type { SendNotificationFn } from 'typesdefs';
 
 
 interface HandleRemoveCommentParams {
