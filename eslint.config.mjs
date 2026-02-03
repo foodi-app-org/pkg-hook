@@ -63,8 +63,8 @@ export default defineConfig([
 
       // complexity / maintainability
       // complexity: ['warn', 10],
-      // 'max-params': ['warn', 4],
-      // 'max-depth': ['warn', 4],
+      'max-params': ['warn', 10],
+      'max-depth': ['warn', 4],
       'max-lines': ['warn', { max: 42000, skipBlankLines: true, skipComments: true }],
 
       // import/order (requires eslint-plugin-import)
