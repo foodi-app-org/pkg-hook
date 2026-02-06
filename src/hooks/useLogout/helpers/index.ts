@@ -32,12 +32,11 @@ export const __NEXTAUTH = {
  * @returns {Promise<{ url: string } | void>} Si no se redirige, devuelve un objeto con la URL de redirección
  * @description Función para cerrar la sesión del usuario
  */
-export async function signOutAuth(options: {
+export async function signOutAuth(options?: {
   callbackUrl?: string
   redirect?: boolean
   reload?: boolean
-} | undefined = undefined
-): Promise<{ url: string } | void> {
+}): Promise<{ url: string } | void> {
   const currentHref = globalThis.location.href
   const { callbackUrl = currentHref, reload = true } = options ?? {}
   const baseUrl = apiBaseUrl(__NEXTAUTH)

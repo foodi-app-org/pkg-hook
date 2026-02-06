@@ -1,4 +1,6 @@
-import { randomBytes } from 'node:crypto'
+import { ApolloCache, DocumentNode } from '@apollo/client';
+
+import { UtilsRandomBytes } from './isomorphicRandom'
 
 /**
  * @description It takes an array of elements and returns an object with a submit hook for each element.
@@ -79,7 +81,7 @@ export const RandomCode = (
   const charactersLength = characters.length
 
   // Generate enough random bytes
-  const randomBuffer = randomBytes(length)
+  const randomBuffer = UtilsRandomBytes(length)
   let code = ''
 
   for (let i = 0; i < length; i++) {
@@ -95,7 +97,7 @@ export const RandomCode = (
  * @param {{ cache: object, query: object, nameFun: string, dataNew: object, type: number, id: string }} params Parámetros para actualizar el cachet de apollo
  * @returns {null} no hay retorno
  */
-import { ApolloCache, DocumentNode } from '@apollo/client';
+
 
 export interface UpdateCacheModParams {
   cache: ApolloCache<unknown>;

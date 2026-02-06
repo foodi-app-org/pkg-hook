@@ -1,10 +1,12 @@
 import { useMutation } from '@apollo/client'
-import { AlertBoxType, type SetAlertBoxFn } from 'typesdefs'
+
 
 import { updateCacheMod } from '../../utils'
 import { GET_EXTRAS_PRODUCT_FOOD_OPTIONAL } from '../useRemoveExtraProductFoodsOptional/queries'
 
 import { DELETE_CAT_EXTRA_SUB_OPTIONAL_PRODUCTS } from './queries'
+
+import type { AlertBoxType, SetAlertBoxFn } from 'typesdefs'
 
 interface UseDeleteSubProductOptionalProps {
   setAlertBox?: SetAlertBoxFn
