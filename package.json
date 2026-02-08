@@ -60,7 +60,8 @@
     "test": "jest",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
-    "link": "npm link typedefs"
+    "link": "npm link typedefs",
+    "dev": "tsup --watch"
   },
   "types": "dist/index.d.ts",
   "version": "1.14.5"

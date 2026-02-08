@@ -10,5 +10,5 @@ import { GET_ALL_CITIES } from './queries'
 export function useCities () {
   const [getCities, { data, loading, error }] = useLazyQuery(GET_ALL_CITIES)
 
-  return [getCities, { data: data ? data?.cities : [], loading, error }]
+  return [getCities, { data: data ? data?.getAllCities : [], loading, error }]
 }

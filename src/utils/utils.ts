@@ -31,27 +31,55 @@ export const statusProduct = {
   active: 1
 }
 
-export const validationSubmitHooks = (elements: Array<HTMLElement & { name?: string; type?: string; value?: unknown; dataset?: DOMStringMap }>) => {
-  if (!elements || elements.length === 0) {
+// validationSubmitHooks.ts (corregido)
+export const validationSubmitHooks = (elements: ArrayLike<HTMLElement & { name?: string; type?: string; value?: any; dataset?: DOMStringMap; checked?: boolean }>) => {
+  if (!elements || (typeof (elements as any).length === 'number' && (elements as any).length === 0)) {
     return {}
   }
+
   let errorForm: Record<string, boolean> = {}
 
-  for (const element of elements) {
-    if (!element.name) continue;
-    const elementType = (element.type as string) || element.tagName.toLowerCase();
-    if (!validTypes[elementType]) continue;
+  // Aseguramos convertir a array para iterar sin sorpresas
+  const list = Array.from(elements as any) as Array<HTMLElement & { name?: string; type?: string; value?: any; dataset?: DOMStringMap; checked?: boolean }>
 
-    if (element.dataset && element.dataset.required === 'true') {
-      errorForm = { ...errorForm, [element.name]: !element.value };
-      continue;
+  for (const element of list) {
+    if (!element || !element.name) continue
+
+    const elementType = (element.type as string) || (element.tagName || '').toLowerCase()
+    // Solo procesamos controles que normalmente tienen name/value (ignorar botones u otros)
+    if (!['input', 'textarea', 'select', 'checkbox', 'radio', 'email', 'tel', 'password', 'text', 'number'].some(t => elementType.includes(t))) {
+      continue
     }
 
-    errorForm = { ...errorForm, [element.name]: false };
+    // Detectar si está marcado como requerido (dataset OR atributo required)
+    const isRequiredFromDataset = element.dataset && (element.dataset.required === 'true' || element.dataset.required === '1')
+    // also check native required attribute (for non-data-required cases)
+    const hasNativeRequired = (element as any).required === true
+
+    const isRequired = Boolean(isRequiredFromDataset || hasNativeRequired)
+
+    if (isRequired) {
+      // Checkbox / radio: validar checked
+      if (elementType === 'checkbox' || elementType === 'radio' || (element as any).type === 'checkbox' || (element as any).type === 'radio') {
+        const checked = Boolean((element as any).checked)
+        errorForm = { ...errorForm, [element.name]: !checked }
+        continue
+      }
+
+      // Para inputs normales: value no vacío (trim)
+      const rawVal = (element as any).value
+      const valStr = rawVal === null || typeof rawVal === 'undefined' ? '' : String(rawVal)
+      errorForm = { ...errorForm, [element.name]: valStr.trim().length === 0 }
+      continue
+    }
+
+    // No requerido -> false (no error)
+    errorForm = { ...errorForm, [element.name]: false }
   }
 
   return errorForm
 }
+
 
 export const getCurrentDomain = (): string | boolean => {
   return globalThis.window !== undefined && globalThis.window.location.hostname

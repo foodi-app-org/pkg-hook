@@ -12,20 +12,23 @@ import type { SendNotificationFn } from 'typesdefs';
 
 interface UseFormToolsProps {
   initialValues?: Record<string, any>;
-  sendNotification?: SendNotificationFn
+  sendNotification?: SendNotificationFn;
+  callback?: () => void;
 }
 
 /**
  * @param root0
  * @param root0.initialValues
  * @param root0.sendNotification
+ * @param root0.callback
  * @version 0.0.1
  * @description Hook con herramientas de validación y eventos de cambio
  * @returns {Array} devuelve la función onChange a ejecutar y el estado de error de cada input
  */
 export const useFormTools = ({
   initialValues = {},
-  sendNotification
+  sendNotification,
+  callback
 }: UseFormToolsProps = {}) => {
   const [dataForm, setDataForm] = useState<Record<string, any>>({ ...initialValues })
   const [errorForm, setErrorForm] = useState<Record<string, boolean>>({})
@@ -58,16 +61,21 @@ export const useFormTools = ({
     msgError = '',
     msgSuccess,
     action = () => { return Promise.resolve() },
-    actionAfterSuccess = () => { return undefined }
+    actionAfterSuccess = () => { return undefined },
+    actionAfterCheck = () => { return undefined }
   }: {
     event: React.FormEvent<HTMLFormElement>,
     msgError?: string,
     msgSuccess?: string,
     action?: () => Promise<any>,
-    actionAfterSuccess?: () => void
+    actionAfterSuccess?: () => void,
+    actionAfterCheck?: () => void
   }) => {
     event.preventDefault()
     setCalledSubmit(true)
+    if (typeof actionAfterCheck === 'function') {
+      actionAfterCheck()
+    }
     let errSub = false
 
     // Valida los errores locales
@@ -92,6 +100,8 @@ export const useFormTools = ({
       return undefined
     }
 
+
+
     // Valida los errores desde el evento
     const errores = validationSubmitHooks(event.currentTarget.elements as any)
     setErrorForm(errores)
@@ -103,7 +113,8 @@ export const useFormTools = ({
       return undefined
     }
 
-    // Ejecuta la accion si es válido
+
+    // Ejecuta la accion si es válido sss
     if (!errSub && typeof action === 'function') {
       const result = action()
       if (result && typeof result.then === 'function') {
@@ -134,9 +145,11 @@ export const useFormTools = ({
 
   useEffect(() => { return setCalledSubmit(false) }, [calledSubmit])
   useEffect(() => {
+    if (typeof callback === 'function') {
+      callback()
+    }
     return setCalledSubmit(false)
-  },
-  [])
+  }, [])
 
   return [handleChange, handleSubmit, handleForcedData, { dataForm, errorForm, errorSubmit, calledSubmit, setForcedError }]
 }
