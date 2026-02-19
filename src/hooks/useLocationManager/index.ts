@@ -1,79 +1,113 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
-type GetDepartmentsFn = (args: { variables: { cId: string } }) => void;
-type GetCitiesFn = (args: { variables: { dId: string } }) => void;
+/**
+ * Tipos para las funciones que obtienen departamentos/ciudades.
+ * Se admite que puedan devolver una Promise (fetch async) o void.
+ */
+type FetchFn<TVars extends Record<string, any>> = (
+  args: { variables: TVars }
+) => void | Promise<unknown>
 
-type ValuesType = Record<string, any>;
-type ErrorsType = Record<string, any>;
+export type ValuesType = Record<string, any>
+export type ErrorsType = Record<string, any>
 
-interface UseLocationManagerReturn {
-  values: ValuesType;
-  errors: ErrorsType;
-  showLocation: boolean;
-  setShowLocation: React.Dispatch<React.SetStateAction<boolean>>;
-  handleChangeSearch: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, error?: any) => void;
-  setValues: React.Dispatch<React.SetStateAction<ValuesType>>;
+export interface UseLocationManagerOptions<V extends ValuesType = ValuesType> {
+  initialValues?: V
+  initialShowLocation?: boolean
+}
+
+export interface UseLocationManagerReturn<V extends ValuesType = ValuesType> {
+  values: V
+  errors: ErrorsType
+  showLocation: boolean
+  setShowLocation: React.Dispatch<React.SetStateAction<boolean>>
+  handleChangeSearch: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    error?: any
+  ) => void
+  setValues: React.Dispatch<React.SetStateAction<V>>
+  setErrors: React.Dispatch<React.SetStateAction<ErrorsType>>
+  reset: (nextValues?: Partial<V>) => void
 }
 
 /**
- * Hook para gestionar la lógica de ubicaciones, valores y errores.
+ * useLocationManager
+ * Hook optimizado para manejar valores/errores de ubicación y disparar
+ * peticiones para departamentos/ciudades cuando corresponde.
  *
- * @param getDepartments - Función para obtener los departamentos basado en el ID de país.
- * @param getCities - Función para obtener las ciudades basado en el ID de departamento.
- *
- * @returns Retorna los estados y funciones de manejo asociados.
+ * - Usa useCallback para memorizar handlers.
+ * - Acepta funciones async o sync para fetchDepartments/fetchCities.
+ * - Expone setValues/setErrors y reset para casos especiales.
+ * @param fetchDepartments
+ * @param fetchCities
+ * @param options
+ * @returns {UseLocationManagerReturn}
+ * 
  */
-export function useLocationManager (
-  getDepartments: GetDepartmentsFn,
-  getCities: GetCitiesFn
-): UseLocationManagerReturn {
-  const [values, setValues] = useState<ValuesType>({})
+export function useLocationManager<V extends ValuesType = ValuesType>(
+  fetchDepartments: FetchFn<{ cId: string }>,
+  fetchCities: FetchFn<{ dId: string }>,
+  options: UseLocationManagerOptions<V> = {}
+): UseLocationManagerReturn<V> {
+  const { initialValues = {} as V, initialShowLocation = true } = options
+
+  const [values, setValues] = useState<V>(initialValues)
   const [errors, setErrors] = useState<ErrorsType>({})
-  const [showLocation, setShowLocation] = useState<boolean>(true)
+  const [showLocation, setShowLocation] = useState<boolean>(initialShowLocation)
 
-  const handleUpdateValues = (name: string, value: any) => {
-    setValues(prevValues => {return { ...prevValues, [name]: value }})
-  }
+  // Actualiza un campo en values (inmutable)
+  const setField = useCallback(
+    (name: string, value: any) =>
+      setValues(prev => ({ ...prev, [name]: value }) as V),
+    []
+  )
 
-  const handleUpdateErrors = (name: string, error: any) => {
-    setErrors(prevErrors => {return { ...prevErrors, [name]: error }})
-  }
+  // Actualiza un campo en errors
+  const setError = useCallback((name: string, error: any) => {
+    setErrors(prev => ({ ...prev, [name]: error }))
+  }, [])
 
-  const handleCountrySearch = (value: string) => {
-    getDepartments({ variables: { cId: value } })
-  }
+  const handleCountrySearch = useCallback(
+    (cId: string) => {
+      // no await here: permitimos que fetch sea async o sync
+      void fetchDepartments({ variables: { cId } })
+    },
+    [fetchDepartments]
+  )
 
-  const handleDepartmentSearch = (value: string) => {
-    setValues(prevValues => {return { ...prevValues, ctId: '' }})
-    getCities({ variables: { dId: value } })
-  }
+  const handleDepartmentSearch = useCallback(
+    (dId: string) => {
+      // limpia el campo de ciudad sólo si existía o era distinto
+      setValues(prev => ({ ...prev, ctId: '' } as V))
+      void fetchCities({ variables: { dId } })
+    },
+    [fetchCities]
+  )
 
-  const handleChangeLocation = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    error: any = undefined
-  ) => {
-    const { name, value } = e.target
-    handleUpdateValues(name, value)
-    handleUpdateErrors(name, error)
-  }
+  const handleChangeSearch = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+      error: any = undefined
+    ) => {
+      const { name, value } = e.target
 
-  const handleChangeSearch = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    error: any = undefined
-  ) => {
-    const { name, value } = e.target
-    switch (name) {
-      case 'countryId':
+      // ordenado explícito para mantener las reglas de negocio claras
+      if (name === 'countryId') {
         handleCountrySearch(value)
-        break
-      case 'code_dId':
+      } else if (name === 'code_dId') {
         handleDepartmentSearch(value)
-        break
-      default:
-        break
-    }
-    handleChangeLocation(e, error)
-  }
+      }
+
+      setField(name, value)
+      setError(name, error)
+    },
+    [handleCountrySearch, handleDepartmentSearch, setField, setError]
+  )
+
+  const reset = useCallback((nextValues?: Partial<V>) => {
+    setValues(() => ({ ...((nextValues as V) ?? {}) } as V))
+    setErrors({})
+  }, [])
 
   return {
     values,
@@ -81,6 +115,8 @@ export function useLocationManager (
     showLocation,
     setShowLocation,
     handleChangeSearch,
-    setValues
+    setValues,
+    setErrors,
+    reset
   }
 }

@@ -31,19 +31,35 @@ export const statusProduct = {
   active: 1
 }
 
-// validationSubmitHooks.ts (corregido)
-export const validationSubmitHooks = (elements: ArrayLike<HTMLElement & { name?: string; type?: string; value?: any; dataset?: DOMStringMap; checked?: boolean }>) => {
+// utils/validationSubmitHooks.ts
+export const validationSubmitHooks = (
+  elements: ArrayLike<HTMLElement & {
+    name?: string;
+    type?: string;
+    value?: any;
+    dataset?: DOMStringMap;
+    checked?: boolean;
+  }>,
+  step?: number | string
+) => {
   if (!elements || (typeof (elements as any).length === 'number' && (elements as any).length === 0)) {
     return {}
   }
 
   let errorForm: Record<string, boolean> = {}
 
-  // Aseguramos convertir a array para iterar sin sorpresas
   const list = Array.from(elements as any) as Array<HTMLElement & { name?: string; type?: string; value?: any; dataset?: DOMStringMap; checked?: boolean }>
 
   for (const element of list) {
     if (!element || !element.name) continue
+
+    // Si se pidió validar por "step", ignoramos elementos que no pertenezcan a ese step
+    if (typeof step !== 'undefined') {
+      const ds = (element.dataset || {})
+      const isGloballyRequired = ds.required === 'true' || ds.required === '1'
+      const belongsToStep = ds.requiredStep === String(step)
+      if (!belongsToStep && !isGloballyRequired) continue
+    }
 
     const elementType = (element.type as string) || (element.tagName || '').toLowerCase()
     // Solo procesamos controles que normalmente tienen name/value (ignorar botones u otros)
@@ -53,9 +69,7 @@ export const validationSubmitHooks = (elements: ArrayLike<HTMLElement & { name?:
 
     // Detectar si está marcado como requerido (dataset OR atributo required)
     const isRequiredFromDataset = element.dataset && (element.dataset.required === 'true' || element.dataset.required === '1')
-    // also check native required attribute (for non-data-required cases)
     const hasNativeRequired = (element as any).required === true
-
     const isRequired = Boolean(isRequiredFromDataset || hasNativeRequired)
 
     if (isRequired) {
@@ -79,6 +93,7 @@ export const validationSubmitHooks = (elements: ArrayLike<HTMLElement & { name?:
 
   return errorForm
 }
+
 
 
 export const getCurrentDomain = (): string | boolean => {

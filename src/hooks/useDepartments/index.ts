@@ -1,16 +1,52 @@
-import { useLazyQuery } from '@apollo/client'
+import {
+  useLazyQuery,
+  LazyQueryExecFunction,
+  ApolloError,
+  QueryResult,
+  OperationVariables
+} from '@apollo/client'
 
 import { GET_ALL_DEPARTMENTS } from './queries'
 
+type Department = { id: string; name: string }
+
+type GetAllDepartmentsData = { getAllDepartments: Department[] }
+type GetAllDepartmentsVars = { cId: string }
+
 /**
- * Custom hook to fetch departments lazily based on the provided company ID.
- * Returns a tuple containing the function to trigger the query and an object with the query's data, loading state, and any errors.
- * @param cId - The company ID for which to fetch the departments.
- * @example   const [getDepartments, { data, loading, error }] = useDepartments()
- * getDepartments({ variables: { cId: 'company-id' } })
- * @returns A tuple with the query function and an object containing the query's data, loading state, and error information.
+ * useDepartments
+ * Hook para obtener departamentos basado en un ID de país.
+ * Retorna una tupla con la función para ejecutar la consulta y un objeto con el estado de la consulta.
+ * - Usa useLazyQuery para permitir ejecutar la consulta bajo demanda.
+ * - El objeto de estado incluye data, loading, error, called, refetch y fetchMore.
+ * - El tipo de retorno está forzado a ser una tupla con `as const` para mantener la inferencia de tipos.
+ * @returns {readonly [LazyQueryExecFunction<GetAllDepartmentsData, GetAllDepartmentsVars>, { data: Department[]; loading: boolean; error?: ApolloError; called: boolean; refetch?: QueryResult<GetAllDepartmentsData, GetAllDepartmentsVars>['refetch']; fetchMore?: QueryResult<GetAllDepartmentsData, GetAllDepartmentsVars>['fetchMore'] }]}
  */
-export function useDepartments (): [any, { data: any[]; loading: boolean; error: any }] {
-  const [getDepartments, { data, loading, error }] = useLazyQuery(GET_ALL_DEPARTMENTS)
-  return [getDepartments, { data: data ? data?.getAllDepartments : [], loading, error }]
+export function useDepartments(): readonly [
+  LazyQueryExecFunction<GetAllDepartmentsData, GetAllDepartmentsVars>,
+  {
+    data: Department[]
+    loading: boolean
+    error?: ApolloError
+    called: boolean
+    refetch?: QueryResult<GetAllDepartmentsData, GetAllDepartmentsVars>['refetch']
+    fetchMore?: QueryResult<GetAllDepartmentsData, GetAllDepartmentsVars>['fetchMore']
+  }
+] {
+  const [getDepartments, query] = useLazyQuery<
+    GetAllDepartmentsData,
+    GetAllDepartmentsVars
+  >(GET_ALL_DEPARTMENTS)
+
+  const mapped = {
+    data: query.data?.getAllDepartments ?? [],
+    loading: query.loading,
+    error: query.error,
+    called: query.called,
+    refetch: query.refetch,
+    fetchMore: query.fetchMore
+  }
+
+  // 👇 CLAVE: forzamos el tipo de tupla con `as const`
+  return [getDepartments, mapped] as const
 }
