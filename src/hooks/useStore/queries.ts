@@ -53,16 +53,12 @@ query getStore($id: ID, $idStore: ID) {
       cName
       cCalCod
       cState
-      cDatCre
-      cDatMod
     }
     city {
       ctId
       dId
       cName
       cState
-      cDatCre
-      cDatMod
     }
     department {
       dId
@@ -129,16 +125,12 @@ query getOneStore($StoreName: String, $idStore: ID){
       cName
       cCalCod
       cState
-      cDatCre
-      cDatMod
     }
     city {
       ctId
       dId
       cName
       cState
-      cDatCre
-      cDatMod
     }
     department {
       dId
@@ -146,15 +138,12 @@ query getOneStore($StoreName: String, $idStore: ID){
       dName
       dState
       dDatCre
-      dDatMod
     }
     cateStore {
       catStore
       idUser
       cName
       cState
-      cDatCre
-      cDatMod
       csDescription
       
     }

@@ -25,8 +25,7 @@ export const useManageNewOrder = ({
   setCountOrders,
   sendNotification
 }: UseManageNewOrderProps) => {
-  // eslint-disable-next-line
-  console.log('🚀 ~ useManageNewOrder ~ idStore:', idStore)
+   
   const KEY_STATUS_ORDER = 'ACEPTA'
   const [orders, setOrders] = useState<any[]>([])
 
