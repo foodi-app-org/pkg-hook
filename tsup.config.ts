@@ -9,6 +9,10 @@ export default defineConfig({
     clean: true,
     sourcemap: true,
     target: 'es2022',
+    // Emit extensions that match package.json ("main": index.cjs / "module": index.mjs)
+    outExtension: ({ format }) => {
+        return { js: format === 'cjs' ? '.cjs' : '.mjs' }
+    },
     external: [
         'react',
         'react-dom',

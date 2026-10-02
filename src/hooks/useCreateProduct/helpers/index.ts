@@ -1,4 +1,4 @@
-import { SendNotificationFn } from 'typesdefs';
+import type { SendNotificationFn } from 'typesdefs';
 
 const MAX_PRICE = 999999999999.99
 

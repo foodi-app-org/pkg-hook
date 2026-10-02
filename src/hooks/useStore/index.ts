@@ -1,6 +1,6 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import { useState, useEffect } from 'react'
-import { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
+import type { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
 
 import { errorHandler, ErrorWithErrors } from '../../config/client'
 import { useLogout } from '../useLogout'

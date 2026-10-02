@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
+import type { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
 
 import { filterAndSortByDate } from '../useRestaurant/helpers'
 import { getStatusForStores } from '../useRestaurant/helpers/manageStatusOpen'

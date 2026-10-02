@@ -30,7 +30,7 @@ import { useStore } from '../useStore'
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
 
 import { addToCartFunc } from './helpers/add-product.utils'
-import { applyDiscountToCart } from './helpers/apply-discount-to-cart.utils'
+import { applyDiscountToCart, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
 import { decrementExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
@@ -57,16 +57,20 @@ import { UseSalesProps } from './types/use-sales.types'
 import { useGetSale } from './useGetSale'
 
 import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
-
+import { useManageQueryParams } from '../useManageQueryParams'
+export {SalesActionTypes} from './helpers/constants'
 export const useSales = ({
   disabled = false,
   // router,
   sendNotification = (args) => { return args },
-  setAlertBox = (args) => { return args }
+  setAlertBox = (args) => { return args },
+  onSaleSuccess = (args) => { return args }, 
 }: UseSalesProps) => {
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
   const domain = getCurrentDomain()
+  const { handleQuery } = useManageQueryParams()
+
   const [loadingSale, setLoadingSale] = useState(false)
   const [delivery, setDelivery] = useState<boolean>(false)
   const [errorSale, setErrorSale] = useState(false)
@@ -81,10 +85,14 @@ export const useSales = ({
   useCatWithProduct({
     max: Infinity,
     callback: (data: GetCatProductsWithProductResponse) => {
+
       if (!data?.getCatProductsWithProduct?.catProductsWithProduct) {
-        return setCategories(data.getCatProductsWithProduct?.catProductsWithProduct || [])
+        return setCategories([])
       }
-      return setCategories([])
+
+      return setCategories(
+        data.getCatProductsWithProduct.catProductsWithProduct || []
+      )
     }
   })
 
@@ -137,11 +145,11 @@ export const useSales = ({
           ? 'Éxito'
           : 'Error'
         sendNotification({
-          backgroundColor: error ? AlertBoxType.SUCCESS : AlertBoxType.ERROR,
+          backgroundColor: error ? 'success' : 'error',
           title: error,
           description: message
         })
-        setAlertBox({ message, type: AlertBoxType.SUCCESS })
+        setAlertBox({ message, type: 'success' as AlertBoxType })
         if (message === 'Token expired') {
           onClickLogout({
             refresh: true,
@@ -774,7 +782,7 @@ export const useSales = ({
         pickUp: 1,
         shoppingCartRefCode,
         discount: {
-          type: String(data.discountType),
+          type: data.discountType ? String(data.discountType) : TypeDiscount.PERCENT,
           value: 2
         },
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
@@ -798,10 +806,7 @@ export const useSales = ({
             setPrint(false)
             client.query({
               query: GET_ALL_COUNT_SALES,
-              fetchPolicy: 'network-only',
-              // onCompleted: (data) => {
-              //   client.writeQuery({ query: GET_ALL_COUNT_SALES, data: { getTodaySales: data.countSales.todaySales } })
-              // }
+              fetchPolicy: 'network-only'
             })
             setValues(initialValuesState)
             handleChange({ target: { name: 'tableId', value: '' } }, false)
@@ -814,30 +819,12 @@ export const useSales = ({
                 const currentSale = responseSale?.data?.getOneSalesStore || {}
                 const inComingCodeRef = currentSale?.pCodeRef || null
                 if (!inComingCodeRef) return
-                // client.cache.modify({
-                //   fields: {
-                //     getAllOrdersFromStore (existingOrders = []) {
-                //       try {
-                //         const newGetAllOrdersFromStore = updateExistingOrders(existingOrders, inComingCodeRef, 4, currentSale)
-                //         return newGetAllOrdersFromStore
-                //       } catch (e) {
-                //         return existingOrders
-                //       }
-                //     }
-                //   }
-                // })
               }
             })
-            // router.push(
-            //   {
-            //     query: {
-            //       ...router.query,
-            //       saleId: code
-            //     }
-            //   },
-            //   undefined,
-            //   { shallow: true }
-            // )
+            onSaleSuccess({
+              code: code
+            })
+            handleQuery('sale', code)
           }
         }
         setLoadingSale(false)
