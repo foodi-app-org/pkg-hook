@@ -2,42 +2,44 @@ import { SalesState } from '../types'
 
 import type { Product } from 'typesdefs'
 
-
 /**
- * Toggles editing state of a product with maximum performance.
- * @param state
- * @param action
- * @param action.payload
- * @param action.payload.pId
- * @returns {SalesState} Updated state.
+ * Toggles the editing state of a product.
+ *
+ * @param state Current sales state.
+ * @param action Product containing the pId to toggle.
+ * @returns Updated sales state.
  */
 export const handleToggleEditingStatus = (
     state: SalesState,
-    action: { payload: { pId: string } }
+    action: Product
 ): SalesState => {
-    const pId = action?.payload?.pId
-    if (!pId) return state
+    const pId = action?.pId
 
-    const list = state.PRODUCT
-    const index = list.findIndex((item: Product) => { return item.pId === pId })
+    if (!pId) {
+        return state
+    }
 
-    // If no match, nothing changes → no re-render
-    if (index === -1) return state
+    const index = state.PRODUCT.findIndex(
+        (item: Product) => item.pId === pId
+    )
 
-    const target = list[index]
+    if (index === -1) {
+        return state
+    }
 
-    const updatedItem = {
+    const target = state.PRODUCT[index]
+
+    const updatedItem: Product = {
         ...target,
         editing: !target.editing,
         oldQuantity: target.ProQuantity ?? 0
     }
 
-    // Clone the array only once
-    const newList = [...list]
-    newList[index] = updatedItem
+    const PRODUCT = [...state.PRODUCT]
+    PRODUCT[index] = updatedItem
 
     return {
         ...state,
-        PRODUCT: newList
+        PRODUCT
     }
 }

@@ -460,6 +460,16 @@ export const useDessert = ({
     setTitle('')
   }
   const handleAdd = ({ listId }: { listId: string }) => {
+    if (valueItems.length < 2) return sendNotification({
+        description: 'El nombre del item debe tener al menos 2 caracteres',
+        title: 'Error',
+        backgroundColor: 'warning'
+      })
+       if (valueItems.length >= 255) return sendNotification({
+        description: 'El nombre del item debe tener como máximo 255 caracteres',
+        title: 'Error',
+        backgroundColor: 'warning'
+      })
     if (valueItems !== '' && valueItems.trim() !== '') {
       addCard(valueItems, listId)
     }

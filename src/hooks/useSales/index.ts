@@ -58,13 +58,14 @@ import { useGetSale } from './useGetSale'
 
 import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
 import { useManageQueryParams } from '../useManageQueryParams'
-export {SalesActionTypes} from './helpers/constants'
+export { SalesActionTypes } from './helpers/constants'
+
 export const useSales = ({
   disabled = false,
   // router,
   sendNotification = (args) => { return args },
   setAlertBox = (args) => { return args },
-  onSaleSuccess = (args) => { return args }, 
+  onSaleSuccess = (args) => { return args },
 }: UseSalesProps) => {
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
@@ -285,38 +286,50 @@ export const useSales = ({
         ...values,
         comment: product?.comment ?? ''
       })
+      setOpenCommentModal(true)
+      return
     }
-    setOpenCommentModal(!openCommentModal)
+    setOpenCommentModal(false)
   }
 
-  const handleSuccessUpdateQuantity = (state: SalesState, payload: { payload: { pId: string } }) => {
-    const pId = payload?.payload?.pId
-    if (!pId) return state
+  const handleSuccessUpdateQuantity = (
+    state: SalesState,
+    action: { pId: string }
+  ): SalesState => {
+    const pId = action?.pId
 
-    const list = state.PRODUCT
-    const index = list.findIndex((item: Product) => { return item.pId === pId })
+    if (!pId) {
+      return state
+    }
 
-    // If no match → no state changes → no rerender
-    if (index === -1) return state
+    const index = state.PRODUCT.findIndex(
+      (item: Product) => item.pId === pId
+    )
 
-    const target = list[index]
-    const updatedItem = {
+    if (index === -1) {
+      return state
+    }
+
+    const target = state.PRODUCT[index]
+
+    const updatedItem: Product = {
       ...target,
       editing: false,
       oldQuantity: target.ProQuantity ?? 0
     }
 
-    // Clone array ONCE
-    const newList = [...list]
-    newList[index] = updatedItem
+    const PRODUCT = [...state.PRODUCT]
+    PRODUCT[index] = updatedItem
+
     sendNotification({
       title: 'Cantidad actualizada',
       backgroundColor: 'success',
       description: `La cantidad de ${target.pName} ha sido actualizada a ${updatedItem.ProQuantity}.`
     })
+
     return {
       ...state,
-      PRODUCT: newList
+      PRODUCT
     }
   }
 
@@ -329,66 +342,57 @@ export const useSales = ({
    * @param payload.payload.pId
    * @returns {Object} - The new state with the updated product quantity and editing status.
    */
-  const handleCancelUpdateQuantity = (state: SalesState, payload: { payload: { pId: string } }) => {
-    // Validación de `state`
-    if (!state || typeof state !== 'object') {
-      sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
-      })
-      return state // Retorna el estado sin cambios si es inválido.
-    }
+  const handleCancelUpdateQuantity = (
+    state: SalesState,
+    action: { pId: string }
+  ): SalesState => {
+    const pId = action?.pId
 
-    // Validación de `PRODUCT`
-    if (!Array.isArray(state.PRODUCT)) {
-      sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
-      })
+    if (!pId) {
       return state
     }
 
-    // Validación de `payload`
-    const { pId } = payload.payload || {}
-    if (!pId) {
+    const index = state.PRODUCT.findIndex(
+      (item: Product) => item.pId === pId
+    )
+
+    if (index === -1) {
+      return state
+    }
+
+    const target = state.PRODUCT[index]
+
+    if (
+      typeof target.oldQuantity !== 'number' ||
+      typeof target.unitPrice !== 'number'
+    ) {
       sendNotification({
         title: 'Error',
         backgroundColor: 'error',
-        description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
+        description: 'No fue posible restaurar la cantidad del producto.'
       })
-      return state // Retorna el estado sin cambios si falta `pId`.
+
+      return state
     }
+
+    const updatedItem: Product = {
+      ...target,
+      editing: false,
+      ProQuantity: target.oldQuantity,
+      ProPrice: target.oldQuantity * target.unitPrice
+    }
+
+    const PRODUCT = [...state.PRODUCT]
+    PRODUCT[index] = updatedItem
 
     return {
       ...state,
-      PRODUCT: state.PRODUCT.map((item: Product) => {
-        // Validación de propiedades en cada item
-        if (item.pId === pId) {
-          if (typeof item.oldQuantity !== 'number' || typeof item.unitPrice !== 'number') {
-            sendNotification({
-              title: 'Error',
-              backgroundColor: 'error',
-              description: 'Ha ocurrido un error al actualizar la cantidad del producto.'
-            })
-            return item // Retorna el item sin cambios si las propiedades son inválidas.
-          }
-
-          return {
-            ...item,
-            editing: false,
-            ProQuantity: item.oldQuantity,
-            ProPrice: item.oldQuantity * item.unitPrice
-          }
-        }
-
-        return item
-      })
+      PRODUCT
     }
   }
 
   const PRODUCT = (state: SalesState, action: SalesReducerAction) => {
+    console.log(action)
     switch (action.type) {
       case SalesActionTypes.ADD_TO_CART:
         return addToCartFunc({
@@ -461,9 +465,12 @@ export const useSales = ({
       case SalesActionTypes.PUT_COMMENT:
         return handleCommentProduct({
           state,
-          action: action.payload as unknown as { payload: string | number },
+          pId: action.payload as string,
           deleteValue: false,
-          value: values.comment
+          value: values.comment,
+          sendNotification,
+          setOpenCommentModal,
+          openCommentModal
         })
       case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
         return handleUpdateAllExtraAndOptional(state, {
@@ -971,13 +978,16 @@ export const useSales = ({
   const filteredProducts = filterProductsByCarProId(productsFood, carProIds)
 
   const allProducts = useMemo(() => {
-    const productMap = new Map(data?.PRODUCT?.map((item: any) => { return [String(item.pId), item.ProQuantity || 0] }))
+    const cartMap = new Map(data?.PRODUCT?.map((item: any) => { return [String(item.pId), item] }))
 
     return filteredProducts.map(product => {
+      const cartItem = cartMap.get(String(product.pId))
       return {
         ...product,
-        existsInSale: productMap.has(String(product.pId)),
-        ProQuantity: productMap.get(String(product.pId)) || 0
+        existsInSale: cartMap.has(String(product.pId)),
+        ProQuantity: cartItem?.ProQuantity || 0,
+        editing: cartItem?.editing ?? false,
+        oldQuantity: cartItem?.oldQuantity
       }
     })
   }, [data.PRODUCT, filteredProducts])
