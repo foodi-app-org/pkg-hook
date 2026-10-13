@@ -1,12 +1,13 @@
-import { useApolloClient, useQuery } from '@apollo/client'
-import { useState, useEffect } from 'react'
-import type { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
+import { useQuery } from '@apollo/client'
+import { useEffect, useRef, useState } from 'react'
+
 
 import { errorHandler, ErrorWithErrors } from '../../config/client'
 import { useLogout } from '../useLogout'
 
-import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries' // Reemplaza con la importación correcta de tu consulta
+import { GET_ONE_STORE, GET_ONE_STORE_BY_ID } from './queries'
 
+import type { IStore } from 'typesdefs/dist/hooks/hooks/useStore/types'
 
 type UseStoreCallback = () => void
 
@@ -16,25 +17,44 @@ interface UseStoreOptions {
   callback?: UseStoreCallback
 }
 
+interface StoreQueryData {
+  getStore: IStore
+}
+
+interface StoreByIdQueryData {
+  getOneStore: IStore
+}
+
+interface StoreQueryVariables {
+  idStore?: string | null
+}
+
+const EMPTY_STORE = {} as IStore
+const NOOP: UseStoreCallback = () => {}
+
 /**
  *
- * @param isClient
- * @param idStore
- * @param callback
- * @param setStore
- * @param setLoading
- * @param setError
- * @param onClickLogout
- * @returns {*}
+ * @param first
+ * @param second
  */
-interface UseStoreServerParams {
-  isClient: boolean;
-  idStore: string | null;
-  callback: UseStoreCallback;
-  setStore: React.Dispatch<React.SetStateAction<IStore>>;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  setError: React.Dispatch<React.SetStateAction<Error | null>>;
-  onClickLogout: () => void;
+function areStoreValuesEqual(
+  first: Partial<IStore> | null | undefined,
+  second: Partial<IStore> | null | undefined
+): boolean {
+  if (first === second) return true
+  if (!first || !second) return false
+
+  const firstRecord = first as unknown as Record<string, unknown>
+  const secondRecord = second as unknown as Record<string, unknown>
+  const firstKeys = Object.keys(firstRecord)
+  const secondKeys = Object.keys(secondRecord)
+
+  if (firstKeys.length !== secondKeys.length) return false
+
+  return firstKeys.every((key) => {
+    return Object.prototype.hasOwnProperty.call(secondRecord, key) &&
+      Object.is(firstRecord[key], secondRecord[key])
+  })
 }
 
 /**
@@ -42,158 +62,140 @@ interface UseStoreServerParams {
  * @param root0
  * @param root0.isClient
  * @param root0.idStore
- * @param root0.callback
- * @param root0.setStore
- * @param root0.setLoading
- * @param root0.setError
- * @param root0.onClickLogout
- * @returns {*}
  */
 function useStoreServer({
   isClient,
-  idStore,
-  callback,
-  setStore,
-  setLoading,
-  setError,
-  onClickLogout
-}: UseStoreServerParams) {
-  return useQuery(GET_ONE_STORE, {
-    skip: isClient && Boolean(idStore),
+  idStore
+}: Pick<UseStoreOptions, 'isClient' | 'idStore'>) {
+  return useQuery<StoreQueryData, StoreQueryVariables>(GET_ONE_STORE, {
+    skip: Boolean(isClient && idStore),
     variables: { idStore },
-    fetchPolicy: 'cache-first',
-    onCompleted: (data: { getStore: IStore }) => {
-      const { getStore } = data || {}
-      setStore(getStore)
-      setLoading(false)
-      callback()
-    },
-    onError: (err: unknown) => {
-      const networkError = (err as { networkError?: { bodyText?: string } })?.networkError
-      if (networkError && typeof networkError.bodyText === 'string') {
-        const response = errorHandler(networkError.bodyText as unknown as ErrorWithErrors)
-        if (response) {
-          onClickLogout()
-        }
-      }
-      setError(err as Error)
-      setLoading(false)
-    }
+    fetchPolicy: 'cache-first'
   })
 }
 
 /**
  *
- * @param cachedData
- * @param store
- * @param setStore
- * @param callback
- */
-function useCachedStore(
-  cachedData: { getStore: IStore } | null | undefined,
-  store: IStore,
-  setStore: React.Dispatch<React.SetStateAction<IStore>>,
-  callback: UseStoreCallback
-) {
-  useEffect(() => {
-    if (cachedData) {
-      const array = store ? Object.keys(store) : []
-      if ((!store || Array.isArray(array)) && array?.length === 0) {
-        setStore(cachedData.getStore)
-      }
-    }
-    callback()
-  }, [cachedData, store])
-}
-
-/**
- *
- * @param isClient
- * @param idStore
- * @param refetchClient
- * @param loadingClient
- * @param errorStoreClient
- * @param dataClient
- * @returns {*}
- */
-function useStoreClient(
-  isClient: boolean,
-  idStore: string | null,
-  refetchClient: any,
-  loadingClient: boolean,
-  errorStoreClient: Error | null,
-  dataClient: any
-): readonly [IStore, { loading: boolean; error: Error | null; refetch?: typeof refetchClient }] {
-  const dataOneStoreClient = loadingClient ? {} : dataClient?.getOneStore
-  return [dataOneStoreClient, {
-    loading: loadingClient,
-    error: errorStoreClient,
-    refetch: refetchClient
-  }] as const
-}
-
-/**
- *
- * @param store
- * @param load
- * @param loadingServer
+ * @param data
  * @param loading
- * @param errorStoreServer
- * @param error
- * @returns {*}
  */
-function useStoreServerReturn(
+function getClientStore(
+  data: StoreByIdQueryData | undefined,
+  loading: boolean
+): IStore {
+  if (loading) return EMPTY_STORE
+  return data?.getOneStore ?? EMPTY_STORE
+}
+
+/**
+ *
+ * @param store
+ * @param loading
+ * @param error
+ * @param refetch
+ */
+function getServerStoreState(
   store: IStore,
-  load: boolean,
-  loadingServer: boolean,
   loading: boolean,
-  errorStoreServer: Error | null,
-  error: Error | null
-): readonly [IStore, { loading: boolean; error: Error | null }] {
-  return [store, { loading: load || loadingServer || loading, error: errorStoreServer || error }] as const
+  error: Error | null,
+  refetch: () => Promise<unknown>
+): readonly [IStore, { loading: boolean; error: Error | null; refetch: () => Promise<unknown> }] {
+  return [store, { loading, error, refetch }] as const
 }
 
 export const useStore = ({
   isClient = false,
   idStore = null,
-  callback = (() => {}) as UseStoreCallback
-}: UseStoreOptions = {}): readonly [IStore, { loading: boolean; error: Error | null; refetch?: any }] => {
-  const client = useApolloClient()
-  const { onClickLogout, loading: load } = useLogout()
+  callback = NOOP
+}: UseStoreOptions = {}): readonly [
+  IStore,
+  { loading: boolean; error: Error | null; refetch?: (...args: any[]) => any }
+] => {
+  const shouldUseClientStore = Boolean(isClient && idStore)
+  const { onClickLogout, loading: logoutLoading } = useLogout()
 
-  const [store, setStore] = useState<IStore>({} as IStore)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
+  const [store, setStore] = useState<IStore>(EMPTY_STORE)
+  const callbackRef = useRef<UseStoreCallback>(callback)
+  const logoutRef = useRef(onClickLogout)
+  const lastProcessedStoreRef = useRef<IStore | null>(null)
 
-  const cachedData = client.readQuery<{ getStore: IStore }>({ query: GET_ONE_STORE })
+  // Mantiene las funciones actuales sin obligar a los efectos de datos a ejecutarse
+  // de nuevo cada vez que el componente padre crea callbacks nuevos.
+  useEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
+
+  useEffect(() => {
+    logoutRef.current = onClickLogout
+  }, [onClickLogout])
+
+  const {
+    data: dataServer,
+    loading: loadingServer,
+    error: errorStoreServer,
+    refetch: refetchServer
+  } = useStoreServer({ isClient, idStore })
+
   const {
     data: dataClient,
     refetch: refetchClient,
     loading: loadingClient,
     error: errorStoreClient
-  } = useQuery(GET_ONE_STORE_BY_ID, {
-    skip: !isClient || !idStore,
+  } = useQuery<StoreByIdQueryData, StoreQueryVariables>(GET_ONE_STORE_BY_ID, {
+    skip: !shouldUseClientStore,
     variables: { idStore }
   })
 
-  const {
-    loading: loadingServer,
-    error: errorStoreServer
-  } = useStoreServer({
-    isClient,
-    idStore,
-    callback,
-    setStore,
-    setLoading,
-    setError,
-    onClickLogout
-  })
+  // Actualiza el estado únicamente después de que React haya montado el hook.
+  // No se actualiza estado desde onCompleted/onError de Apollo.
+  useEffect(() => {
+    if (shouldUseClientStore) return
 
-  useCachedStore(cachedData, store, setStore, callback)
+    const nextStore = dataServer?.getStore
+    if (!nextStore) return
 
-  if (isClient && idStore) {
-    return useStoreClient(isClient, idStore, refetchClient, loadingClient, errorStoreClient as Error | null, dataClient)
+    setStore((currentStore) => {
+      return areStoreValuesEqual(currentStore, nextStore) ? currentStore : nextStore
+    })
+
+    const previousStore = lastProcessedStoreRef.current
+    if (!areStoreValuesEqual(previousStore, nextStore)) {
+      lastProcessedStoreRef.current = nextStore
+      callbackRef.current()
+    }
+  }, [dataServer, shouldUseClientStore])
+
+  // Los errores también se procesan en un efecto, no desde callbacks de la consulta.
+  useEffect(() => {
+    if (shouldUseClientStore || !errorStoreServer) return
+
+    const networkError = (
+      errorStoreServer as unknown as { networkError?: { bodyText?: string } }
+    )?.networkError
+
+    if (networkError && typeof networkError.bodyText === 'string') {
+      const response = errorHandler(
+        networkError.bodyText as unknown as ErrorWithErrors
+      )
+
+      if (response) logoutRef.current()
+    }
+  }, [errorStoreServer, shouldUseClientStore])
+
+  if (shouldUseClientStore) {
+    const clientStore = getClientStore(dataClient, loadingClient)
+
+    return [clientStore, {
+      loading: loadingClient,
+      error: (errorStoreClient as Error | null) ?? null,
+      refetch: refetchClient
+    }] as const
   }
 
-  return useStoreServerReturn(store, load, loadingServer, loading, errorStoreServer as Error | null, error)
+  return getServerStoreState(
+    dataServer?.getStore ?? store,
+    Boolean(logoutLoading || loadingServer),
+    (errorStoreServer as Error | null) ?? null,
+    refetchServer as () => Promise<unknown>
+  )
 }

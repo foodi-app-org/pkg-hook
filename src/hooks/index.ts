@@ -155,3 +155,6 @@ export * from './getSession'
 export * from './useLoading'
 export * from './useDeleteDashboardComponent'
 export * from './useCreateDashboardComponent'
+export * from './useWhatsApp/useWhatsApp'
+export * from './useWhatsApp/useWhatsAppMessageStats'
+

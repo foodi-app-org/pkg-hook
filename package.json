@@ -1,10 +1,11 @@
 {
   "dependencies": {
-    "@apollo/client": "3.13.5",
+    "@apollo/client": "^3.13.5",
     "file-saver": "2.0.5",
     "graphql": "16.12.0",
     "js-cookie": "3.0.5",
     "lodash": "4.17.23",
+    "qrcode": "1.5.4",
     "typesdefs": "^1.0.9",
     "xlsx": "0.18.5"
   },
@@ -13,6 +14,7 @@
     "@babel/preset-env": "7.29.0",
     "@babel/preset-typescript": "7.28.5",
     "@eslint/js": "9.39.2",
+    "@tanstack/react-query": "5.104.2",
     "@types/file-saver": "2.0.7",
     "@types/js-cookie": "3.0.6",
     "@types/lodash": "4.17.23",
@@ -47,6 +49,8 @@
   "module": "dist/index.mjs",
   "name": "npm-pkg-hook",
   "peerDependencies": {
+    "@apollo/client": "^3.13.5",
+    "@tanstack/react-query": "^5.0.0",
     "next": "^14 || ^15",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"

@@ -19,7 +19,9 @@ export default defineConfig({
         'next',
         '@apollo/client',
         'graphql',
-        'js-cookie'
+        'js-cookie',
+        '@tanstack/react-query',
+        '@tanstack/query-core',
     ],
     esbuildOptions: (ctx) => {
         // Si necesitas tweaks extra a esbuild, los pones aquí
