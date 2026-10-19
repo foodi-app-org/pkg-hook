@@ -156,5 +156,9 @@ export * from './useLoading'
 export * from './useDeleteDashboardComponent'
 export * from './useCreateDashboardComponent'
 export * from './useWhatsApp/useWhatsApp'
+export * from './useWhatsApp/useWhatsAppCampaignUpload'
+export * from './useWhatsApp/helpers/campaignExcel'
 export * from './useWhatsApp/useWhatsAppMessageStats'
+
+
 

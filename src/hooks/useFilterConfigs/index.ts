@@ -138,8 +138,7 @@ export const useFilterConfigs = ({
 
   if (error && onError) onError(error as Error)
 
-  const rawRecords =
-        Array.isArray((data as any)?.filterConfigs) ? (data as any).filterConfigs as FilterConfigRecord[] : null
+  const rawRecords = Array.isArray((data as any)?.filterConfigs) ? (data as any).filterConfigs as FilterConfigRecord[] : null
 
   // let tabs: FilterTab[] = []
 
