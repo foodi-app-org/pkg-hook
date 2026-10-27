@@ -392,7 +392,6 @@ export const useSales = ({
   }
 
   const PRODUCT = (state: SalesState, action: SalesReducerAction) => {
-    console.log(action)
     switch (action.type) {
       case SalesActionTypes.ADD_TO_CART:
         return addToCartFunc({
@@ -703,7 +702,7 @@ export const useSales = ({
       const { total } = a || {}
       runningTotal += total
     })
-    setTotalProductPrice(Math.abs(runningTotal))
+    setTotalProductPrice(Math.max(0, runningTotal))
     if (data.PRODUCT.length === 0) {
       setTotalProductPrice(0)
     }
@@ -712,14 +711,21 @@ export const useSales = ({
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
   // Removed console.log(data)
+  // Safe monetary converter: strips thousand-separator dots then parses as float,
+  // rounds to the nearest integer (Colombian peso — no cents in this POS).
+  // parseInt was previously used here but is unsafe because parseInt('10.500', 10)
+  // returns 10 instead of 10500.
   const convertInteger = (cadena: string | number): number => {
-    if (typeof cadena === 'string') {
-      const numeroEntero = Number.parseInt(cadena.replace('.', ''))
-      return numeroEntero
-    }
-    return (typeof cadena === 'number' ? cadena : 0)
+    if (typeof cadena === 'number') return Number.isFinite(cadena) ? Math.round(cadena) : 0
+    if (typeof cadena !== 'string' || cadena.trim() === '') return 0
+    // Strip thousand-separator dots (Colombian locale uses '.' as thousands sep)
+    const cleaned = cadena.trim().replace(/\./g, '').replace(',', '.')
+    const parsed = parseFloat(cleaned)
+    return Number.isFinite(parsed) ? Math.round(parsed) : 0
   }
   const handleSubmit = () => {
+    // Double-submit guard: prevent a second mutation while one is already in-flight.
+    if (loadingSale || loadingRegisterSale) return
 
     if (errors?.change || errors?.valueDelivery) {
       return sendNotification({
@@ -790,7 +796,7 @@ export const useSales = ({
         shoppingCartRefCode,
         discount: {
           type: data.discountType ? String(data.discountType) : TypeDiscount.PERCENT,
-          value: 2
+          value: data.discountAmount ?? 0
         },
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
       },
@@ -1041,7 +1047,9 @@ export const useSales = ({
     dataExtra: dataExtra || [],
     fetchMore,
     pagination,
-    discount: 0,
+    discount: data.discountAmount ?? 0,
+    discountPercent: data.discountPercent ?? 0,
+    discountAmount: data.discountAmount ?? 0,
     datCat: categories,
     currentPage,
     loadingProduct: loading,

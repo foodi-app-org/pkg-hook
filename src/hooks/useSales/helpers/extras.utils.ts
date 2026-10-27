@@ -34,7 +34,7 @@ export const decrementExtra = (dataExtra = [], exPid: string | number) => {
     if (producto.exPid === exPid) {
       const { quantity = 0, extraPrice = 0 } = producto
       const newQuantity = Math.max(quantity - 1, 0)
-      const newExtraPrice = newQuantity === 0 ? extraPrice : extraPrice * newQuantity
+      const newExtraPrice = newQuantity === 0 ? 0 : extraPrice * newQuantity
       return { ...producto, quantity: newQuantity, newExtraPrice }
     }
     return producto
