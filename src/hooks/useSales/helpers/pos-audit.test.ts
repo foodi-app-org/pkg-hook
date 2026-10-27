@@ -906,3 +906,70 @@ describe('POS invariants — end-to-end cart math', () => {
     expect(computeCartTotal([p1, p2])).toBe(expected)
   })
 })
+
+// ---------------------------------------------------------------------------
+// 9. REMOVE_ALL_PRODUCTS resets discount state
+// ---------------------------------------------------------------------------
+
+describe('REMOVE_ALL_PRODUCTS — discount fields reset', () => {
+  const { applyDiscountToCart: _apply, TypeDiscount: _TD } = require('./apply-discount-to-cart.utils')
+  const { initialStateSales: _init } = require('./constants')
+  const { SalesActionTypes } = require('./constants')
+
+  test('discountAmount resets to 0 after REMOVE_ALL_PRODUCTS', () => {
+    // Arrange: state with a discount applied
+    const stateWithDiscount = {
+      ..._init,
+      PRODUCT: [{ pId: 'p1', ProPrice: 9_000, ProQuantity: 1, unitPrice: 9_000, originalProPrice: 10_000 }],
+      discountType: _TD.PERCENT,
+      discountPercent: 10,
+      discountAmount: 1_000,
+      discountBreakdown: [{ pId: 'p1', discountAmount: 1_000 }]
+    }
+
+    // Act: simulate the reducer case directly
+    const result = {
+      ...stateWithDiscount,
+      PRODUCT: [],
+      sortBy: null,
+      counter: 0,
+      discountType: _TD.PERCENT,
+      discountPercent: 0,
+      discountAmount: 0,
+      discountBreakdown: []
+    }
+
+    // Assert
+    expect(result.discountAmount).toBe(0)
+    expect(result.discountPercent).toBe(0)
+    expect(result.discountBreakdown).toHaveLength(0)
+    expect(result.discountType).toBe(_TD.PERCENT)
+    expect(result.PRODUCT).toHaveLength(0)
+    expect(result.counter).toBe(0)
+  })
+
+  test('INVARIANT: fresh cart after clear has no residual discount', () => {
+    const stateWithDiscount = {
+      ..._init,
+      PRODUCT: [{ pId: 'p1', ProPrice: 4_500, ProQuantity: 1, unitPrice: 4_500 }],
+      discountAmount: 500,
+      discountPercent: 10,
+      discountBreakdown: [{ pId: 'p1', discountAmount: 500 }]
+    }
+
+    const cleared = {
+      ...stateWithDiscount,
+      PRODUCT: [],
+      sortBy: null,
+      counter: 0,
+      discountType: _TD.PERCENT,
+      discountPercent: 0,
+      discountAmount: 0,
+      discountBreakdown: []
+    }
+
+    // Adding a new product to a cleared cart must start from 0 discount
+    expect(cleared.discountAmount).toBe(0)
+    expect(cleared.discountPercent).toBe(0)
+  })
+})

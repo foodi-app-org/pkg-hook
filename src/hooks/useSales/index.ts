@@ -444,7 +444,11 @@ export const useSales = ({
           ...state,
           PRODUCT: [],
           sortBy: null,
-          counter: 0
+          counter: 0,
+          discountType: TypeDiscount.PERCENT,
+          discountPercent: 0,
+          discountAmount: 0,
+          discountBreakdown: []
         }
 
       case SalesActionTypes.TOGGLE_FREE_PRODUCT:
