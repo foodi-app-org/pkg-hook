@@ -19,7 +19,9 @@ export enum SalesActionTypes {
     PRICE_RANGE = 'PRICE_RANGE',
     SORT = 'SORT',
     PAYMENT_METHOD = 'PAYMENT_METHOD',
-    APPLY_DISCOUNT = 'APPLY_DISCOUNT'
+    APPLY_DISCOUNT = 'APPLY_DISCOUNT',
+    RESTORE_PENDING_ORDER = 'RESTORE_PENDING_ORDER'
+    
 }
 
 export const initialStateSales: SalesState = {

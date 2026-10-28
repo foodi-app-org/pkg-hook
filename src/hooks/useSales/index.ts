@@ -55,10 +55,11 @@ import {
 import { SalesReducerAction, SalesState, ValuesState } from './types'
 import { UseSalesProps } from './types/use-sales.types'
 import { useGetSale } from './useGetSale'
+import { usePendingOrders } from './usePendingOrders'
+import type { PendingOrder, PendingOrderCustomer } from './types/pending-orders.types'
 
 import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
 import { useManageQueryParams } from '../useManageQueryParams'
-import { usePendingOrders } from './usePendingOrders'
 export { SalesActionTypes } from './helpers/constants'
 
 export const useSales = ({
@@ -67,6 +68,7 @@ export const useSales = ({
   sendNotification = (args) => { return args },
   setAlertBox = (args) => { return args },
   onSaleSuccess = (args) => { return args },
+  pendingOrdersPersistence
 }: UseSalesProps) => {
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
@@ -501,6 +503,31 @@ export const useSales = ({
           sendNotification
         )
       }
+      case SalesActionTypes.RESTORE_PENDING_ORDER: {
+        const payload = action.payload
+        const restoredProducts = Array.isArray(payload?.products)
+          ? payload.products
+          : []
+        const counter = restoredProducts.reduce((total, item) => {
+          return total + Math.max(0, Number(item.ProQuantity) || 0)
+        }, 0)
+
+        return {
+          ...state,
+          PRODUCT: restoredProducts,
+          counter,
+          discountType: payload.discountType
+            ? payload.discountType as TypeDiscount
+            : TypeDiscount.PERCENT,
+          discountPercent: Number.isFinite(payload.discountPercent)
+            ? Math.max(0, payload.discountPercent)
+            : 0,
+          discountAmount: Number.isFinite(payload.discountAmount)
+            ? Math.max(0, payload.discountAmount)
+            : 0,
+          discountBreakdown: []
+        }
+      }
       default:
         return state
     }
@@ -508,17 +535,25 @@ export const useSales = ({
 
   const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
 
+
+  const [activePendingOrderId, setActivePendingOrderId] = useState<string | null>(null)
+
   const {
     pendingOrders,
     activePendingOrders,
     pendingOrdersCount,
+    isPendingOrdersReady,
+    canPersistPendingOrders,
     savePendingOrder,
     resumePendingOrder,
     removePendingOrder,
     updatePendingOrder,
     updatePendingStatus,
-    clearPendingOrders
+    clearPendingOrders,
+    persistPendingOrder,
+    searchPendingOrders
   } = usePendingOrders({
+    persistence: pendingOrdersPersistence,
     onError: (message) => {
       sendNotification({
         title: 'Orden pendiente',
@@ -527,60 +562,6 @@ export const useSales = ({
       })
     }
   })
-
-  /**
-   * Moves the current sale to the pending orders list.
-   *
-   * @returns {PendingOrder | null} Created pending order.
-   */
-  const handleSavePendingOrder = (): ReturnType<typeof savePendingOrder> => {
-    if (!data?.PRODUCT?.length) {
-      sendNotification({
-        title: 'Orden pendiente',
-        backgroundColor: 'warning',
-        description: 'Agrega al menos un producto antes de enviar la orden a espera.'
-      })
-
-      return null
-    }
-
-    const order = savePendingOrder({
-      products: data.PRODUCT,
-      values,
-      total: totalProductsPrice,
-      discountType: data.discountType,
-      discountPercent: data.discountPercent,
-      discountAmount: data.discountAmount,
-      customer: values.cliId
-        ? {
-          id: values.cliId
-        }
-        : null
-    })
-
-    if (!order) {
-      return null
-    }
-
-    /**
-     * Important:
-     * The current cart is cleared only after the pending order
-     * has been successfully created.
-     */
-    dispatch({
-      type: SalesActionTypes.REMOVE_ALL_PRODUCTS
-    })
-
-    setValues(initialValuesState)
-
-    sendNotification({
-      title: 'Orden en espera',
-      backgroundColor: 'success',
-      description: `La orden ${order.ticket} fue enviada a la lista de espera.`
-    })
-
-    return order
-  }
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
@@ -896,6 +877,13 @@ export const useSales = ({
           const { success } = registerSalesStore ?? {}
           if (success) {
             setPrint(false)
+
+            // Complete a resumed order only after the backend confirms the sale.
+            if (activePendingOrderId) {
+              updatePendingStatus(activePendingOrderId, 'COMPLETED')
+              setActivePendingOrderId(null)
+            }
+
             client.query({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only'
@@ -1079,6 +1067,123 @@ export const useSales = ({
 
   const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: Product) => { return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0) }, 0) }, [finalArrayProduct])
 
+
+  /**
+   * Parks the current cart, or updates the same order if it was resumed earlier.
+   * The cart is cleared only after the local snapshot has been persisted.
+   *
+   * @param {Partial<Omit<PendingOrderCustomer, 'id'>>} customerDetails - Optional customer details.
+   * @returns {PendingOrder | null} Saved order, or null when saving fails.
+   */
+  const handleSavePendingOrder = (
+    customerDetails: Partial<Omit<PendingOrderCustomer, 'id'>> = {}
+  ): PendingOrder | null => {
+    if (!Array.isArray(data?.PRODUCT) || data.PRODUCT.length === 0) {
+      sendNotification({
+        title: 'Orden pendiente',
+        backgroundColor: 'warning',
+        description: 'Agrega al menos un producto antes de enviar la orden a espera.'
+      })
+      return null
+    }
+
+    const customerHasDetails = Object.values(customerDetails).some(Boolean)
+    const customer: PendingOrderCustomer | null = values.cliId || customerHasDetails
+      ? { id: values.cliId || null, ...customerDetails }
+      : null
+
+    const snapshot = {
+      products: data.PRODUCT,
+      values: { ...values },
+      total: totalProductsPrice,
+      discountType: data.discountType ? String(data.discountType) : String(TypeDiscount.PERCENT),
+      discountPercent: Number(data.discountPercent) || 0,
+      discountAmount: Number(data.discountAmount) || 0,
+      customer
+    }
+
+    const activeOrder = pendingOrders.find(
+      (order) => order.id === activePendingOrderId && order.status === 'IN_PROGRESS'
+    )
+
+    const order = activeOrder
+      ? updatePendingOrder(activeOrder.id, { ...snapshot, status: 'PENDING' })
+      : savePendingOrder(snapshot)
+
+    if (!order) return null
+
+    dispatch({ type: SalesActionTypes.REMOVE_ALL_PRODUCTS })
+    setValues(initialValuesState)
+    setActivePendingOrderId(null)
+
+    sendNotification({
+      title: 'Orden en espera',
+      backgroundColor: 'success',
+      description: activeOrder
+        ? `La orden ${order.ticket} fue actualizada y devuelta a la lista de espera.`
+        : `La orden ${order.ticket} fue enviada a la lista de espera.`
+    })
+
+    return order
+  }
+
+  /**
+   * Restores a pending-order snapshot to the POS cart.
+   * Set replaceCurrent=true only after the UI has confirmed replacing a non-empty cart.
+   *
+   * @param {string} orderId - Pending order ID.
+   * @param {boolean} replaceCurrent - Whether to replace a non-empty current cart.
+   * @returns {boolean} Whether the order was resumed successfully.
+   */
+  const handleResumePendingOrder = (
+    orderId: string,
+    replaceCurrent = false
+  ): boolean => {
+    const order = pendingOrders.find((item) => item.id === orderId)
+
+    if (!order || !['PENDING', 'IN_PROGRESS'].includes(order.status)) {
+      sendNotification({
+        title: 'Orden pendiente',
+        backgroundColor: 'error',
+        description: 'La orden no existe o ya no se puede retomar.'
+      })
+      return false
+    }
+
+    if (data.PRODUCT.length > 0 && !replaceCurrent) {
+      sendNotification({
+        title: 'Carrito ocupado',
+        backgroundColor: 'warning',
+        description: 'Confirma el reemplazo del carrito actual antes de retomar esta orden.'
+      })
+      return false
+    }
+
+    const resumedOrder = resumePendingOrder(order.id)
+    if (!resumedOrder) return false
+
+    dispatch({
+      type: SalesActionTypes.RESTORE_PENDING_ORDER,
+      payload: {
+        products: resumedOrder.products,
+        discountType: resumedOrder.discountType || String(TypeDiscount.PERCENT),
+        discountPercent: resumedOrder.discountPercent,
+        discountAmount: resumedOrder.discountAmount
+      }
+    })
+
+    setValues({ ...resumedOrder.values })
+    setActivePendingOrderId(resumedOrder.id)
+
+    sendNotification({
+      title: 'Orden retomada',
+      backgroundColor: 'success',
+      description: `La orden ${resumedOrder.ticket} fue restaurada al carrito.`
+    })
+
+    return true
+  }
+
   const handleAddAllProductsToCart = () => {
     for (const product of allProducts) {
       const existsInCart = data.PRODUCT.some((item: any) => { return item.pId === product.pId })
@@ -1189,18 +1294,22 @@ export const useSales = ({
     setProduct,
     setPrint: handlePrint,
     PRODUCT,
-    
-    // PENDINGS ORDERS
-    handleSavePendingOrder,
 
+    // Pending orders
+    activePendingOrderId,
+    handleSavePendingOrder,
+    handleResumePendingOrder,
     pendingOrders,
     activePendingOrders,
     pendingOrdersCount,
-
+    isPendingOrdersReady,
+    canPersistPendingOrders,
     resumePendingOrder,
     removePendingOrder,
     updatePendingOrder,
     updatePendingStatus,
-    clearPendingOrders
+    clearPendingOrders,
+    persistPendingOrder,
+    searchPendingOrders
   }
 }
