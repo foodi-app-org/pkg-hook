@@ -58,6 +58,7 @@ import { useGetSale } from './useGetSale'
 
 import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
 import { useManageQueryParams } from '../useManageQueryParams'
+import { usePendingOrders } from './usePendingOrders'
 export { SalesActionTypes } from './helpers/constants'
 
 export const useSales = ({
@@ -506,6 +507,80 @@ export const useSales = ({
   }
 
   const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
+
+  const {
+    pendingOrders,
+    activePendingOrders,
+    pendingOrdersCount,
+    savePendingOrder,
+    resumePendingOrder,
+    removePendingOrder,
+    updatePendingOrder,
+    updatePendingStatus,
+    clearPendingOrders
+  } = usePendingOrders({
+    onError: (message) => {
+      sendNotification({
+        title: 'Orden pendiente',
+        backgroundColor: 'error',
+        description: message
+      })
+    }
+  })
+
+  /**
+   * Moves the current sale to the pending orders list.
+   *
+   * @returns {PendingOrder | null} Created pending order.
+   */
+  const handleSavePendingOrder = (): ReturnType<typeof savePendingOrder> => {
+    if (!data?.PRODUCT?.length) {
+      sendNotification({
+        title: 'Orden pendiente',
+        backgroundColor: 'warning',
+        description: 'Agrega al menos un producto antes de enviar la orden a espera.'
+      })
+
+      return null
+    }
+
+    const order = savePendingOrder({
+      products: data.PRODUCT,
+      values,
+      total: totalProductsPrice,
+      discountType: data.discountType,
+      discountPercent: data.discountPercent,
+      discountAmount: data.discountAmount,
+      customer: values.cliId
+        ? {
+          id: values.cliId
+        }
+        : null
+    })
+
+    if (!order) {
+      return null
+    }
+
+    /**
+     * Important:
+     * The current cart is cleared only after the pending order
+     * has been successfully created.
+     */
+    dispatch({
+      type: SalesActionTypes.REMOVE_ALL_PRODUCTS
+    })
+
+    setValues(initialValuesState)
+
+    sendNotification({
+      title: 'Orden en espera',
+      backgroundColor: 'success',
+      description: `La orden ${order.ticket} fue enviada a la lista de espera.`
+    })
+
+    return order
+  }
 
   const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
     if (!exOptional || !codeCategory) return
@@ -1089,7 +1164,15 @@ export const useSales = ({
         }
       })
     },
-    handleRemoveValue: handleRemoveComment,
+    handleRemoveValue: (params: { name: string; pId: string; value: string | null }) => {
+      return handleRemoveComment({
+        ...params,
+        values,
+        setValues,
+        sendNotification,
+        dispatch
+      })
+    },
     setDelivery,
     setValues,
     setShowMore,
@@ -1105,6 +1188,19 @@ export const useSales = ({
     handleIncrementExtra,
     setProduct,
     setPrint: handlePrint,
-    PRODUCT
+    PRODUCT,
+    
+    // PENDINGS ORDERS
+    handleSavePendingOrder,
+
+    pendingOrders,
+    activePendingOrders,
+    pendingOrdersCount,
+
+    resumePendingOrder,
+    removePendingOrder,
+    updatePendingOrder,
+    updatePendingStatus,
+    clearPendingOrders
   }
 }
