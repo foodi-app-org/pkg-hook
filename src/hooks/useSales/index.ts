@@ -60,6 +60,7 @@ import type { PendingOrder, PendingOrderCustomer } from './types/pending-orders.
 
 import type { AlertBoxType, Product, ExtProductFoodOptional, ExtProductFoodsAll } from 'typesdefs'
 import { useManageQueryParams } from '../useManageQueryParams'
+import { stripTypename } from '@apollo/client/utilities'
 export { SalesActionTypes } from './helpers/constants'
 
 export const useSales = ({
@@ -837,12 +838,12 @@ export const useSales = ({
 
     const shoppingCartRefCode = `REF-${RandomCode(36)}`
 
-    const input = finalArrayProduct.map((item: any) => {
-      return {
+    const input = stripTypename(
+      finalArrayProduct.map((item) => ({
         ...item,
         shoppingCartRefCode
-      }
-    })
+      }))
+    )
     return registerSalesStore({
       variables: {
         input,
