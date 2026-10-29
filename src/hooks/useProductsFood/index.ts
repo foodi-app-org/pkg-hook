@@ -35,6 +35,9 @@ interface UseProductsFoodOptions {
   toDate?: string | null
   dataSale?: Array<{ pId: string }>
   isShoppingCard?: boolean
+  priceMin?: number | null
+  priceMax?: number | null
+  orderBy?: string[]
   callback: (args: any) => void
 }
 export const useProductsFood = ({
@@ -52,6 +55,9 @@ export const useProductsFood = ({
   // toDate = null, // removed unused variable
   dataSale = [],
   isShoppingCard = false,
+  priceMin = null,
+  priceMax = null,
+  orderBy = [],
   callback
 }: UseProductsFoodOptions) => {
   const [showMore, setShowMore] = useState(500)
@@ -63,8 +69,11 @@ export const useProductsFood = ({
     max,
     min,
     pState,
-    search
-  }}, [categories, desc, gender, max, min, pState, search, callback])
+    search,
+    priceMin,
+    priceMax,
+    orderBy
+  }}, [categories, desc, gender, max, min, pState, search, priceMin, priceMax, orderBy, callback])
 
   const { data, loading, fetchMore, refetch, error, called } = useQuery(GET_ALL_PRODUCT_STORE, {
     onCompleted: (data) => {

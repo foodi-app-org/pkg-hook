@@ -87,6 +87,9 @@ query productFoodsAll(
   $fromDate: DateTime
   $toDate: DateTime
   $page: Int
+  $priceMin: Float
+  $priceMax: Float
+  $orderBy: [String]
 ) {
   productFoodsAll(
     search: $search
@@ -99,6 +102,9 @@ query productFoodsAll(
     toDate: $toDate
     fromDate: $fromDate
     page: $page
+    priceMin: $priceMin
+    priceMax: $priceMax
+    orderBy: $orderBy
   ) {
     success
     message

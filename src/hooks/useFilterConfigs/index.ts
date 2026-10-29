@@ -2,90 +2,102 @@
 import { gql, useQuery } from '@apollo/client'
 
 /**
- * GraphQL query: expects the backend to return a JSON (or custom scalar) containing filterTabs
+ * GraphQL query: returns active filter configs scoped to a store (or global).
+ * The backend parses the JSONB column into typed FilterTab objects and
+ * hydrates dynamic groups (e.g. product categories) at runtime.
  */
 const GET_FILTER_CONFIGS = gql`
   query GetFilterConfigs($idStore: String) {
     filterConfigs(idStore: $idStore) {
       id
       idStore
-      filterTabs
       active
       priority
+      filterTabs {
+        id
+        name
+        filterGroups {
+          id
+          description
+          displayType
+          queryKey
+          selectionMode
+          source
+          values {
+            id
+            description
+            value
+            imageUrn
+          }
+        }
+      }
       createdAt
       updatedAt
     }
   }
 `
 
-/**
- * Type definitions matching DB/json structure
- */
+// ─── Type definitions ────────────────────────────────────────────────────────
 
-/**
- * @typedef {Object} FilterValue
- * @property {string} [id]
- * @property {string} description
- * @property {number|string|null} [value]
- * @property {string|null} [imageUrn]
- */
 export type FilterValue = {
-    id?: string
-    description: string
-    value?: number | string | null
-    imageUrn?: string | null
+  id?: string
+  description: string
+  value?: number | string | null
+  imageUrn?: string | null
 }
 
-/**
- * @typedef {Object} FilterGroup
- * @property {string} id
- * @property {string} description
- * @property {string} displayType
- * @property {FilterValue[]} values
- */
 export type FilterGroup = {
-    id: string
-    description: string
-    displayType: string
-    values: FilterValue[]
+  id: string
+  description: string
+  displayType: string
+  /** Query variable this group maps to (e.g. 'categories', 'orderBy', 'priceRange', 'pState'). */
+  queryKey?: string | null
+  /** 'single' or 'multi'. */
+  selectionMode?: string | null
+  /** Dynamic source (e.g. 'PRODUCT_CATEGORIES'). */
+  source?: string | null
+  values: FilterValue[]
 }
 
-/**
- * @typedef {Object} FilterTab
- * @property {string} id
- * @property {string} name
- * @property {FilterGroup[]} filterGroups
- */
 export type FilterTab = {
-    id: string
-    name: string
-    filterGroups: FilterGroup[]
+  id: string
+  name: string
+  filterGroups: FilterGroup[]
 }
 
-/**
- * @typedef {Object} FilterConfigRecord
- * @property {string} id
- * @property {string|null} idStore
- * @property {FilterTab[]} filterTabs
- * @property {boolean} active
- * @property {number} priority
- */
 export type FilterConfigRecord = {
-    id: string
-    idStore: string | null
-    filterTabs: FilterTab[]
-    active: boolean
-    priority: number
+  id: string
+  idStore: string | null
+  filterTabs: FilterTab[]
+  active: boolean
+  priority: number
 }
 
 /**
- * Runtime guard to ensure shape is roughly correct
- * @param anyData any
- * @returns boolean
+ * Map of groupId → Set (or array) of selected value ids.
+ * Mirrors the FilterSelection shape used by the UI viewer.
  */
-const isFilterTabs = (anyData: any) => {
-  if (!Array.isArray(anyData)) return false
-  for (const tab of anyData) {
+export type FilterSelectionInput = Record<string, Set<string> | string[]>
+
+/**
+ * Reusable query variables produced from a selection. These match the
+ * `productFoodsAll` arguments but the builder is generic enough to feed
+ * any list query that shares these conventions.
+ */
+export type FilterQueryVariables = {
+  categories?: string[]
+  orderBy?: string[]
+  priceMin?: number
+  priceMax?: number
+  pState?: number
+  [key: string]: unknown
+}
+
+// ─── Runtime shape guard ─────────────────────────────────────────────────────
+
+const isFilterTabs = (data: unknown): data is FilterTab[] => {
+  if (!Array.isArray(data)) return false
+  for (const tab of data) {
     if (typeof tab?.id !== 'string' || typeof tab?.name !== 'string') return false
     if (!Array.isArray(tab.filterGroups)) return false
     for (const g of tab.filterGroups) {
@@ -96,78 +108,162 @@ const isFilterTabs = (anyData: any) => {
   return true
 }
 
+// ─── Generic selection → query-variables translator ──────────────────────────
+
 /**
- * Hook options
+ * Normalizes a selection entry to an array of selected value ids.
  */
-export type UseFilterConfigsOptions = {
-    idStore?: string | null
-    pollIntervalMs?: number
-    skip?: boolean
-    onError?: (err: Error) => void
+const toIdArray = (entry: Set<string> | string[] | undefined): string[] => {
+  if (!entry) return []
+  return Array.isArray(entry) ? entry : Array.from(entry)
 }
 
 /**
- * Hook return
+ * Finds a value definition inside a group by its id.
  */
-export type UseFilterConfigsResult = {
-    data: FilterTab[]
-    rawRecords: FilterConfigRecord[] | null
-    loading: boolean
-    error: Error | null
-    refetch: () => Promise<void>
-}
+const findValue = (group: FilterGroup, id: string): FilterValue | undefined =>
+  group.values.find(v => (v.id ?? v.description) === id)
 
 /**
- * Custom hook to fetch filter configs from GraphQL and expose typed, validated tabs.
- * - Returns empty array when data is invalid (defensive).
- * - Accepts idStore and poll interval as parameters for flexibility.
+ * Translates a user selection into reusable query variables, driven entirely
+ * by each group's `queryKey`. This makes the filter button reusable for any
+ * query: add a group with a `queryKey` and it maps automatically.
  *
- * @param {UseFilterConfigsOptions} options
- * @returns {UseFilterConfigsResult}
+ * Supported queryKeys:
+ *  - 'categories'  → string[] of selected ids
+ *  - 'orderBy'     → string[] like ['ProPrice:ASC'] (ignores 'DEFAULT')
+ *  - 'priceRange'  → parses a value 'min:max' into priceMin / priceMax
+ *  - 'pState'      → number from the selected value
+ *  - any other key → array of raw value payloads (or single value for 'single' mode)
+ *
+ * @param tabs - The filter tab definitions (from the hook).
+ * @param selection - Map of groupId → selected value ids.
+ * @returns Query variables ready to pass to productFoodsAll (or any compatible query).
+ */
+export const buildFilterVariables = (
+  tabs: FilterTab[],
+  selection: FilterSelectionInput
+): FilterQueryVariables => {
+  const vars: FilterQueryVariables = {}
+
+  const groups = tabs.flatMap(t => t.filterGroups ?? [])
+
+  for (const group of groups) {
+    const selectedIds = toIdArray(selection[group.id])
+    if (selectedIds.length === 0) continue
+
+    const key = group.queryKey ?? group.id
+
+    switch (key) {
+      case 'categories': {
+        vars.categories = [...(vars.categories ?? []), ...selectedIds]
+        break
+      }
+      case 'orderBy': {
+        const order = selectedIds
+          .filter(id => id && id !== 'DEFAULT')
+        if (order.length > 0) vars.orderBy = order
+        break
+      }
+      case 'priceRange': {
+        // Each selected value holds 'min:max' (max optional) e.g. '10000:30000' or '50000:'
+        const raw = findValue(group, selectedIds[0])?.value
+        if (typeof raw === 'string' && raw.includes(':')) {
+          const [minStr, maxStr] = raw.split(':')
+          const min = Number(minStr)
+          const max = Number(maxStr)
+          if (Number.isFinite(min) && minStr !== '') vars.priceMin = min
+          if (Number.isFinite(max) && maxStr !== '') vars.priceMax = max
+        }
+        break
+      }
+      case 'pState': {
+        const raw = findValue(group, selectedIds[0])?.value
+        const num = Number(raw)
+        if (Number.isFinite(num)) vars.pState = num
+        break
+      }
+      default: {
+        // Generic passthrough: resolve to raw value payloads so arbitrary
+        // future groups work without code changes.
+        const payloads = selectedIds.map(id => findValue(group, id)?.value ?? id)
+        vars[key] = group.selectionMode === 'single' ? payloads[0] : payloads
+      }
+    }
+  }
+
+  return vars
+}
+
+// ─── Hook options / return ───────────────────────────────────────────────────
+
+export type UseFilterConfigsOptions = {
+  idStore?: string | null
+  pollIntervalMs?: number
+  skip?: boolean
+  onError?: (err: Error) => void
+}
+
+export type UseFilterConfigsResult = {
+  data: FilterTab[]
+  rawRecords: FilterConfigRecord[] | null
+  loading: boolean
+  error: Error | null
+  refetch: () => Promise<void>
+  /** Translates a selection into reusable query variables. */
+  buildVariables: (selection: FilterSelectionInput) => FilterQueryVariables
+}
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
+/**
+ * Fetches filter configs from the backend and exposes typed, validated tabs.
+ * Picks the active record with the lowest `priority` number.
+ * Falls back to an empty array when data is missing or malformed.
  */
 export const useFilterConfigs = ({
+  idStore,
   skip = false,
   onError
 }: UseFilterConfigsOptions = {}): UseFilterConfigsResult => {
-  const { data, loading, error, refetch } = useQuery(
-    GET_FILTER_CONFIGS,
-    {
-      skip
-    }
-  )
+  const { data, loading, error, refetch } = useQuery(GET_FILTER_CONFIGS, {
+    variables: idStore ? { idStore } : undefined,
+    skip
+  })
 
   if (error && onError) onError(error as Error)
 
-  const rawRecords = Array.isArray((data as any)?.filterConfigs) ? (data as any).filterConfigs as FilterConfigRecord[] : null
+  const rawRecords: FilterConfigRecord[] | null = Array.isArray(
+    (data as any)?.filterConfigs
+  )
+    ? (data as any).filterConfigs
+    : null
 
-  // let tabs: FilterTab[] = []
+  let tabs: FilterTab[] = []
 
   if (rawRecords && rawRecords.length > 0) {
-    // pick the active config with highest priority (lowest number)
-    const active = rawRecords
-      .filter(r => {return r.active !== false})
-      .sort((a, b) => {return (a.priority ?? 9999) - (b.priority ?? 9999)})[0]
-
-    const candidate = active ?? rawRecords[0]
+    // Pick the active record with the highest priority (lowest number)
+    const candidate = rawRecords
+      .filter(r => r.active !== false)
+      .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999))[0]
+      ?? rawRecords[0]
 
     if (candidate && isFilterTabs(candidate.filterTabs)) {
-      // tabs = candidate.filterTabs
+      tabs = candidate.filterTabs
     } else {
-      // defensive logging — don't throw to avoid crashing UI, return empty array
-       
       console.warn('useFilterConfigs: invalid filterTabs structure', candidate?.filterTabs)
-      // eslint-disabled-next-line
-      // tabs = []
     }
   }
 
   return {
-    data: [{ 'id': 'BASIC', 'name': 'Básicos', 'filterGroups': [{ 'id': 'DELIVERY_MODE', 'description': 'Modo de entrega', 'displayType': 'WORD_CLOUD_SINGLE', 'values': [{ 'id': 'DELIVERY', 'description': 'Entrega' }, { 'id': 'TAKEOUT', 'description': 'Pra retirar' }] }, { 'id': 'SORTING', 'description': 'Ordenar por', 'displayType': 'GRID', 'values': [{ 'id': 'DEFAULT', 'description': 'Ordenação Padrão' }, { 'id': 'PRICE_RANGE:ASC', 'description': 'Preço' }, { 'id': 'USER_RATING:DESC', 'description': 'Avaliação' }, { 'id': 'DELIVERY_TIME:ASC', 'description': 'Tempo de Entrega' }, { 'id': 'DELIVERY_FEE:ASC', 'description': 'Taxa de Entrega' }, { 'id': 'DISTANCE:ASC', 'description': 'Menor distância' }] }, { 'id': 'DISTANCE', 'description': 'Distância', 'displayType': 'SLIDER', 'values': [{ 'id': 'MIN_VALUE', 'description': '1' }, { 'id': 'MAX_VALUE', 'description': '10' }] }, { 'id': 'DELIVERY_FEE', 'description': 'Taxa de entrega', 'displayType': 'WORD_CLOUD_SINGLE', 'values': [{ 'id': 'FREE', 'description': 'Grátis', 'value': 0 }, { 'id': 'MAX_FIVE', 'description': 'até R$ 5,00', 'value': 5 }, { 'id': 'MAX_TEN', 'description': 'até R$ 10,00', 'value': 10 }] }, { 'id': 'TAGS', 'description': 'Filtros especiais', 'displayType': 'CHECKBOX', 'values': [{ 'id': 'SUPER_RESTAURANT', 'imageUrn': 'SUPER_RESTAURANT.png', 'description': 'Super-Restaurantes' }, { 'id': 'SUPPORTS_ORDER_TRACKING', 'imageUrn': 'SUPPORTS_ORDER_TRACKING.png', 'description': 'Entrega Parceira' }, { 'id': 'SUPPORTS_ANY_TRACKING', 'imageUrn': 'SUPPORTS_ANY_TRACKING.png', 'description': 'Entrega Rastreável' }, { 'id': 'SUPPORTS_SCHEDULING', 'imageUrn': 'SUPPORTS_SCHEDULING.png', 'description': 'Aceita agendamento' }] }] }, { 'id': 'CATEGORY', 'name': 'Categorias', 'filterGroups': [{ 'id': 'MERCHANT_TYPE', 'description': 'Tipo de loja', 'displayType': 'GRID', 'values': [{ 'id': 'ALL', 'description': 'Todas as lojas' }, { 'id': 'RESTAURANT', 'description': 'Restaurante' }, { 'id': 'MARKET', 'description': 'Mercado' }] }, { 'id': 'AVAILABLE_CATEGORIES', 'description': 'Categorias', 'displayType': 'WORD_CLOUD', 'values': [{ 'description': 'Africana', 'id': 'AF1' }, { 'description': 'Alemã', 'id': 'ALE' }, { 'description': 'Árabe', 'id': 'ARA' }, { 'description': 'Argentina', 'id': 'AR1' }, { 'description': 'Asiática', 'id': 'ASI' }, { 'description': 'Açaí', 'id': 'AC1' }, { 'description': 'Baiana', 'id': 'BA1' }, { 'description': 'Bebidas', 'id': 'BEB' }, { 'description': 'Brasileira', 'id': 'BRA' }, { 'description': 'Cafeteria', 'id': 'CA1' }, { 'description': 'Carnes', 'id': 'CAR' }, { 'description': 'Casa de Sucos', 'id': 'CS1' }, { 'description': 'Chinesa', 'id': 'CHI' }, { 'description': 'Colombiana', 'id': 'CO1' }, { 'description': 'Congelados Fit', 'id': 'CF1' }, { 'description': 'Congelados', 'id': 'CN1' }, { 'description': 'Contemporânea', 'id': 'CNT' }, { 'description': 'Conveniência', 'id': 'CV1' }, { 'description': 'Coreana', 'id': 'CR1' }, { 'description': 'Cozinha rápida', 'id': 'CRP' }, { 'description': 'Crepe', 'id': 'CP1' }, { 'description': 'Doces & Bolos', 'id': 'DCE' }, { 'description': 'Espanhola', 'id': 'ES1' }, { 'description': 'Francesa', 'id': 'FRA' }, { 'description': 'Frangos', 'id': 'FR1' }, { 'description': 'Frutos do mar', 'id': 'FRU' }, { 'description': 'Gaúcha', 'id': 'GA1' }, { 'description': 'Grega', 'id': 'GRC' }, { 'description': 'Hambúrguer', 'id': 'BUR' }, { 'description': 'Indiana', 'id': 'IND' }, { 'description': 'Italiana', 'id': 'ITA' }, { 'description': 'Japonesa', 'id': 'JAP' }, { 'description': 'Lanches', 'id': 'LCH' }, { 'description': 'Marmita', 'id': 'MA1' }, { 'description': 'Marroquina', 'id': 'MAR' }, { 'description': 'Mediterrânea', 'id': 'MED' }, { 'description': 'Mercado 🛒', 'id': 'MER' }, { 'description': 'Mexicana', 'id': 'MEX' }, { 'description': 'Mineira', 'id': 'MI1' }, { 'description': 'Nordestina', 'id': 'NO1' }, { 'description': 'Padaria', 'id': 'PA1' }, { 'description': 'Panqueca', 'id': 'PQC' }, { 'description': 'Paranaense', 'id': 'PR1' }, { 'description': 'Pastel', 'id': 'PAS' }, { 'description': 'Peixes', 'id': 'PX1' }, { 'description': 'Peruana', 'id': 'PER' }, { 'description': 'Pizza', 'id': 'PIZ' }, { 'description': 'Portuguesa', 'id': 'POR' }, { 'description': 'Presentes', 'id': 'PRE' }, { 'description': 'Salgados', 'id': 'SAG' }, { 'description': 'Saudável', 'id': 'SAU' }, { 'description': 'Sopas & Caldos', 'id': 'SP1' }, { 'description': 'Sorvetes', 'id': 'SOR' }, { 'description': 'Tailandesa', 'id': 'THA' }, { 'description': 'Tapioca', 'id': 'TA1' }, { 'description': 'Típica do Norte', 'id': 'TN1' }, { 'description': 'Variada', 'id': 'VAR' }, { 'description': 'Vegana', 'id': 'VE1' }, { 'description': 'Vegetariana', 'id': 'VEG' }, { 'description': 'Xis', 'id': 'XI1' }, { 'description': 'Yakisoba', 'id': 'YA1' }] }] }, { 'id': 'PAYMENT', 'name': 'Pagamentos', 'filterGroups': [{ 'id': 'MEDIUM_PRICE', 'description': 'Preço médio', 'displayType': 'WORD_CLOUD_SINGLE', 'values': [{ 'id': 'CHEAPEST', 'description': '$' }, { 'id': 'CHEAP', 'description': '$$' }, { 'id': 'MODERATE', 'description': '$$$' }, { 'id': 'EXPENSIVE', 'description': '$$$$' }, { 'id': 'MOST_EXPENSIVE', 'description': '$$$$$' }] }, { 'id': 'ONLINE_PAYMENTS', 'description': 'Pagamento pelo app', 'displayType': 'WORD_CLOUD', 'values': [{ 'id': 'PIX', 'description': 'pix' }, { 'id': 'ELO', 'description': 'Elo' }, { 'id': 'MC', 'description': 'Mastercard' }, { 'id': 'MCMA', 'description': 'Mastercard Maestro' }, { 'id': 'VIS', 'description': 'Visa' }, { 'id': 'VISE', 'description': 'Visa Electron' }, { 'id': 'AM', 'description': 'Amex' }, { 'id': 'DNR', 'description': 'Diners' }] }, { 'id': 'ONLINE_PAYMENTS_VR', 'description': 'Vale-refeição/alimentação pelo app', 'displayType': 'WORD_CLOUD', 'values': [{ 'id': 'IMV', 'description': 'iFood Refeição' }, { 'id': 'VRO', 'description': 'VR Refeição' }, { 'id': 'SRP', 'description': 'Sodexo Refeição' }, { 'id': 'ALR', 'description': 'Alelo Refeição' }, { 'id': 'TRO', 'description': 'Ticket' }, { 'id': 'BENRON', 'description': 'Ben Refeição' }] }, { 'id': 'OFFLINE_PAYMENTS', 'description': 'Pagamento na entrega', 'displayType': 'WORD_CLOUD', 'values': [{ 'id': 'DIN', 'description': 'Dinheiro' }, { 'id': 'RSODEX', 'description': 'Sodexo' }, { 'id': 'VVREST', 'description': 'Vale Alelo Refeição' }, { 'id': 'VR_SMA', 'description': 'VR Refeição' }, { 'id': 'BENVVR', 'description': 'Ben Refeição' }, { 'id': 'TRE', 'description': 'Ticket' }, { 'id': 'RDREST', 'description': 'Mastercard - Crédito' }, { 'id': 'MEREST', 'description': 'Mastercard' }, { 'id': 'VSREST', 'description': 'Visa - Crédito' }, { 'id': 'VIREST', 'description': 'Visa' }, { 'id': 'REC', 'description': 'Elo - Crédito' }, { 'id': 'RED', 'description': 'Elo' }, { 'id': 'RHIP', 'description': 'Hipercard' }, { 'id': 'TVER', 'description': 'Verocard' }, { 'id': 'RAM', 'description': 'American Express' }, { 'id': 'CPRCAR', 'description': 'Cooper Card' }, { 'id': 'GRNCAR', 'description': 'Green Card' }, { 'id': 'GRNCPL', 'description': 'Green Card (papel)' }, { 'id': 'RSELE', 'description': 'Refeisul' }, { 'id': 'VALECA', 'description': 'Vale Card' }, { 'id': 'BANRC', 'description': 'Banricompras - Crédito' }, { 'id': 'BANRD', 'description': 'Banricompras' }, { 'id': 'DNREST', 'description': 'Diners' }, { 'id': 'GOODC', 'description': 'Goodcard' }, { 'id': 'VERDEC', 'description': 'Verdecard' }, { 'id': 'CHE', 'description': 'Cheque' }] }] }],
+    data: tabs,
     rawRecords,
     loading,
     error: error ? (error as Error) : null,
     refetch: async () => {
       await refetch()
-    }
+    },
+    buildVariables: (selection: FilterSelectionInput) =>
+      buildFilterVariables(tabs, selection)
   }
 }

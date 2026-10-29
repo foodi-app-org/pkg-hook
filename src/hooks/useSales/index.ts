@@ -138,6 +138,16 @@ export const useSales = ({
     }
   })
 
+  // Variables de filtro aplicadas desde el modal (categorías, orden, precio, estado).
+  // Genéricas: provienen de buildFilterVariables(selection) en el front.
+  const [appliedFilters, setAppliedFilters] = useState<{
+    categories?: string[]
+    orderBy?: string[]
+    priceMin?: number | null
+    priceMax?: number | null
+    pState?: number
+  }>({})
+
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState<ExtProductFoodOptional[]>([])
   const [dataExtra, setDataExtra] = useState<ExtProductFoodsAll[]>([])
@@ -197,11 +207,15 @@ export const useSales = ({
     search: search?.length >= 4 ? search : '',
     gender: [],
     desc: [],
-    categories: [],
+    categories: appliedFilters.categories ?? [],
     toDate: valuesDates?.toDate,
     fromDate: valuesDates?.fromDate,
     max: showMore,
     min: 0,
+    priceMin: appliedFilters.priceMin ?? null,
+    priceMax: appliedFilters.priceMax ?? null,
+    orderBy: appliedFilters.orderBy ?? [],
+    pState: appliedFilters.pState,
     isShoppingCard: true,
     idStore: idStore ?? '',
     dataSale: (Array.isArray(saveDataState?.PRODUCT) && saveDataState?.PRODUCT) ?? [],
@@ -211,6 +225,56 @@ export const useSales = ({
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber)
     refetch({ page: pageNumber })
+  }
+
+  /**
+   * Aplica las variables de filtro provenientes del modal y re-consulta
+   * los productos. `variables` es genérico: lo produce buildFilterVariables()
+   * del hook useFilterConfigs, por lo que cualquier filtro nuevo funciona sin
+   * cambios aquí.
+   *
+   * @param variables - Variables de query (categories, orderBy, priceMin, priceMax, pState).
+   */
+  const handleApplyFilters = (variables: {
+    categories?: string[]
+    orderBy?: string[]
+    priceMin?: number
+    priceMax?: number
+    pState?: number
+  } = {}) => {
+    const next = {
+      categories: variables.categories ?? [],
+      orderBy: variables.orderBy ?? [],
+      priceMin: typeof variables.priceMin === 'number' ? variables.priceMin : null,
+      priceMax: typeof variables.priceMax === 'number' ? variables.priceMax : null,
+      pState: variables.pState
+    }
+    setAppliedFilters(next)
+    setCurrentPage(1)
+    refetch({
+      page: 1,
+      categories: next.categories,
+      orderBy: next.orderBy,
+      priceMin: next.priceMin,
+      priceMax: next.priceMax,
+      pState: next.pState
+    })
+  }
+
+  /**
+   * Limpia todos los filtros aplicados y recarga la lista completa.
+   */
+  const handleClearFilters = () => {
+    setAppliedFilters({})
+    setCurrentPage(1)
+    refetch({
+      page: 1,
+      categories: [],
+      orderBy: [],
+      priceMin: null,
+      priceMax: null,
+      pState: undefined
+    })
   }
 
   /**
@@ -1295,6 +1359,11 @@ export const useSales = ({
     setProduct,
     setPrint: handlePrint,
     PRODUCT,
+
+    // Filtros del modal (reusables)
+    appliedFilters,
+    handleApplyFilters,
+    handleClearFilters,
 
     // Pending orders
     activePendingOrderId,
