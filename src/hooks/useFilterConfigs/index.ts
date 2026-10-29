@@ -23,11 +23,13 @@ const GET_FILTER_CONFIGS = gql`
           queryKey
           selectionMode
           source
+          icon
           values {
             id
             description
             value
             imageUrn
+            icon
           }
         }
       }
@@ -44,6 +46,8 @@ export type FilterValue = {
   description: string
   value?: number | string | null
   imageUrn?: string | null
+  /** Icon name from pkg-components Icons map (e.g. 'IconStar'). */
+  icon?: string | null
 }
 
 export type FilterGroup = {
@@ -56,6 +60,8 @@ export type FilterGroup = {
   selectionMode?: string | null
   /** Dynamic source (e.g. 'PRODUCT_CATEGORIES'). */
   source?: string | null
+  /** Default icon applied to group values that don't define their own. */
+  icon?: string | null
   values: FilterValue[]
 }
 
