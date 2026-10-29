@@ -43,8 +43,36 @@ export const addToCartFunc = ({
     ProDescuento
   } = payload
 
-  // Validate basic stock
-  if (stock === 0) {
+  if (!product) return state
+
+  // Determine whether the product tracks inventory. Defaults to the catalog
+  // product value, falling back to the payload so stock is respected even when
+  // `manageStock` is not explicitly set.
+  const managesStock = Boolean(product.manageStock ?? payload.manageStock)
+
+  // Raw stock value as provided (used to detect an explicit "0 = agotado").
+  const rawStock = product.stock ?? stock
+
+  // Normalize the real available stock to a number. Prefer the catalog product
+  // value, fall back to the payload. Treats null/undefined/NaN as 0.
+  const availableStock = Math.max(0, Number(rawStock ?? 0) || 0)
+
+  // A product is considered "out of stock" when its stock is explicitly 0,
+  // regardless of the manageStock flag. This prevents adding agotado products.
+  const isExplicitlyOutOfStock =
+    rawStock !== null &&
+    rawStock !== undefined &&
+    Number(rawStock) === 0
+
+  // PRE-FETCH product references (only ONCE)
+  const productExistIndex = state.PRODUCT.findIndex((item: Product) => {return item.pId === pId})
+  const productExist = productExistIndex !== -1 ? state.PRODUCT[productExistIndex] : null
+
+  // How many units of this product are already in the cart.
+  const currentQty = productExist?.ProQuantity ?? 0
+
+  // Out-of-stock guard: an explicit stock of 0 always blocks the add.
+  if (isExplicitlyOutOfStock) {
     sendNotification({
       title: 'Sin stock',
       backgroundColor: 'warning',
@@ -53,15 +81,10 @@ export const addToCartFunc = ({
     return state
   }
 
-  // PRE-FETCH product references (only ONCE)
-  const productExistIndex = state.PRODUCT.findIndex((item: Product) => {return item.pId === pId})
-  const productExist = productExistIndex !== -1 ? state.PRODUCT[productExistIndex] : null
-  if (!product) return state
-
-  // Check stock handling rules
-  const currentQty = productExist?.ProQuantity ?? 0
-  if (product.manageStock && isStockInsufficient(currentQty, product.stock)) {
-    sendAlertStock(stock)
+  // Stock enforcement when the product tracks inventory: the quantity already
+  // in the cart cannot reach/exceed the available stock.
+  if (managesStock && isStockInsufficient(currentQty, availableStock)) {
+    sendAlertStock(availableStock)
     return state
   }
 
@@ -90,11 +113,11 @@ export const addToCartFunc = ({
       editing: false,
       getOneTags,
       unitPrice,
-      manageStock: product.manageStock ?? false,
+      manageStock: managesStock,
       ProDescription,
       ProImage,
       ProPrice,
-      stock,
+      stock: availableStock,
       ProDescuento,
       ProQuantity: 1,
       free: false

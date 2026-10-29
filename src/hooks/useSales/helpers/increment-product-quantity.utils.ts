@@ -35,16 +35,30 @@ export const incrementProductQuantity = ({
     if (item.pId !== productId) return item
 
     const {
-      stock = 0,
       manageStock,
       ProPrice: unitPrice = 0
     } = sourceProduct
 
+    // Raw stock value as provided (used to detect an explicit "0 = agotado").
+    const rawStock = sourceProduct.stock
+
+    // Normalize stock to a number (handles string/null/undefined/NaN as 0).
+    const availableStock = Math.max(0, Number(rawStock ?? 0) || 0)
+
+    // A product is considered "out of stock" when its stock is explicitly 0,
+    // regardless of the manageStock flag.
+    const isExplicitlyOutOfStock =
+      rawStock !== null &&
+      rawStock !== undefined &&
+      Number(rawStock) === 0
+
+    const managesStock = Boolean(manageStock ?? item.manageStock)
+
     const isFree = Boolean(item.free)
     const newQuantity = item.ProQuantity + 1
 
-    // Stock = 0
-    if (stock === 0) {
+    // Out-of-stock guard: an explicit stock of 0 always blocks the increment.
+    if (isExplicitlyOutOfStock) {
       sendNotification({
         title: 'Sin stock',
         backgroundColor: 'warning',
@@ -53,12 +67,12 @@ export const incrementProductQuantity = ({
       return item
     }
 
-    // Stock exceeded
-    if (manageStock && newQuantity > stock) {
+    // Requested quantity exceeds available stock (only when tracking inventory).
+    if (managesStock && newQuantity > availableStock) {
       sendNotification({
         title: 'Stock insuficiente',
         backgroundColor: 'warning',
-        description: `No puedes agregar más unidades de ${item.pName}, stock disponible: ${stock}`
+        description: `No puedes agregar más unidades de ${item.pName}, stock disponible: ${availableStock}`
       })
       return item
     }
