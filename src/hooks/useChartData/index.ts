@@ -59,6 +59,51 @@ export const useChartData = (_: { year?: number }) => {
 
   result.sort((a, b) => a.Mes - b.Mes)
 
+  // --- Trend + summary metrics -------------------------------------------
+  // Colors mirror InventoryC: green when the latest active month grew vs the
+  // previous one, red when it fell. Tokens come from the shared theme so the
+  // chart matches the rest of the dashboard instead of the old gray fallback.
+  const GREEN = 'var(--color-feedback-success-dark)'
+  const RED = 'var(--color-feedback-error-dark)'
+
+  const activeResult = asFilter ? newResult : result
+  const monthlyValues = activeResult.map((item) => item?.totalProductsPrice ?? 0)
+  const totalSales = monthlyValues.reduce((acc, value) => acc + value, 0)
+
+  const monthsWithSales = activeResult.filter((item) => (item?.totalProductsPrice ?? 0) > 0)
+  const lastActive = monthsWithSales[monthsWithSales.length - 1]
+  const prevActive = monthsWithSales[monthsWithSales.length - 2]
+  const lastValue = lastActive?.totalProductsPrice ?? 0
+  const prevValue = prevActive?.totalProductsPrice ?? 0
+
+  // Up (or flat with sales) => green, down => red. No sales at all => green.
+  const isTrendingUp = prevValue === 0 ? lastValue >= 0 : lastValue >= prevValue
+  const trendColor = isTrendingUp ? GREEN : RED
+  const trendDelta = prevValue > 0
+    ? Number((((lastValue - prevValue) / prevValue) * 100).toFixed(1))
+    : 0
+
+  const bestMonth = activeResult.reduce<ResultItem | null>((best, item) => {
+    if (!best || (item?.totalProductsPrice ?? 0) > (best?.totalProductsPrice ?? 0)) {
+      return item
+    }
+    return best
+  }, null)
+
+  const summary = {
+    totalSales,
+    lastValue,
+    prevValue,
+    trendDelta,
+    isTrendingUp,
+    bestMonth: bestMonth
+      ? {
+          label: SPANISH_MONTHS[bestMonth.Mes],
+          value: bestMonth.totalProductsPrice ?? 0
+        }
+      : null
+  }
+
   const labelTitle = `Ventas por meses del año ${asFilter ? chartTypeYear : ''}`
   // Resultado:
   const dataChart = {
@@ -71,25 +116,8 @@ export const useChartData = (_: { year?: number }) => {
         data: asFilter
           ? newResult.map((data) => data?.totalProductsPrice)
           : result.map((data) => data?.totalProductsPrice),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)'
-        ],
-        borderColor:
-          chartType === 'bar'
-            ? [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-              ]
-            : 'rgb(255 0 0)',
+        backgroundColor: [trendColor],
+        borderColor: [trendColor],
         tension: 0.6,
         fill: false,
         borderWidth: 1,
@@ -186,6 +214,8 @@ export const useChartData = (_: { year?: number }) => {
     labelTitle,
     result,
     dataChart,
+    trendColor,
+    summary,
     loading
   }
 }
