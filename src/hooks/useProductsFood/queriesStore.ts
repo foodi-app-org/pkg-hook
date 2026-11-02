@@ -868,6 +868,8 @@ export const GET_ALL_EXTRA_PRODUCT = gql`
       exState
       extraName
       extraPrice
+      manageStock
+      stock
       state
       createdAt
       updatedAt

@@ -12,6 +12,8 @@ mutation updateMultipleExtProduct($inputLineItems: ILineItemsExtraFinal) {
       exState
       extraName
       extraPrice
+      manageStock
+      stock
       state
       createdAt
       updatedAt

@@ -110,6 +110,8 @@ query ExtProductFoodsAll($search: String, $min: Int, $max: Int, $pId: ID) {
     exState
     extraName
     extraPrice
+    manageStock
+    stock
     state
     pDatCre
     pDatMod

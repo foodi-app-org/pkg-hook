@@ -3,6 +3,8 @@ type ExtraItem = {
   extraPrice?: number | string
   exState?: boolean
   forEdit?: boolean
+  manageStock?: boolean
+  stock?: number
   [key: string]: any
 }
 
@@ -28,6 +30,8 @@ export const transformData = (dataExtra: ExtraItem[]): ExtraItem[] => {
       extraName: item.extraName || '',
       extraPrice: item?.extraPrice?.toString() || '',
       exState: Boolean(item.exState),
+      manageStock: Boolean(item.manageStock),
+      stock: Number(item.stock) || 1,
       forEdit: true,
       ...item
     }

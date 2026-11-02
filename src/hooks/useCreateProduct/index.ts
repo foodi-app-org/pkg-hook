@@ -80,8 +80,8 @@ export const useCreateProduct = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [arrTags, setTags] = useState<string[]>([])
   const [stock, setStock] = useState(1)
-  // Manage stock optional value boolean
-  const [checkStock, setCheckStock] = useState(false)
+  // Manage stock siempre activo por defecto
+  const [checkStock, setCheckStock] = useState(true)
 
   const handleIncreaseStock = () => {
     setStock(prevStock => {return prevStock + 1})
@@ -92,11 +92,9 @@ export const useCreateProduct = ({
   }
 
   const handleCheckStock = () => {
-    setCheckStock(prev => {
-      const newCheckStock = !prev
-      setStock(newCheckStock ? 1 : stock)
-      return newCheckStock
-    })
+    // El control de stock siempre permanece activo (manageStock = true).
+    setCheckStock(true)
+    setStock(prev => (prev > 0 ? prev : 1))
   }
   const [dataStore] = useStore()
   const {
@@ -237,10 +235,10 @@ export const useCreateProduct = ({
             ValueDelivery: check?.desc ? 0 : ValueDelivery,
             ProDescription,
             pName: names,
-            manageStock: checkStock,
+            manageStock: true,
             pCode,
             carProId,
-            stock,
+            stock: stock ?? 1,
             pState: 1,
             sTateLogistic: 1,
             ProStar: 0,

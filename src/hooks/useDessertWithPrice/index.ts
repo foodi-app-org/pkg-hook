@@ -31,6 +31,22 @@ interface UseDessertWithPriceProps {
   setAlertBox?: SetAlertBoxFn
 }
 
+/**
+ * Shape of a single complement (extra) line in the editor state.
+ */
+interface ExtraLine {
+  exPid?: string | number | null
+  extraName?: string
+  extraPrice?: number | string
+  exState?: boolean
+  forEdit?: boolean
+  manageStock?: boolean
+  stock?: number
+  error?: boolean
+  messageError?: string
+  [key: string]: any
+}
+
 export const useDessertWithPrice = ({
   dataExtra = [],
   sendNotification = ({
@@ -52,21 +68,25 @@ export const useDessertWithPrice = ({
   })
   const [editExtraProductFoods] = useMutation(EDIT_EXTRA_PRODUCT_FOODS)
 
-  const initialLine = useMemo(() => {
+  const initialLine = useMemo<ExtraLine>(() => {
     return {
       extraName: '',
       extraPrice: '',
-      exState: false
+      exState: false,
+      manageStock: false,
+      stock: 1
     }
   }, [])
 
-  const initialLineItems = useMemo(() => {
+  const initialLineItems = useMemo<{ Lines: ExtraLine[] }>(() => {
     return {
       Lines: [
         {
           extraName: '',
           extraPrice: '',
-          exState: false
+          exState: false,
+          manageStock: false,
+          stock: 1
         },
         (initialLine)
       ]
@@ -74,7 +94,7 @@ export const useDessertWithPrice = ({
   }, [initialLine])
   const transformedData = transformData(dataExtra)
 
-  const [LineItems, setLine] = useState(
+  const [LineItems, setLine] = useState<{ Lines: ExtraLine[] }>(
     Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems
   )
 
@@ -281,11 +301,13 @@ export const useDessertWithPrice = ({
 
   const prepareAndValidateData = useCallback((pId: string) => {
       const dataArr = LineItems?.Lines?.map((line: any) => {
-        const { extraPrice, exState, extraName } = line
+        const { extraPrice, exState, extraName, manageStock, stock } = line
         return {
           extraPrice: Number(extraPrice),
           exState: exState === true ? 1 : 0,
           extraName,
+          manageStock: Boolean(manageStock),
+          stock: manageStock ? (Number(stock) || 1) : 0,
           pId
         }
       })
@@ -305,13 +327,15 @@ export const useDessertWithPrice = ({
   const handleEdit = async (i: number, exPid: string) => {
     setSelected({ exPid: null, loading: true })
     const findOneExtra = LineItems?.Lines?.find(x => { return x?.exPid === exPid })
-    const { extraName, extraPrice: price } = findOneExtra || {}
+    const { extraName, extraPrice: price, manageStock, stock } = findOneExtra || {}
     const extraPrice = price
     const { data } = await editExtraProductFoods({
       variables: {
         exPid,
         extraName,
-        extraPrice
+        extraPrice,
+        manageStock: Boolean(manageStock),
+        stock: manageStock ? (Number(stock) || 1) : 0
       },
       update: (cache) => {
         cache.modify({
@@ -349,7 +373,7 @@ export const useDessertWithPrice = ({
    * @param pId
    * @returns Array of filtered and transformed items
    */
-  function filterItemsWithValidExPid(items: Array<{ exPid: string; extraPrice: number; exState: boolean; extraName: string }>, pId: string) {
+  function filterItemsWithValidExPid(items: ExtraLine[], pId: string) {
     // Primero, filtrar los elementos basados en exPid
     const filteredItems = items.filter(({ exPid }) => {
       const isExPidValid = !exPid
@@ -357,12 +381,14 @@ export const useDessertWithPrice = ({
     })
 
     // Luego, transformar los elementos filtrados
-    return filteredItems.map(({ exPid, extraPrice, exState, extraName }) => {
+    return filteredItems.map(({ exPid, extraPrice, exState, extraName, manageStock, stock }) => {
       return {
         exPid,
         extraPrice,
         exState: exState === true ? 1 : 0,
         extraName,
+        manageStock: Boolean(manageStock),
+        stock: manageStock ? (Number(stock) || 1) : 0,
         pId
       }
     })
@@ -385,6 +411,8 @@ export const useDessertWithPrice = ({
           extraPrice,
           exState: x.exState === true ? 1 : 0,
           extraName,
+          manageStock: Boolean(x.manageStock),
+          stock: x.manageStock ? (Number(x.stock) || 1) : 0,
           pId
         }
       })
