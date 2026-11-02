@@ -32,7 +32,7 @@ import { useStore } from '../useStore'
 import { addToCartFunc } from './helpers/add-product.utils'
 import { applyDiscountToCart, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
-import { decrementExtra } from './helpers/extras.utils'
+import { decrementExtra, removeExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
 import { handleAddProduct } from './helpers/handleAddProduct.utils'
@@ -737,6 +737,22 @@ export const useSales = ({
     setDataExtra((prev) => { return decrementExtra(prev as any, exPid) })
   }
 
+  /**
+   * Remove an added complement from the current selection.
+   *
+   * POS semantics: resets the extra's selected quantity to 0 so it no longer
+   * contributes to the product total, while keeping it in the list (and keeping
+   * its unit price) so the operator can add it again.
+   *
+   * @param exPid - the extra product id to reset. Can be passed directly or via
+   *   an `Adicionales` object, matching the increment/decrement handler shape.
+   */
+  const handleRemoveExtra = (arg: any) => {
+    const exPid = arg?.Adicionales?.exPid ?? arg?.exPid ?? arg
+    if (!exPid) return
+    setDataExtra((prev) => { return removeExtra(prev as any, exPid) })
+  }
+
 
 
 
@@ -1351,6 +1367,7 @@ export const useSales = ({
     handleSubmit,
     handleChangeFilterProduct,
     handleDecrementExtra,
+    handleRemoveExtra,
     setTotalProductPrice,
     setInputValue,
     getSortedProduct,

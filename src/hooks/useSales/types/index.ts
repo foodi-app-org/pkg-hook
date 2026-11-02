@@ -192,6 +192,7 @@ export interface UseSalesReturn {
     handleSubmit: () => void
     handleChangeFilterProduct: (e: React.ChangeEvent<HTMLInputElement>) => void
     handleDecrementExtra: ({ Adicionales }: { Adicionales: any }) => void
+    handleRemoveExtra: (arg: { Adicionales?: any; exPid?: string | number } | string | number) => void
     setTotalProductPrice: (n: number) => void
     setInputValue: (s: string) => void
     getSortedProduct: (data: any[], sort: string) => any[]

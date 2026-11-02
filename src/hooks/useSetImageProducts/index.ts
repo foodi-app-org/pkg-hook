@@ -22,7 +22,7 @@ export const useSetImageProducts = () => {
    * @param variables.image
    * @returns {Promise<any>}
    */
-  const updateImageProducts = async (variables: { pId: number; image: string }) => {
+  const updateImageProducts = async (variables: { pId: string | number; image: File }) => {
     const { pId, image } = variables
 
     if (!pId || !image) throw new Error('Missing pId or image')
@@ -57,5 +57,5 @@ export const useSetImageProducts = () => {
     return response
   }
 
-  return [updateImageProducts, { data, loading, error }]
+  return [updateImageProducts, { data, loading, error }] as const
 }

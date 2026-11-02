@@ -17,7 +17,7 @@
 import { expect } from '@jest/globals'
 
 import { applyDiscountToCart, TypeDiscount } from './apply-discount-to-cart.utils'
-import { decrementExtra, incrementExtra } from './extras.utils'
+import { decrementExtra, incrementExtra, removeExtra } from './extras.utils'
 import { multiplyMoney, moneyToMinorUnits, sumMoney, roundMoney, handleChangeNumber } from './handleChangeNumber.utils'
 import { handleRemoveProduct } from './remove-product.utils'
 import { toggleFreeProducts } from './toggleFreeProducts'
@@ -249,6 +249,41 @@ describe('extras.utils', () => {
       const after = result.find((x: any) => x.exPid === 'e1').newExtraPrice
 
       expect(after).toBeGreaterThan(before)
+    })
+  })
+
+  describe('removeExtra', () => {
+    test('resets quantity and newExtraPrice to 0 but preserves unit price', () => {
+      const extras = [makeExtra('e1', 2_500, 3)]
+      const result = removeExtra(extras as any, 'e1')
+      const e = result.find((x: any) => x.exPid === 'e1')
+
+      expect(e.quantity).toBe(0)
+      expect(e.newExtraPrice).toBe(0)
+      // Unit price must remain so the row can keep showing the real price
+      expect(e.extraPrice).toBe(2_500)
+    })
+
+    test('keeps the extra in the list (does not delete it)', () => {
+      const extras = [makeExtra('e1', 2_500, 2), makeExtra('e2', 1_000, 1)]
+      const result = removeExtra(extras as any, 'e1')
+
+      expect(result).toHaveLength(2)
+      expect(result.find((x: any) => x.exPid === 'e1')).toBeDefined()
+    })
+
+    test('does not touch unrelated extras', () => {
+      const extras = [makeExtra('e1', 2_500, 2), makeExtra('e2', 1_000, 3)]
+      const result = removeExtra(extras as any, 'e1')
+      const e2 = result.find((x: any) => x.exPid === 'e2')
+
+      expect(e2.quantity).toBe(3)
+      expect(e2.newExtraPrice).toBe(3_000)
+    })
+
+    test('returns empty array for non-array input', () => {
+      expect(removeExtra(null as any, 'e1')).toEqual([])
+      expect(removeExtra(undefined as any, 'e1')).toEqual([])
     })
   })
 })

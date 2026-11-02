@@ -35,9 +35,9 @@ export const useEditProduct = ({
       }
       if (success) {
         sendNotification({
-          title: 'Error',
+          title: 'Éxito',
           description: `${message}`,
-          backgroundColor: 'error'
+          backgroundColor: 'success'
         })
       }
     },
