@@ -1,32 +1,68 @@
 /**
- * Minimal shape of an optional Electron bridge the renderer may expose on
- * `window` for saving files through the main process. Entirely optional: when
- * absent, the browser download path is used.
+ * Shape of the generic Electron IPC bridge the POS preload actually exposes
+ * (`window.electron.ipcRenderer`). We only rely on `invoke`, and only when a
+ * matching main-process handler is registered; otherwise we fall back to the
+ * standard Chromium download (which works inside Electron too).
  */
-interface ElectronDownloadBridge {
-  saveReportFile?: (payload: { fileName: string; data: ArrayBuffer; mimeType: string }) => Promise<boolean>
+interface ElectronIpcBridge {
+  ipcRenderer?: {
+    invoke?: (channel: string, ...args: unknown[]) => Promise<unknown>
+  }
 }
 
-const getElectronBridge = (): ElectronDownloadBridge | null => {
+/**
+ * IPC channel a host app may implement in the Electron main process to save a
+ * report file natively. Optional: when no handler is registered, the renderer
+ * download path is used. (Main process handler not shipped by default.)
+ */
+const REPORT_SAVE_CHANNEL = 'report:save-file'
+
+const getElectronIpc = (): ElectronIpcBridge['ipcRenderer'] | null => {
   if (typeof globalThis === 'undefined') return null
-  const w = globalThis as unknown as { electronAPI?: ElectronDownloadBridge; api?: ElectronDownloadBridge }
-  return w.electronAPI ?? w.api ?? null
+  const w = globalThis as unknown as { electron?: ElectronIpcBridge }
+  return w.electron?.ipcRenderer ?? null
+}
+
+/**
+ * Triggers a standard browser/Chromium blob download, preserving the file name
+ * and extension. Respects browser security (no silent writes to arbitrary
+ * paths). Works both in a plain browser and inside Electron's renderer.
+ *
+ * @param response - The fetched file response.
+ * @param fileName - Target file name (extension preserved).
+ * @returns `true` once the download has been triggered.
+ */
+const browserDownload = async (response: Response, fileName: string): Promise<boolean> => {
+  const blob = await response.blob()
+  const url = globalThis.URL.createObjectURL(blob)
+  try {
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  } finally {
+    // Always revoke to avoid leaking Blob URLs, even if the click throws.
+    globalThis.URL.revokeObjectURL(url)
+  }
+  return true
 }
 
 /**
  * Downloads a generated report file to the user's machine.
  *
  * Resolution order:
- * 1. If a safe Electron bridge (`window.electronAPI.saveReportFile` or
- *    `window.api.saveReportFile`) is present, delegate to the main process so
- *    the file is saved natively (no `nodeIntegration` needed in the renderer).
- * 2. Otherwise use the standard browser blob download, honoring the file name
- *    and extension. Browser security restrictions are respected (no silent
- *    writes to arbitrary paths).
+ * 1. If running in Electron AND a `report:save-file` IPC handler is registered
+ *    in the main process, delegate the save to it (native save dialog / default
+ *    downloads dir) via the existing `window.electron.ipcRenderer` bridge — no
+ *    `nodeIntegration` and no new preload API required. If the handler is
+ *    absent or declines, fall back to the browser path.
+ * 2. Otherwise use the standard Chromium/browser blob download.
  *
- * @param fileUrl - URL to fetch the file from (the frontend `/api/files` proxy).
- * @param fileName - Target file name (preserves extension).
- * @param mimeType - MIME type for the blob.
+ * @param fileUrl - URL to fetch the file from (the report download route).
+ * @param fileName - Target file name (extension preserved).
+ * @param mimeType - MIME type for the native-save payload.
  * @returns `true` on success.
  * @throws When the fetch fails.
  */
@@ -40,22 +76,17 @@ export const downloadReportFile = async (
     throw new Error(`No se pudo descargar el archivo (${response.status}).`)
   }
 
-  const bridge = getElectronBridge()
-  if (bridge?.saveReportFile) {
-    const buffer = await response.arrayBuffer()
-    const ok = await bridge.saveReportFile({ fileName, data: buffer, mimeType })
-    if (ok) return true
-    // Fall through to browser download if the bridge declined.
+  const ipc = getElectronIpc()
+  if (ipc?.invoke) {
+    try {
+      const buffer = await response.clone().arrayBuffer()
+      const saved = await ipc.invoke(REPORT_SAVE_CHANNEL, { fileName, mimeType, data: buffer })
+      // A host that implements the channel returns a truthy result on success.
+      if (saved === true) return true
+    } catch {
+      // No handler registered or it threw: fall through to the browser path.
+    }
   }
 
-  const blob = await response.blob()
-  const url = globalThis.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', fileName)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  globalThis.URL.revokeObjectURL(url)
-  return true
+  return browserDownload(response, fileName)
 }

@@ -19,12 +19,18 @@ import {
 import { useReportJobSubscription } from './useReportJobSubscription'
 
 /**
- * Builds the frontend file-proxy URL for a generated report file.
+ * Builds the report download URL for a generated file.
+ *
+ * Uses the dedicated, non-deleting report route (`/api/reports/download/...`)
+ * instead of the generic `/api/files` proxy, which deletes files after serving.
+ * This lets a report be re-downloaded from the history while it remains valid;
+ * retention is owned by the backend worker (per-job `expiresAt`).
  *
  * @param fileName - The generated report file name.
- * @returns The `/api/files/<name>` URL used to fetch the file.
+ * @returns The report download URL used to fetch the file.
  */
-const buildFileUrl = (fileName: string): string => `/api/files/${encodeURIComponent(fileName)}`
+const buildFileUrl = (fileName: string): string =>
+  `/api/reports/download/${encodeURIComponent(fileName)}`
 
 const noop: SendNotification = () => undefined
 
@@ -68,6 +74,13 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
   // against duplicate downloads of the same job.
   const sessionJobIds = useRef<Set<string>>(new Set())
   const downloadedJobIds = useRef<Set<string>>(new Set())
+  // Jobs whose terminal transition has already been handled, so the side
+  // effects (history refresh, auto-download, failure toast) run exactly once
+  // regardless of whether the subscription or the polling fallback observes the
+  // transition first.
+  const handledTerminalIds = useRef<Set<string>>(new Set())
+  // Prevents seeding an in-flight job from history more than once per mount.
+  const reconciledRef = useRef(false)
 
   const {
     data: recentData,
@@ -128,11 +141,16 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
   )
 
   /**
-   * Reacts to a job reaching a terminal state: refreshes the history and, when
-   * appropriate, auto-downloads a session-initiated completed job.
+   * Idempotently reacts to a job reaching a terminal state: refreshes history
+   * and, for a session-initiated completed job, triggers the auto-download.
+   * Deduped per job id so it runs exactly once even if both the subscription
+   * and the polling fallback observe the same transition.
    */
   const handleTerminal = useCallback(
     (job: ReportJob) => {
+      if (handledTerminalIds.current.has(job.id)) return
+      handledTerminalIds.current.add(job.id)
+
       void refetchRecent()
       if (job.status === 'COMPLETED') {
         if (autoDownload && sessionJobIds.current.has(job.id)) {
@@ -149,31 +167,37 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
     [autoDownload, performDownload, refetchRecent, sendNotification]
   )
 
-  // Live updates for the active job. Also serves as the resilience mechanism:
-  // if the socket reconnects, Apollo re-subscribes automatically.
+  // Live updates for the active job. Only updates state here; terminal side
+  // effects are handled by the effect below (never inside a state updater).
+  // Apollo re-subscribes automatically on reconnect.
   useReportJobSubscription(
     activeJob && (activeJob.status === 'PENDING' || activeJob.status === 'PROCESSING') ? activeJob.id : null,
-    useCallback(
-      (update: ReportJobUpdate) => {
-        setActiveJob((prev) => {
-          if (!prev || prev.id !== update.jobId) return prev
-          const next: ReportJob = {
-            ...prev,
-            status: update.status,
-            progress: update.progress,
-            stage: update.stage ?? prev.stage,
-            fileName: update.fileName ?? prev.fileName,
-            errorMessage: update.errorMessage ?? prev.errorMessage
-          }
-          if (next.status === 'COMPLETED' || next.status === 'FAILED' || next.status === 'CANCELLED') {
-            handleTerminal(next)
-          }
-          return next
-        })
-      },
-      [handleTerminal]
-    )
+    useCallback((update: ReportJobUpdate) => {
+      setActiveJob((prev) => {
+        if (!prev || prev.id !== update.jobId) return prev
+        return {
+          ...prev,
+          status: update.status,
+          progress: update.progress,
+          stage: update.stage ?? prev.stage,
+          fileName: update.fileName ?? prev.fileName,
+          errorMessage: update.errorMessage ?? prev.errorMessage
+        }
+      })
+    }, [])
   )
+
+  // Terminal-state side effects, driven by the observed active job status from
+  // any source (subscription or polling). Deduped inside handleTerminal.
+  useEffect(() => {
+    if (!activeJob) return
+    const terminal =
+      activeJob.status === 'COMPLETED' ||
+      activeJob.status === 'FAILED' ||
+      activeJob.status === 'CANCELLED' ||
+      activeJob.status === 'EXPIRED'
+    if (terminal) handleTerminal(activeJob)
+  }, [activeJob, handleTerminal])
 
   /**
    * Submits an export request. Prevents double submission. When the backend
@@ -201,13 +225,15 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
 
         const job: ReportJob = payload.job
         sessionJobIds.current.add(job.id)
+        // A fresh submission is eligible for terminal handling again even if an
+        // id somehow repeats (retry creates a new id, so this is defensive).
+        handledTerminalIds.current.delete(job.id)
         setActiveJob(job)
         void refetchRecent()
 
-        if (job.status === 'COMPLETED') {
-          // Fast path already finished server-side.
-          handleTerminal(job)
-        } else {
+        // Terminal handling (incl. fast-path auto-download) is driven by the
+        // activeJob effect; here we only surface the in-progress notification.
+        if (job.status !== 'COMPLETED') {
           sendNotification({
             title: 'Reporte en proceso',
             description: job.status === 'PENDING' ? 'La solicitud fue encolada.' : 'Generando el reporte...',
@@ -224,7 +250,7 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
         setIsSubmitting(false)
       }
     },
-    [isSubmitting, requestExport, refetchRecent, handleTerminal, sendNotification]
+    [isSubmitting, requestExport, refetchRecent, sendNotification]
   )
 
   /**
@@ -265,8 +291,10 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
       const payload = data?.retryReportJob
       if (payload?.success && payload.job) {
         sessionJobIds.current.add(payload.job.id)
+        handledTerminalIds.current.delete(payload.job.id)
+        // Terminal handling (incl. auto-download for a fast retry) is driven by
+        // the activeJob effect once this state lands.
         setActiveJob(payload.job)
-        if (payload.job.status === 'COMPLETED') handleTerminal(payload.job)
       }
       sendNotification({
         title: payload?.success ? 'Reintentando' : 'No se pudo reintentar',
@@ -275,8 +303,28 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
       })
       void refetchRecent()
     },
-    [retryJob, refetchRecent, sendNotification, handleTerminal]
+    [retryJob, refetchRecent, sendNotification]
   )
+
+  // Reconciliation on mount / route re-entry: if there is no active job but the
+  // history still has one in flight (PENDING/PROCESSING), adopt it so the UI
+  // reconnects to its progress. It is NOT added to sessionJobIds, so it will
+  // never trigger an automatic download (only session-initiated jobs do). This
+  // reconciles state with the backend independently of the WebSocket.
+  useEffect(() => {
+    if (reconciledRef.current) return
+    if (activeJob) {
+      reconciledRef.current = true
+      return
+    }
+    const inFlight = recentRequests.find(
+      (j) => j.status === 'PENDING' || j.status === 'PROCESSING'
+    )
+    if (inFlight) {
+      reconciledRef.current = true
+      setActiveJob(inFlight)
+    }
+  }, [activeJob, recentRequests])
 
   // Polling fallback: if the active job is still running and we haven't had a
   // socket update in a while, poll its status so progress keeps advancing even
@@ -297,11 +345,10 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
           if (cancelled) return
           const jobs: ReportJob[] = data?.getRecentReportRequests?.jobs ?? []
           const fresh = jobs.find((j) => j.id === activeJob.id)
-          if (fresh && fresh.status !== activeJob.status) {
+          // Only advance state; terminal side effects are handled by the
+          // activeJob effect (deduped), avoiding double auto-download.
+          if (fresh && (fresh.status !== activeJob.status || fresh.progress !== activeJob.progress)) {
             setActiveJob(fresh)
-            if (fresh.status === 'COMPLETED' || fresh.status === 'FAILED' || fresh.status === 'CANCELLED') {
-              handleTerminal(fresh)
-            }
           }
         } catch {
           // transient; next tick retries
@@ -313,7 +360,7 @@ export const useReportsExport = (options: UseReportsExportOptions = {}) => {
       cancelled = true
       clearInterval(interval)
     }
-  }, [activeJob, client, recentLimit, handleTerminal])
+  }, [activeJob, client, recentLimit])
 
   return {
     activeJob,
