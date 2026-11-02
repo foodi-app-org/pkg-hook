@@ -199,7 +199,12 @@ export const useCreateProduct = ({
     newTags,
     handleRemoveTag,
     handleRegister: handleRegisterTags,
-    handleAddTag
+    handleAddTag,
+    handleClearSelectedTag,
+    handleAddDraftTag,
+    handleRemoveDraftTag,
+    registerTags: handleRegisterDraftTags,
+    loadingTags: loadingRegisterTags
   } = useTagsProducts({ sendNotification })
 
   // Estados de disponibilidad
@@ -756,6 +761,11 @@ export const useCreateProduct = ({
     handleCheckStock,
     onTargetClick,
     handleAddTag,
+    handleClearSelectedTag,
+    handleAddDraftTag,
+    handleRemoveDraftTag,
+    handleRegisterDraftTags,
+    loadingRegisterTags,
     handleRemoveTag,
     handleCheck,
     handleCheckFreeShipping,
