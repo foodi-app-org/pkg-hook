@@ -192,17 +192,50 @@ export const updateCacheMod = async ({
  * @param {string|number} value - El valor a formatear.
  * @returns {string} El valor formateado como número o el valor original si no es numérico.
  */
+/**
+ * Coerces a raw value into a JS number without destroying decimals.
+ *
+ * - Numbers are returned as-is (never stripped), so `140618.43` stays
+ *   `140618.43` instead of being inflated to `14061843`.
+ * - Strings are interpreted as es-CO formatted text: dots are thousands
+ *   separators and a comma is the decimal separator (e.g. `"14.061.843,50"` ->
+ *   `14061843.5`). A plain numeric string with a dot decimal (e.g. `"140618.43"`)
+ *   is also parsed correctly.
+ *
+ * @param {string|number} value - Raw value.
+ * @returns {number} Parsed number, or NaN when it cannot be parsed.
+ */
+const toNumeric = (value: string | number): number => {
+  if (typeof value === 'number') return value
+
+  const raw = `${value}`.trim()
+  // es-CO formatted ("1.234.567,89"): strip dot thousands, comma -> dot.
+  if (raw.includes(',')) {
+    return Number.parseFloat(raw.replace(/\./g, '').replace(',', '.'))
+  }
+  // Dot present and used as a thousands separator (groups of exactly 3, no
+  // decimal comma): e.g. "14.061.843" -> 14061843. Otherwise treat the dot as
+  // a real decimal point ("140618.43" -> 140618.43).
+  if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+    return Number.parseFloat(raw.replace(/\./g, ''))
+  }
+  return Number.parseFloat(raw)
+}
+
+/**
+ * Formatea un valor como número con el formato de Colombia (es-CO), con dos
+ * decimales. No corrompe los decimales de los números: `numberFormat(140618.43)`
+ * devuelve `"140.618,43"`, no `"14.061.843,00"`.
+ *
+ * @param {string|number} value - El valor a formatear.
+ * @returns {string|number} El valor formateado, o el original si no es numérico.
+ */
 export const numberFormat = (value: string | number) => {
-  // Verifica si el valor es nulo o indefinido, devolviendo el mismo valor.
   if (value === null || value === undefined) {
     return value
   }
 
-  // Convierte el valor a string y elimina puntos.
-  const stringValue = `${value}`.replaceAll('.', '')
-
-  // Intenta convertir a número y formatear si es posible.
-  const numberValue = Number.parseFloat(stringValue)
+  const numberValue = toNumeric(value)
   if (!Number.isNaN(numberValue)) {
     return new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 2,
