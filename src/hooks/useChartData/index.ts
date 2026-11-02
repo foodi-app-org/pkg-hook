@@ -17,7 +17,10 @@ type ResultItem = {
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const useChartData = (_: { year?: number }) => {
-  const { data, loading } = useQuery(GET_ALL_SALES)
+  const { data, loading } = useQuery(GET_ALL_SALES, {
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
+  })
   const [chartType, setChartType] = useState<string>('line')
   const [chartTypeYear, setChartTypeYear] = useState<number>(new Date().getFullYear())
   const [asFilter, setFilter] = useState<boolean>(false)
