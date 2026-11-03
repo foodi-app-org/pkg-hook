@@ -1,4 +1,12 @@
-import type { Product } from 'typesdefs'
+/**
+ * Minimal shape needed to compute the counter. Accepting a structural type
+ * (anything carrying a `ProQuantity`) keeps this helper usable across the
+ * different product shapes handled by the reducer without fighting the strict
+ * `Product` type.
+ */
+interface CountableProduct {
+    ProQuantity?: number | string | null
+}
 
 /**
  * Derives the cart counter from the actual products in the cart.
@@ -15,13 +23,13 @@ import type { Product } from 'typesdefs'
  * @returns The total units in the cart (never negative).
  */
 export const recalculateCounter = (
-    products: Product[] = []
+    products: CountableProduct[] = []
 ): number => {
     if (!Array.isArray(products) || products.length === 0) {
         return 0
     }
 
-    const total = products.reduce((sum: number, item: Product) => {
+    const total = products.reduce((sum: number, item: CountableProduct) => {
         const quantity = Number(item?.ProQuantity)
 
         if (!Number.isFinite(quantity) || quantity <= 0) {

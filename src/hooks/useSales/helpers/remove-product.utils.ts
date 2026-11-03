@@ -27,9 +27,6 @@ export function handleRemoveProduct(state: any, action: any, productsFood: any) 
             ...items,
             pId: action.payload.pId,
             ProQuantity: items.ProQuantity - 1,
-            // Keep the baseline aligned so a later edit/cancel restores the
-            // correct quantity after a decrement.
-            oldQuantity: items.ProQuantity - 1,
             ProPrice: Math.max(0, (items.ProPrice ?? 0) - perUnitPrice)
           }
           : items

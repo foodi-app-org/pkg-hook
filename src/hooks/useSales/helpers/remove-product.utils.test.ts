@@ -4,8 +4,12 @@ import { handleRemoveProduct } from './remove-product.utils'
 
 describe('handleRemoveProduct', () => {
   test('decrements product quantity and updates price when ProQuantity > 1', () => {
+    // counter is the real sum of quantities (3 + 1 = 4). After decrementing p1
+    // the cart holds 2 + 1 = 3 units, so counter must become 3. The counter is
+    // always derived from the real products, never from a blind -1, so it can
+    // never drift out of sync with the cart.
     const state = {
-      counter: 5,
+      counter: 4,
       totalAmount: 100,
       PRODUCT: [
         { pId: 'p1', ProQuantity: 3, ProPrice: 30 },
@@ -17,7 +21,7 @@ describe('handleRemoveProduct', () => {
 
     const result = handleRemoveProduct(state as any, action as any, productsFood as any)
 
-    expect(result.counter).toBe(4)
+    expect(result.counter).toBe(3)
     expect(result.totalAmount).toBe(90)
     expect(result.PRODUCT).toHaveLength(2)
 
