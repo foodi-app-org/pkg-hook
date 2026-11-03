@@ -73,9 +73,30 @@ export const useLogout = ({
   }
 
   /**
+   * Revokes the server-side refresh-token family and clears the HttpOnly
+   * refresh cookie by calling the backend logout endpoint. Best-effort: a
+   * network/HTTP failure must never block client-side logout.
+   */
+  const revokeServerSession = async (): Promise<void> => {
+    try {
+      const backendUrl = String(process.env.NEXT_PUBLIC_URL_BACK_SERVER ?? '').replace(/\/+$/, '')
+      if (!backendUrl) { return }
+      await fetch(`${backendUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    } catch {
+      // ignore: logout must proceed regardless of server reachability
+    }
+  }
+
+  /**
    * Remove all known session cookies. Throws if any removal fails.
    */
   const deleteCookie = async (): Promise<void> => {
+    // Revoke the refresh-token family server-side first (best-effort).
+    await revokeServerSession()
     await eliminarCookie(String(process.env.NEXT_PUBLIC_SESSION_NAME))
     await eliminarCookie(String(process.env.NEXT_LOCAL_SALES_STORE))
     await eliminarCookie('restaurant')

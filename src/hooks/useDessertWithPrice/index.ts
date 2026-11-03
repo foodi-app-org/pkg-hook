@@ -14,6 +14,7 @@ import { useUpdateMultipleExtProduct } from '../useUpdateMultipleExtProduct'
 
 import {
   findNumbersExceedingRange,
+  markEmptyRequiredFields,
   transformData,
   updateErrorFieldByIndex
 } from './helpers'
@@ -43,6 +44,8 @@ interface ExtraLine {
   manageStock?: boolean
   stock?: number
   error?: boolean
+  errorName?: boolean
+  errorPrice?: boolean
   messageError?: string
   [key: string]: any
 }
@@ -185,6 +188,18 @@ export const useDessertWithPrice = ({
 
       if (name === 'extraName' || name === 'extraPrice') {
         newLine[name] = value
+
+        // Limpia el estado de requerido del campo en cuanto el usuario escribe,
+        // para que el resaltado de error desaparezca al corregirlo.
+        const filled = String(value ?? '').trim() !== ''
+
+        if (name === 'extraName') newLine.errorName = !filled
+        if (name === 'extraPrice') newLine.errorPrice = !filled
+
+        if (!newLine.errorName && !newLine.errorPrice) {
+          newLine.error = false
+          newLine.messageError = ''
+        }
       } else if (name === 'exState') {
         newLine[name] = value.target.checked
       } else {
@@ -218,80 +233,91 @@ export const useDessertWithPrice = ({
    * @param {string} [exPid] - External product ID to remove (optional).
    * @returns {Promise<void>}
    */
-  // Helper function to handle cache modification logic
-  function handleCacheModification(dataOld: any[], i: number) {
+  /**
+   * Removes a line from the local editor state by its exPid. This is the source
+   * of truth the modal renders, so it must run regardless of the Apollo cache.
+   */
+  const removeLineByExPid = (exPid: string | number): void => {
+    setLine(prev => {
+      const Lines = (prev?.Lines ?? []).filter(line => line?.exPid !== exPid)
+      return { ...prev, Lines }
+    })
+  }
+
+  /**
+   * Drops the deleted extra from the persisted `ExtProductFoodsAll` cache field
+   * by exPid, so other views that read the query stay in sync.
+   */
+  function removeFromCacheByExPid(dataOld: any[], exPid: string | number) {
     if (!Array.isArray(dataOld)) return dataOld
 
-    const transformedData = transformData(dataOld)
-    const Lines = transformedData.filter((_item: any, index: number) => index !== i)
-    const newCache = dataOld.filter((_item: any, index: number) => index !== i)
-
-    setLine(prev => ({
-      ...prev,
-      Lines
-    }))
-
-    return newCache
+    return dataOld.filter((item: any) => {
+      const ref = item?.exPid ?? item?.__ref
+      return ref !== exPid && item?.exPid !== exPid
+    })
   }
 
   const handleRemove = async (i: number, exPid?: string): Promise<void> => {
+    // Lines without an exPid only exist on the client, so remove them locally.
+    if (!exPid) {
+      filterOneLine(i)
+      return
+    }
+
+    // Ignore repeated clicks on the row that is already being deleted.
+    if (selected.loading && selected.exPid === exPid) return
+    setSelected({ exPid, loading: true })
+
     try {
-      if (!exPid) {
-        filterOneLine(i)
-        return
-      }
-
-      const findDataExtra = dataExtra?.find(x => x?.exPid === exPid)
-      if (!findDataExtra) return
-
-      await deleteExtraProductFoods({
+      const { data } = await deleteExtraProductFoods({
         variables: {
           state: 1,
           id: exPid
         },
-        update: (cache: any, result: { data?: any }) => {
-          const res = result.data?.deleteExtraProduct
-          const success = res?.success
-          const message = res?.message || ''
-
-          if (!success) {
-            sendNotification({
-              title: 'Error',
-              description: message,
-              backgroundColor: 'error'
-            })
-            return null
-          }
-
-          sendNotification({
-            title: 'Producto eliminado',
-            description: message,
-            backgroundColor: 'success'
-          })
-
+        update: (cache: any) => {
+          // Keep the shared query cache in sync. This only runs if the field
+          // exists, so it is a best-effort sync, not the source of truth.
           cache.modify({
             fields: {
-              ExtProductFoodsAll: (dataOld: any[] = []) => handleCacheModification(dataOld, i)
+              ExtProductFoodsAll: (dataOld: any[] = []) => removeFromCacheByExPid(dataOld, exPid)
             }
           })
-          return null
         }
+      })
+
+      const res = data?.deleteExtraProduct
+      const success = res?.success
+      const message = res?.message || ''
+
+      if (!success) {
+        sendNotification({
+          title: 'Error',
+          description: message || 'No se pudo eliminar el complemento',
+          backgroundColor: 'error'
+        })
+        return
+      }
+
+      // Source of truth: remove from the editor list the modal renders.
+      removeLineByExPid(exPid)
+
+      sendNotification({
+        title: 'Producto eliminado',
+        description: message,
+        backgroundColor: 'success'
       })
       return
     } catch (error) {
-      if (error instanceof Error) {
-        sendNotification({
-          title: error.message,
-          description: 'Ocurrió un error al eliminar el producto',
-          backgroundColor: 'error'
-        })
-      }
       sendNotification({
         title: 'Error',
-        description: 'Ocurrió un error al eliminar el producto',
+        description: error instanceof Error ? error.message : 'Ocurrió un error al eliminar el producto',
         backgroundColor: 'error'
       })
       return
+    } finally {
+      // Always clear the deleting flag so the row's buttons re-enable, whether
+      // the mutation succeeded, failed, or threw.
+      setSelected({ exPid: null, loading: false })
     }
   }
 
@@ -410,14 +436,38 @@ export const useDessertWithPrice = ({
 
   const handleSubmit = ({ pId }: { pId: string }): Promise<void> => {
     try {
+      // Marca como requeridas las líneas con nombre o precio vacío y avisa.
+      const invalidIndexes = markEmptyRequiredFields(setLine)
+      if (invalidIndexes.length > 0) {
+        sendNotification({
+          title: 'Campos obligatorios',
+          description: 'Completa el nombre y el precio de cada complemento antes de guardar.',
+          backgroundColor: 'warning'
+        })
+        setAlertBox?.({ message: 'Completa los campos obligatorios', type: AlertBoxType.WARNING })
+        return Promise.resolve()
+      }
+
       const checkNumberRange = findNumbersExceedingRange(LineItems?.Lines)
       updateErrorFieldByIndex({ checkNumberRange, setLine })
       if (checkNumberRange?.length > 0) {
+        sendNotification({
+          title: 'Precio inválido',
+          description: 'El precio no puede ser tan alto.',
+          backgroundColor: 'warning'
+        })
         setAlertBox?.({ message: 'El precio no puede ser tan alto', type: AlertBoxType.WARNING })
         return Promise.resolve()
       }
 
-      if (!prepareAndValidateData(pId)) return Promise.resolve()
+      if (!prepareAndValidateData(pId)) {
+        sendNotification({
+          title: 'Campos obligatorios',
+          description: 'Completa los campos vacíos antes de guardar.',
+          backgroundColor: 'warning'
+        })
+        return Promise.resolve()
+      }
       const dataArr = LineItems?.Lines?.map((x: any) => {
         const extraPrice = Number(x.extraPrice)
         const extraName = x.extraName

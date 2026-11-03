@@ -4,13 +4,6 @@ import { UPDATE_MULTI_EXTRAS_PRODUCT_FOOD } from './queries'
 
 import type { SendNotificationFn } from 'typesdefs'
 
-
-/**
- * Custom hook para manejar la actualización de múltiples extras de productos alimenticios.
- * @param cleanLines - Función para limpiar líneas después de completar la mutación.
- * @param sendNotification - Función para notificar al usuario.
- * @returns Retorna un array con la función de mutación y el estado de carga.
- */
 type UseUpdateMultipleExtProductParams = {
   cleanLines?: () => void
   sendNotification?: SendNotificationFn
@@ -24,18 +17,38 @@ export const useUpdateMultipleExtProduct = (
     sendNotification = () => {}
   } = params || {}
 
-  const [updateMultipleExtProduct, { loading }] = useMutation(UPDATE_MULTI_EXTRAS_PRODUCT_FOOD, {
-    onCompleted: (data) => {
-      const { updateMultipleExtProduct: result } = data
-      const { success, message } = result ?? {}
-      sendNotification({
-        description: message,
-        title: success ? 'Éxito' : 'Error',
-        backgroundColor: success ? 'success' : 'error'
-      })
-      cleanLines()
-    }
-  })
+  const [updateMultipleExtProduct, { loading }] = useMutation(
+    UPDATE_MULTI_EXTRAS_PRODUCT_FOOD,
+    {
+      onCompleted: (data) => {
+        console.log(data)
+        const result = data?.updateMultipleExtProduct
+        const { success, message } = result ?? {}
 
-  return [updateMultipleExtProduct, { loading }]
+        sendNotification({
+          description: message || 'La operación ha finalizado.',
+          title: success ? 'Éxito' : 'Error',
+          backgroundColor: success ? 'success' : 'error'
+        })
+
+        cleanLines()
+      },
+
+      onError: (error) => {
+        const sessionExpired = error.graphQLErrors.some(
+          ({ message }) => /session expired/i.test(message)
+        )
+
+        sendNotification({
+          description: sessionExpired
+            ? 'Tu sesión ha expirado. Inicia sesión nuevamente para continuar.'
+            : error.graphQLErrors[0]?.message || error.message,
+          title: 'Error',
+          backgroundColor: 'error'
+        })
+      }
+    }
+  )
+
+  return [updateMultipleExtProduct, { loading }] as const
 }

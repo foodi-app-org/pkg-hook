@@ -66,6 +66,84 @@ type UpdateErrorFieldByIndexParams = {
   checkNumberRange: CheckNumberRangeItem[]
 }
 
+/**
+ * Determina si una línea tiene campos requeridos vacíos (nombre o precio).
+ *
+ * @param item - Línea de complemento a validar.
+ * @returns `true` cuando falta el nombre o el precio.
+ */
+export const hasEmptyRequiredFields = (item: ExtraItem): boolean => {
+  const nameEmpty =
+    item?.extraName === undefined ||
+    item?.extraName === null ||
+    String(item.extraName).trim() === ''
+
+  const priceRaw = item?.extraPrice
+  const priceEmpty =
+    priceRaw === undefined ||
+    priceRaw === null ||
+    String(priceRaw).trim() === '' ||
+    Number.isNaN(Number(priceRaw))
+
+  return nameEmpty || priceEmpty
+}
+
+/**
+ * Marca cada línea con los campos vacíos como requerida (`error`) y guarda el
+ * detalle por campo (`errorName` / `errorPrice`) para que la UI resalte el
+ * input correcto. Las líneas válidas se limpian de errores previos.
+ *
+ * @param setLine - Setter del estado de LineItems.
+ * @returns Los índices de las líneas con campos vacíos.
+ */
+export const markEmptyRequiredFields = (
+  setLine: (array: any) => any
+): number[] => {
+  const invalidIndexes: number[] = []
+
+  setLine((prevLineItems: LineItemsState) => {
+    const updatedLines = prevLineItems.Lines.map(
+      (line: LineItem, index: number) => {
+        const nameEmpty =
+          line?.extraName === undefined ||
+          line?.extraName === null ||
+          String(line.extraName).trim() === ''
+
+        const priceRaw = line?.extraPrice
+        const priceEmpty =
+          priceRaw === undefined ||
+          priceRaw === null ||
+          String(priceRaw).trim() === '' ||
+          Number.isNaN(Number(priceRaw))
+
+        if (nameEmpty || priceEmpty) {
+          invalidIndexes.push(index)
+
+          return {
+            ...line,
+            error: true,
+            errorName: nameEmpty,
+            errorPrice: priceEmpty,
+            messageError: 'Este campo es obligatorio'
+          }
+        }
+
+        return {
+          ...line,
+          error: false,
+          errorName: false,
+          errorPrice: false,
+          messageError: ''
+        }
+      }
+    )
+
+    return { ...prevLineItems, Lines: updatedLines }
+  })
+
+  return invalidIndexes
+}
+
 export const updateErrorFieldByIndex = ({
   setLine,
   checkNumberRange
