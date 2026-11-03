@@ -715,6 +715,27 @@ export const useSales = ({
     const exPid = Adicionales?.exPid || null
 
     if (exPid && pId) {
+      // Stock guard for complementos. Only extras that manage inventory are
+      // limited; extras with manageStock=false are unlimited. The available
+      // units are the extra's current `stock`; the already-selected `quantity`
+      // counts against it, so a user can never select more than is on hand.
+      // The backend re-validates on registerSalesStore (source of truth); this
+      // is an early, friendly block that mirrors that rule.
+      const current = dataExtra.find((p) => { return p.exPid === exPid })
+      const managesStock = Boolean(current?.manageStock)
+      const available = Number(current?.stock ?? 0)
+      const selected = Number(current?.quantity ?? 0)
+      if (managesStock && selected >= available) {
+        sendNotification({
+          title: 'Sin stock disponible',
+          backgroundColor: 'warning',
+          description: available > 0
+            ? `"${current?.extraName ?? 'Complemento'}" solo tiene ${available} unidad(es) disponible(s).`
+            : `"${current?.extraName ?? 'Complemento'}" no tiene stock disponible.`
+        })
+        return
+      }
+
       const newExtra = dataExtra.map((producto) => {
         if (exPid === producto.exPid) {
           const initialQuantity = producto?.quantity ? producto?.quantity : 0

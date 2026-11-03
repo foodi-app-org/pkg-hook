@@ -325,46 +325,60 @@ export const useDessertWithPrice = ({
     }, [LineItems])
 
   const handleEdit = async (i: number, exPid: string) => {
-    setSelected({ exPid: null, loading: true })
-    const findOneExtra = LineItems?.Lines?.find(x => { return x?.exPid === exPid })
-    const { extraName, extraPrice: price, manageStock, stock } = findOneExtra || {}
-    const extraPrice = price
-    const { data } = await editExtraProductFoods({
-      variables: {
-        exPid,
-        extraName,
-        extraPrice,
-        manageStock: Boolean(manageStock),
-        stock: manageStock ? (Number(stock) || 1) : 0
-      },
-      update: (cache) => {
-        cache.modify({
-          fields: {
-            ExtProductFoodsAll: () => {
-              return LineItems?.Lines || []
+    // Mark THIS row as saving (keep it selected so its inline editor stays open
+    // and only its button shows the saving state). Using exPid here—rather than
+    // null—prevents every other row's Edit button from being disabled.
+    setSelected({ exPid, loading: true })
+    try {
+      const findOneExtra = LineItems?.Lines?.find(x => { return x?.exPid === exPid })
+      const { extraName, extraPrice: price, manageStock, stock } = findOneExtra || {}
+      const extraPrice = price
+      const { data } = await editExtraProductFoods({
+        variables: {
+          exPid,
+          extraName,
+          extraPrice,
+          manageStock: Boolean(manageStock),
+          stock: manageStock ? (Number(stock) || 1) : 0
+        },
+        update: (cache) => {
+          cache.modify({
+            fields: {
+              ExtProductFoodsAll: () => {
+                return LineItems?.Lines || []
+              }
             }
-          }
-        })
-      }
-    })
-    if (!data?.editExtraProductFoods?.success) {
-      sendNotification({
-        title: 'Error',
-        description: data?.editExtraProductFoods?.message || '',
-        backgroundColor: 'error'
+          })
+        }
       })
-      return null
-    }
+      if (!data?.editExtraProductFoods?.success) {
+        sendNotification({
+          title: 'Error',
+          description: data?.editExtraProductFoods?.message || '',
+          backgroundColor: 'error'
+        })
+        return null
+      }
 
-    if (data?.editExtraProductFoods?.success) {
       sendNotification({
         title: 'Producto actualizado',
         description: data?.editExtraProductFoods?.message || '',
         backgroundColor: 'success'
       })
       return null
+    } catch (error) {
+      sendNotification({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo actualizar el complemento',
+        backgroundColor: 'error'
+      })
+      return null
+    } finally {
+      // Always clear the saving/selected state so the Edit buttons re-enable
+      // and the row returns to read-only. This fixes the bug where buttons
+      // stayed disabled after editing an item.
+      setSelected({ exPid: null, loading: false })
     }
-    return null
   }
 
   /**
