@@ -60,5 +60,12 @@ export const useStockMovements = (
     }
   }, [data])
 
-  return [fillMissingDates(chartData), { loading, error, refetch }]
+  // Render the REAL movements returned by the backend. Gaps are filled only
+  // within the actual span of the data (or the selected filter range) so every
+  // existing movement in the DB shows up — instead of clamping to a fixed
+  // last-7-days window anchored to the client clock, which hid older movements.
+  return [
+    fillMissingDates(chartData, { from: filter?.from, to: filter?.to }),
+    { loading, error, refetch }
+  ]
 }
