@@ -68,7 +68,7 @@ export const useUpdateExtProductFoodsOptional = ({
 
       if (response?.success) {
         sendNotification?.({
-          description: 'El sub item actualizado con éxito',
+          description: response?.message,
           title: response?.message ?? '',
           backgroundColor: 'success'
         })

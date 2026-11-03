@@ -1,8 +1,11 @@
 import { useMutation } from '@apollo/client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-
-import { useDeleteOneTag, useGetAllTags, useRegisterMultipleTags } from '../useTagProducts'
+import {
+  useDeleteOneTag,
+  useGetAllTags,
+  useRegisterMultipleTags
+} from '../useTagProducts'
 
 import { REGISTER_TAGS_PRODUCT } from './queriesStore'
 import {
@@ -29,33 +32,42 @@ const EMPTY_SELECTED: TagItem = {
 /**
  * Hook that drives the product tags experience.
  *
- * It exposes a small, predictable API split in two clear concepts:
- *
- * 1. Draft tags (`newTags`): tags the user is typing/creating but has not
- *    saved yet. They live only in local state until `registerTags` runs.
- * 2. Saved tags (`dataTags`): tags already stored for the store, rendered as
- *    chips the user can select (to reuse) or delete.
- *
- * @param {UseTagsProductsProps} props - Optional notification handler.
- * @returns Tags API consumed by the product form.
+ * 1. Draft tags: tags being created but not yet persisted.
+ * 2. Saved tags: tags already stored for the store.
+ * 3. Selected tag: saved tag currently selected for the product.
+ * @param root0
+ * @param root0.sendNotification
  */
 export const useTagsProducts = ({
-  sendNotification = () => { }
+  sendNotification = () => {}
 }: UseTagsProductsProps = {}) => {
   const [registerTag] = useMutation(REGISTER_TAGS_PRODUCT)
-  const [handleDeleteTag, { loading: loadingDelete }] = useDeleteOneTag()
-  const { tags: listTags, loading: loadingList } = useGetAllTags()
+
+  const [handleDeleteTag, { loading: loadingDelete }] =
+    useDeleteOneTag()
+
+  const {
+    tags: listTags,
+    loading: loadingList
+  } = useGetAllTags()
 
   // Draft tags: being created, not yet persisted.
   const [newTags, setNewTags] = useState<string[]>([])
 
-  // Currently selected saved tag (reused on the product).
+  // Currently selected saved tag.
   const [tags, setTags] = useState<TagItem>(EMPTY_SELECTED)
+
+  // Tag waiting to be selected after being persisted.
+  const [pendingTagSelection, setPendingTagSelection] =
+    useState<string | null>(null)
 
   const [registerMultipleTags, { loading: loadingRegister }] =
     useRegisterMultipleTags({
       callback: (response) => {
-        const { success = false, message = '' } = response ?? {}
+        const {
+          success = false,
+          message = ''
+        } = response ?? {}
 
         sendNotification({
           title: success ? 'Tags guardados' : 'Error',
@@ -75,7 +87,26 @@ export const useTagsProducts = ({
   const dataTags = normalizeTags(listTags)
 
   /**
-   * Adds a draft tag from a raw value, notifying the user on duplicates.
+   * Automatically selects the newly created tag once it appears
+   * in the saved tags list.
+   */
+  useEffect(() => {
+    if (!pendingTagSelection) return
+
+    const createdTag = dataTags.find(
+      ({ tag }) =>
+        tag.trim().toLowerCase() ===
+        pendingTagSelection.trim().toLowerCase()
+    )
+
+    if (!createdTag) return
+
+    setTags(createdTag)
+    setPendingTagSelection(null)
+  }, [dataTags, pendingTagSelection])
+
+  /**
+   * Adds a draft tag from a raw value.
    *
    * @param {string} value - Raw text typed by the user.
    * @returns {boolean} Whether the tag was added.
@@ -103,19 +134,18 @@ export const useTagsProducts = ({
   /**
    * Removes a draft tag by index.
    *
-   * @param {number} index - Position of the draft tag to remove.
-   * @returns {void}
+   * @param {number} index - Position of the draft tag.
    */
   const handleRemoveDraftTag = (index: number): void => {
     setNewTags((previous) => removeDraftTagAt(previous, index))
   }
 
   /**
-   * Selects (or unselects) a saved tag so it can be reused on the product.
+   * Selects or unselects a saved tag.
    *
    * @param {string} id - Tag id.
    * @param {string} tag - Tag name.
-   * @returns {boolean} Whether a tag is selected after the toggle.
+   * @returns {boolean} Whether a tag is selected.
    */
   const handleAddTag = (id: string, tag: string): boolean => {
     const next = toggleSelectedTag(tags, { id, tag })
@@ -126,78 +156,86 @@ export const useTagsProducts = ({
   }
 
   /**
-   * Clears the current selection.
-   *
-   * @returns {void}
+   * Clears the current tag selection.
    */
   const handleClearSelectedTag = (): void => {
     setTags(EMPTY_SELECTED)
   }
 
   /**
-   * Deletes a saved tag permanently and notifies the result.
+   * Deletes a saved tag permanently.
    *
    * @param {TagItem} tag - Tag to delete.
-   * @returns {Promise<void>}
    */
   const handleRemoveTag = async (tag: TagItem): Promise<void> => {
     try {
       if (loadingDelete) return
 
-      const { id: tgId, tag: nameTag } = tag ?? EMPTY_SELECTED
+      const {
+        id: tgId,
+        tag: nameTag
+      } = tag ?? EMPTY_SELECTED
 
       if (!tgId) return
 
-      // Keep selection in sync when the selected tag is deleted.
+      // Clear selection when deleting the currently selected tag.
       if (tags.id === tgId) {
         setTags(EMPTY_SELECTED)
       }
 
-      const response = await handleDeleteTag({ tgId, nameTag })
-      const { success = false, message = '' } = response ?? {}
+      const response = await handleDeleteTag({
+        tgId,
+        nameTag
+      })
+
+      const {
+        success = false,
+        message = ''
+      } = response ?? {}
 
       sendNotification({
         title: success ? 'Tag eliminado' : 'Error',
-        description: message || (success ? 'Tag eliminado.' : 'No fue posible eliminar el tag.'),
+        description:
+          message ||
+          (success
+            ? 'Tag eliminado.'
+            : 'No fue posible eliminar el tag.'),
         backgroundColor: success ? 'success' : 'error'
       })
     } catch (e) {
       sendNotification({
         title: 'Error',
-        description: e instanceof Error ? e.message : 'Ocurrió un error al eliminar el tag.',
+        description:
+          e instanceof Error
+            ? e.message
+            : 'Ocurrió un error al eliminar el tag.',
         backgroundColor: 'error'
       })
     }
   }
 
   /**
-   * Creates and persists tag(s) in a single, reliable step.
+   * Creates and persists tag(s).
    *
-   * This is the single entry point used by the input (Enter and the "+"
-   * button). It intentionally accepts the value(s) explicitly instead of
-   * reading `newTags` from state, which removes the stale-closure bug that
-   * forced the user to press Enter twice and dropped tags.
+   * 1. Normalizes and validates the incoming values.
+   * 2. Rejects empty values.
+   * 3. Rejects duplicates against saved tags.
+   * 4. Persists new tags.
+   * 5. Automatically selects the last successfully created tag.
    *
-   * Flow:
-   * 1. Normalize and validate the incoming value(s).
-   * 2. Reject empty values.
-   * 3. Reject duplicates (against both draft and already-saved tags).
-   * 4. Persist via the existing bulk mutation (backend `findOrCreate`
-   *    keeps it idempotent, so re-sending is safe).
-   * 5. Return whether the operation succeeded so the input can decide if
-   *    it should clear the field (success) or keep it (error, so the user
-   *    can retry without retyping).
-   *
-   * @param {string | string[]} [value] - Tag name(s). Defaults to the
-   *   current draft list for backward compatibility.
-   * @returns {Promise<boolean>} Whether the tag(s) were persisted.
+   * @param {string | string[]} value - Tag name(s).
+   * @returns {Promise<boolean>} Whether the operation succeeded.
    */
   const registerTags = async (
     value: string | string[] = newTags
   ): Promise<boolean> => {
-    const { toPersist, duplicates, normalized } = resolveTagsToPersist(
+    const {
+      toPersist,
+      duplicates,
+      normalized
+    } = resolveTagsToPersist(
       value,
-      (dataTags ?? []).map((t) => t.tag)
+      (dataTags ?? []).map(({ tag }) => tag)
     )
 
     if (normalized.length === 0) {
@@ -222,20 +260,30 @@ export const useTagsProducts = ({
     }
 
     if (toPersist.length === 0) {
-      // Everything was a duplicate; nothing to persist but not an error
-      // the user needs to recover from.
       return true
     }
 
     try {
       const response = await registerMultipleTags(toPersist)
+
       const { success = false } = response ?? {}
 
-      return Boolean(success)
+      if (!success) {
+        return false
+      }
+
+      // Wait for the newly created tag to appear in dataTags.
+      // The useEffect above will select it using its actual id.
+      setPendingTagSelection(toPersist[toPersist.length - 1])
+
+      return true
     } catch (e) {
       sendNotification({
         title: 'Error',
-        description: e instanceof Error ? e.message : 'No fue posible guardar los tags.',
+        description:
+          e instanceof Error
+            ? e.message
+            : 'No fue posible guardar los tags.',
         backgroundColor: 'error'
       })
 
@@ -247,14 +295,23 @@ export const useTagsProducts = ({
    * Registers a single tag already linked to a product (legacy flow).
    *
    * @param {object} tag - Tag input.
-   * @param {string} tag.pId - Product id.
-   * @param {string} tag.idUser - User id.
-   * @param {string} tag.idStore - Store id.
-   * @param {string} tag.nameTag - Tag name.
-   * @returns {void}
+   * @param tag.pId
+   * @param tag.idUser
+   * @param tag.idStore
+   * @param tag.nameTag
    */
-  const handleRegister = (tag: { pId: string, idUser: string, idStore: string, nameTag: string }) => {
-    const { pId, idUser, idStore, nameTag } = tag || {}
+  const handleRegister = (tag: {
+    pId: string
+    idUser: string
+    idStore: string
+    nameTag: string
+  }) => {
+    const {
+      pId,
+      idUser,
+      idStore,
+      nameTag
+    } = tag || {}
 
     registerTag({
       variables: {
@@ -269,27 +326,27 @@ export const useTagsProducts = ({
   }
 
   return {
-    // selection
+    // Selection
     tags,
     handleAddTag,
     handleClearSelectedTag,
 
-    // saved tags
+    // Saved tags
     dataTags,
     data: dataTags,
     handleRemoveTag,
 
-    // draft tags
+    // Draft tags
     newTags: newTags ?? [],
     setNewTags,
     handleAddDraftTag,
     handleRemoveDraftTag,
     registerTags,
 
-    // legacy single register
+    // Legacy single register
     handleRegister,
 
-    // state
+    // State
     error: false,
     loading: loadingList,
     loadingTags: loadingRegister,

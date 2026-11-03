@@ -386,23 +386,17 @@ export const useDessert = ({
           required: required ? 1 : 0,
           numbersOptionalOnly: Number(numberLimit)
         })
-        const { data } = response || {}
-        if (!data?.updateExtProductOptional) {
+        if (!response?.updateExtProductOptional.success) {
           return sendNotification({
             description: 'Ocurrió un error, intenta de nuevo',
             title: 'Error',
             backgroundColor: 'warning'
           })
         }
-        const { success, message } = data?.updateExtProductOptional || {}
+        const { success } = response?.updateExtProductOptional || {}
         if (success) {
           setSelectedExtra({})
           setOpenModalEditExtra(false)
-          sendNotification({
-            description: message,
-            title: 'Actualizado',
-            backgroundColor: 'success'
-          })
           return updateListById(id, {
             title,
             numberLimit: Number(numberLimit),
