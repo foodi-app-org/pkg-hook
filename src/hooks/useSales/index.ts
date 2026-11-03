@@ -49,6 +49,7 @@ import { handleRemoveProduct } from './helpers/remove-product.utils'
 import { searchedInput } from './helpers/searchedInput'
 import { sendAlertStock } from './helpers/sendAlertStock.utils'
 import { toggleFreeProducts } from './helpers/toggleFreeProducts'
+import { updateStockCacheAfterSale } from './helpers/update-stock-cache.utils'
 import {
   CREATE_SHOPPING_CARD_TO_USER_STORE,
   GET_ALL_COUNT_SALES
@@ -152,32 +153,112 @@ export const useSales = ({
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState<ExtProductFoodOptional[]>([])
   const [dataExtra, setDataExtra] = useState<ExtProductFoodsAll[]>([])
+  /**
+   * Renderiza el resultado de `registerSalesStore` (éxito o error de negocio).
+   *
+   * Se extrae a una función porque la misma respuesta puede llegar por dos vías:
+   *  - `onCompleted`, cuando la mutación responde sin `graphQLErrors`.
+   *  - `onError`, cuando GraphQL adjunta `graphQLErrors` (p. ej. un error de
+   *    serialización del backend en `context.value`) pero igual trae el `data`
+   *    parcial con el `errors[]` de negocio (stock insuficiente, etc.).
+   *
+   * Con esto el usuario siempre ve el detalle real ("Stock insuficiente para el
+   * producto X. Solicitado: 4, disponible: 1.") en lugar del genérico
+   * "ha ocurrido un error".
+   *
+   * @param response Objeto `registerSalesStore` de la respuesta.
+   * @returns `true` si la venta fue exitosa.
+   */
+  const renderSaleResponse = (response: {
+    success?: boolean | null
+    message?: string | null
+    errors?: Array<{ message?: string; type?: string }> | null
+  } | null | undefined): boolean => {
+    const isSuccess = Boolean(response?.success)
+    const rawMessage = `${response?.message ?? ''}`
+
+    // El backend devuelve un `errors[]` estructurado (por ejemplo, cuando un
+    // producto manejado por stock se quedó sin inventario y la venta se
+    // bloqueó). Construimos una descripción legible concatenando esos
+    // mensajes; si no hay `errors`, caemos al `message` general.
+    const backendErrors: Array<{ message?: string; type?: string }> =
+      Array.isArray(response?.errors) ? response.errors : []
+    const errorsDescription = backendErrors
+      .map((err: { message?: string }) => err?.message)
+      .filter((msg: unknown): msg is string => typeof msg === 'string' && msg.length > 0)
+      .join('\n')
+    const description = !isSuccess && errorsDescription
+      ? errorsDescription
+      : (rawMessage || 'Lo sentimos, ocurrió un error')
+
+    // El estado de stock insuficiente es una regla de negocio (no un fallo
+    // técnico), así que se notifica como 'warning'; cualquier otro fallo va
+    // como 'error' y el éxito como 'success'.
+    const hasStockError = backendErrors.some((err: { type?: string }) =>
+      typeof err?.type === 'string' && err.type.startsWith('stock.')
+    )
+    const backgroundColor = isSuccess
+      ? 'success'
+      : hasStockError
+        ? 'warning'
+        : 'error'
+
+    sendNotification({
+      backgroundColor,
+      title: isSuccess ? 'Éxito' : hasStockError ? 'Sin stock' : 'Error',
+      description
+    })
+    setAlertBox({
+      message: description,
+      type: (isSuccess ? 'success' : 'error') as AlertBoxType
+    })
+    if (rawMessage === 'Token expired') {
+      onClickLogout({
+        refresh: true,
+      })
+    }
+    // Solo cerramos/avanzamos la venta cuando realmente fue exitosa, para que
+    // el usuario pueda corregir el carrito si el backend la rechazó.
+    setOpenCurrentSale(response?.success as any)
+    return isSuccess
+  }
+
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
     CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
+      // 'all' hace que Apollo entregue el `data` parcial a `onCompleted` aunque
+      // la respuesta traiga `graphQLErrors`. Esto es clave: el backend puede
+      // adjuntar un error de serialización (context.value tipado como Int) y,
+      // aun así, el `data.registerSalesStore.errors[]` con el detalle de stock
+      // sigue presente. Sin 'all', Apollo iría directo a `onError` y se perdería
+      // el mensaje real.
+      errorPolicy: 'all',
       onCompleted: (data) => {
-        const message = `${data?.registerSalesStore?.message}`
-        const error = data?.registerSalesStore?.success
-          ? 'Éxito'
-          : 'Error'
-        sendNotification({
-          backgroundColor: error ? 'success' : 'error',
-          title: error,
-          description: message
-        })
-        setAlertBox({ message, type: 'success' as AlertBoxType })
-        if (message === 'Token expired') {
-          onClickLogout({
-            refresh: true,
-          })
-        }
-        setOpenCurrentSale(data?.registerSalesStore.success)
+        renderSaleResponse(data?.registerSalesStore)
       },
-      onError: (error) => {
+      onError: (error: any) => {
+        // Si GraphQL reporta errores pero igual vino el `data` parcial con el
+        // `errors[]` de negocio, lo renderizamos en lugar del mensaje genérico.
+        // Apollo expone ese payload en `error.graphQLErrors[i].data` o en el
+        // `networkError.result.data`, según el transporte.
+        const partialResponse =
+          error?.graphQLErrors?.find((gqlErr: any) => gqlErr?.data?.registerSalesStore)?.data
+            ?.registerSalesStore ??
+          error?.networkError?.result?.data?.registerSalesStore ??
+          null
+
+        if (partialResponse) {
+          renderSaleResponse(partialResponse)
+          return
+        }
+
         sendNotification({
           backgroundColor: 'error',
-          title: typeof error === 'string' ? error : 'Lo sentimos',
-          description: 'ha ocurrido un error'
+          title: 'Lo sentimos',
+          description:
+            typeof error?.message === 'string' && error.message.length > 0
+              ? error.message
+              : 'ha ocurrido un error'
         })
       }
     }
@@ -981,6 +1062,13 @@ export const useSales = ({
 
     const shoppingCartRefCode = `REF-${RandomCode(36)}`
 
+    // Snapshot del carrito en el momento del envío. Se usa en update() para
+    // descontar el stock en caché; `data.PRODUCT` conserva cantidades y extras
+    // seleccionados y puede limpiarse tras el éxito, así que lo fijamos aquí.
+    const soldProducts: Product[] = Array.isArray(data?.PRODUCT)
+      ? [...data.PRODUCT]
+      : []
+
     const input = stripTypename(
       finalArrayProduct.map((item) => ({
         ...item,
@@ -1004,14 +1092,18 @@ export const useSales = ({
         },
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
       },
-      update(cache) {
-        cache.modify({
-          fields: {
-            productFoodsAll(existingProductFoodsAll = []) {
-              return existingProductFoodsAll
-            }
-          }
-        })
+      update(cache, { data: mutationData }) {
+        // Solo descontamos stock en caché cuando el backend confirmó la venta.
+        // El backend es la fuente de verdad del inventario; esto mantiene la UI
+        // del POS sincronizada sin re-fetch, descontando por producto (pId) y
+        // por complemento/extra (exPid) las unidades vendidas. `soldProducts`
+        // se toma del carrito actual (data.PRODUCT) porque conserva las
+        // cantidades y los extras seleccionados.
+        const wasSuccessful = Boolean(
+          mutationData?.registerSalesStore?.success
+        )
+        if (!wasSuccessful) return
+        updateStockCacheAfterSale(cache, soldProducts)
       }
     })
       .then((response) => {

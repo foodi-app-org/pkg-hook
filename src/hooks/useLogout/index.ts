@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { Cookies } from '../../cookies/index'
 import { getCurrentDomain } from '../../utils'
+import { clearPendingOrdersStorage } from '../useSales/helpers/pending-orders.storage'
 
 import { signOutAuth } from './helpers'
 
@@ -80,6 +81,9 @@ export const useLogout = ({
     await eliminarCookie('restaurant')
     await eliminarCookie('usuario')
     await eliminarCookie('session')
+    // Las órdenes en espera (pos_pending_orders) viven en cookie y no deben
+    // sobrevivir a la sesión del operador: se eliminan en cada cierre de sesión.
+    clearPendingOrdersStorage()
   }
 
   /**
@@ -142,6 +146,7 @@ export const useLogout = ({
       Cookies.remove('restaurant')
       Cookies.remove('usuario')
       Cookies.remove('session')
+      clearPendingOrdersStorage()
 
       // Clear Apollo Client cache if present
       try {

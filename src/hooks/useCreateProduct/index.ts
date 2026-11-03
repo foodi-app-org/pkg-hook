@@ -1,4 +1,4 @@
-import { gql, useApolloClient, useMutation } from '@apollo/client'
+import { useApolloClient, useMutation } from '@apollo/client'
 import { useRef, useState } from 'react'
 
 import { RandomCode } from '../../utils'
@@ -11,78 +11,6 @@ import {
 import { useTagsProducts } from '../useProductsFood/usetagsProducts'
 import { useSetImageProducts } from '../useSetImageProducts'
 import { useStore } from '../useStore'
-
-/**
- * Fragment used to write a newly created ProductFood into Apollo's normalized
- * cache. Includes every field that either `productFoodsAll` (flat list) or the
- * nested `productFoodsAll` inside `getCatProductsWithProduct` might request,
- * so both queries can read the cached entity without cache misses.
- */
-const NEW_PRODUCT_FRAGMENT = gql`
-  fragment NewProductFood on ProductFood {
-    pId
-    sizeId
-    colorId
-    stock
-    manageStock
-    carProId
-    caId
-    cId
-    dId
-    ctId
-    fId
-    idStore
-    pName
-    getOneTags {
-      tgId
-      idUser
-      idStore
-      pId
-      nameTag
-    }
-    ProPrice
-    ProDescuento
-    free
-    ProUniDisponibles
-    ProDescription
-    ProProtegido
-    ProAssurance
-    ValueDelivery
-    ProStar
-    sTateLogistic
-    ProImage
-    ProWidth
-    ProHeight
-    ProLength
-    ProWeight
-    ProQuantity
-    ProOutstanding
-    createdAt
-    updatedAt
-    ProDelivery
-    ProVoltaje
-    pState
-    feat {
-      fId
-      thpId
-      hpqrQuestion
-    }
-    area {
-      aId
-      aName
-    }
-    product_availables {
-      availableProductId
-      pId
-      idStore
-      dayAvailable
-      startDate
-      endDate
-      createdAt
-      updatedAt
-    }
-  }
-`
 
 // import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
@@ -344,23 +272,24 @@ export const useCreateProduct = ({
   })
 
   /**
-   * Inyecta un producto recién creado en la caché normalizada de Apollo.
+   * Inyecta un producto recién creado en la caché de Apollo.
+   *
+   * `ProductFood` no se normaliza (no tiene id/keyFields), así que los objetos
+   * viven embebidos en cada query. Por eso insertamos el objeto completo dentro
+   * de los arrays cacheados en vez de usar writeFragment + referencias.
    *
    * Estrategia (en orden):
-   *  1. Escribe la entidad ProductFood con writeFragment (normalización).
-   *  2. Mediante cache.modify agrega la referencia al inicio de cada
-   *     `productFoodsAll` ya cacheada (listado plano) y, si corresponde, al
-   *     `productFoodsAll` anidado de su categoría en getCatProductsWithProduct.
-   *  3. Valida que el producto quede visible leyendo la caché. Si no quedó
-   *     (por ejemplo porque las queries aún no estaban cacheadas), hace un
-   *     refetch a la base de datos como último recurso.
+   *  1. Antepone el objeto a cada `productFoodsAll` ya cacheada (listado plano)
+   *     e incrementa totalRecords de su paginación.
+   *  2. Antepone el objeto al `productFoodsAll` anidado de su categoría dentro
+   *     de getCatProductsWithProduct.
+   *  3. Si no se pudo insertar en ningún listado cacheado (o algo falló), hace
+   *     un refetch a la base de datos como último recurso.
    *
-   * @param params.productData - Datos del producto devueltos por la mutación.
-   * @param root0
-   * @param root0.productData
-   * @param params.formValues  - Valores del formulario para completar campos
-   *                             que la mutación no retorna (stock, imagen, etc.).
-   * @param root0.formValues
+   * @param root0 - Parámetros.
+   * @param root0.productData - Datos del producto devueltos por la mutación.
+   * @param root0.formValues  - Valores del formulario para completar campos
+   *                            que la mutación no retorna (stock, imagen, etc.).
    */
   const injectNewProductIntoCache = ({
     productData,
@@ -376,8 +305,9 @@ export const useCreateProduct = ({
     const idStore = dataStore?.idStore || ''
     const carProId = productData?.carProId ?? formValues?.carProId ?? null
 
-    // Entidad completa que satisface tanto productFoodsAll (lista plana) como
-    // el productFoodsAll anidado dentro de getCatProductsWithProduct.
+    // Objeto que se inserta embebido en los listados. Incluye los campos que
+    // leen tanto productFoodsAll (lista plana) como el productFoodsAll anidado
+    // dentro de getCatProductsWithProduct, con __typename para consistencia.
     const newProduct = {
       __typename: 'ProductFood',
       pId,
@@ -422,35 +352,34 @@ export const useCreateProduct = ({
     }
 
     try {
-      // 1. Escribe/normaliza la entidad en la caché.
-      const productId = client.cache.identify(newProduct)
+      // IMPORTANTE: `ProductFood` no tiene `id`/`_id` ni `keyFields` definidos
+      // en la caché, así que Apollo NO normaliza estos objetos: viven embebidos
+      // dentro de cada query. Por eso NO usamos writeFragment + refs (eso fallaba
+      // con "Missing field while writing result" porque cache.identify devolvía
+      // undefined al no haber keyField). En su lugar insertamos el objeto
+      // completo directamente dentro de los arrays cacheados.
 
-      client.writeFragment({
-        id: productId,
-        fragment: NEW_PRODUCT_FRAGMENT,
-        data: newProduct
-      })
+      let insertedSomewhere = false
 
-      const newRef = { __ref: productId }
-
-      // 2a. Agrega la referencia a cada campo productFoodsAll cacheado
-      //     (el listado plano de GET_ALL_PRODUCT_STORE).
+      // 1. Antepone el producto a cada campo productFoodsAll cacheado
+      //    (el listado plano de GET_ALL_PRODUCT_STORE).
       client.cache.modify({
         fields: {
-          productFoodsAll (existing: any, { readField }: any) {
+          productFoodsAll (existing: any) {
             // Caso lista plana: { success, message, pagination, data: [...] }
             if (existing && Array.isArray(existing?.data)) {
               const alreadyExists = existing.data.some(
-                (ref: any) => readField('pId', ref) === pId
+                (item: any) => item?.pId === pId
               )
               if (alreadyExists) return existing
 
               const prevPagination = existing?.pagination ?? {}
               const prevTotal = Number(prevPagination?.totalRecords ?? existing.data.length) || 0
 
+              insertedSomewhere = true
               return {
                 ...existing,
-                data: [newRef, ...existing.data],
+                data: [newProduct, ...existing.data],
                 pagination: {
                   ...prevPagination,
                   totalRecords: prevTotal + 1
@@ -462,55 +391,46 @@ export const useCreateProduct = ({
         }
       })
 
-      // 2b. Agrega la referencia al productFoodsAll anidado de la categoría
-      //     correspondiente dentro de getCatProductsWithProduct.
+      // 2. Antepone el producto al productFoodsAll anidado de la categoría
+      //    correspondiente dentro de getCatProductsWithProduct.
       client.cache.modify({
         fields: {
-          getCatProductsWithProduct (existing: any, { readField }: any) {
+          getCatProductsWithProduct (existing: any) {
             const list = existing?.catProductsWithProduct
             if (!Array.isArray(list) || list.length === 0) return existing
+            if (!carProId) return existing
 
-            const updatedList = list.map((catRef: any) => {
-              if (!carProId) return catRef
-              if (readField('carProId', catRef) !== carProId) return catRef
+            let changed = false
+            const updatedList = list.map((cat: any) => {
+              if (cat?.carProId !== carProId) return cat
 
-              const nested = readField('productFoodsAll', catRef)
-              const nestedArr = Array.isArray(nested) ? nested : []
+              const nestedArr = Array.isArray(cat?.productFoodsAll)
+                ? cat.productFoodsAll
+                : []
 
               const alreadyExists = nestedArr.some(
-                (ref: any) => readField('pId', ref) === pId
+                (item: any) => item?.pId === pId
               )
-              if (alreadyExists) return catRef
+              if (alreadyExists) return cat
 
-              client.cache.modify({
-                id: client.cache.identify(catRef as any),
-                fields: {
-                  productFoodsAll (nestedExisting: any = []) {
-                    const arr = Array.isArray(nestedExisting) ? nestedExisting : []
-                    return [newRef, ...arr]
-                  }
-                }
-              })
-
-              return catRef
+              changed = true
+              insertedSomewhere = true
+              return {
+                ...cat,
+                productFoodsAll: [newProduct, ...nestedArr]
+              }
             })
 
-            return {
-              ...existing,
-              catProductsWithProduct: updatedList
-            }
+            return changed
+              ? { ...existing, catProductsWithProduct: updatedList }
+              : existing
           }
         }
       })
 
-      // 3. Validación: confirmar que el producto quedó en la caché.
-      const cachedEntity = client.readFragment({
-        id: productId,
-        fragment: NEW_PRODUCT_FRAGMENT
-      })
-
-      if (cachedEntity) {
-        // El producto quedó inyectado correctamente; no es necesario tocar la DB.
+      if (insertedSomewhere) {
+        // El producto quedó inyectado en al menos un listado cacheado; no es
+        // necesario tocar la DB.
         return
       }
     } catch (err) {

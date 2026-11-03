@@ -118,8 +118,12 @@ export const useDessert = ({
   const { handleMutateExtProductFoodsSubOptional } = useUpdateExtProductFoodsSubOptional({
     sendNotification
   })
-  const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional()
-  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional()
+  const { handleUpdateExtProduct } = useUpdateExtProductFoodsOptional({
+    sendNotification
+  })
+  const { DeleteExtProductFoodsOptional } = useRemoveExtraProductFoodsOptional({
+    sendNotification
+  })
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
   const editSubProductOptionalResult = useEditSubProductOptional()
   const editExtFoodSubsOptional = Array.isArray(editSubProductOptionalResult)
@@ -191,7 +195,7 @@ export const useDessert = ({
               query: GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
               nameFun: 'ExtProductFoodsOptionalAll',
               dataNew: ExtProductFoodsOptionalAll,
-              type: 2 // Provide the required 'type' property (set to appropriate value)
+              type: 2 
             })
           }
         })
