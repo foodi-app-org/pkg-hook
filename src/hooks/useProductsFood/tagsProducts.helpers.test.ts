@@ -5,6 +5,7 @@ import {
   canAddDraftTag,
   normalizeTags,
   removeDraftTagAt,
+  resolveTagsToPersist,
   sanitizeTagName,
   toggleSelectedTag
 } from './tagsProducts.helpers'
@@ -134,6 +135,58 @@ describe('tagsProducts.helpers', () => {
       expect(
         toggleSelectedTag({ id: '1', tag: 'oferta' }, { id: '', tag: '' })
       ).toEqual(empty)
+    })
+  })
+
+  describe('resolveTagsToPersist', () => {
+    test('persists a single trimmed tag', () => {
+      expect(resolveTagsToPersist('  oferta ', [])).toEqual({
+        toPersist: ['oferta'],
+        duplicates: [],
+        normalized: ['oferta']
+      })
+    })
+
+    test('ignores empty values (no request)', () => {
+      expect(resolveTagsToPersist('   ', [])).toEqual({
+        toPersist: [],
+        duplicates: [],
+        normalized: []
+      })
+    })
+
+    test('dedupes within the same batch (case-insensitive)', () => {
+      expect(resolveTagsToPersist(['oferta', 'OFERTA', 'nuevo'], [])).toEqual({
+        toPersist: ['oferta', 'nuevo'],
+        duplicates: [],
+        normalized: ['oferta', 'nuevo']
+      })
+    })
+
+    test('splits out tags that already exist among saved tags', () => {
+      const result = resolveTagsToPersist(['vegano', 'nuevo'], ['Vegano'])
+
+      expect(result.toPersist).toEqual(['nuevo'])
+      expect(result.duplicates).toEqual(['vegano'])
+      expect(result.normalized).toEqual(['vegano', 'nuevo'])
+    })
+
+    test('keeps earlier tags when a later one is added (no overwrite)', () => {
+      // First tag persisted independently.
+      const first = resolveTagsToPersist('postres', [])
+      expect(first.toPersist).toEqual(['postres'])
+
+      // Second tag, with "postres" now saved, must not re-create it.
+      const second = resolveTagsToPersist('vinos', ['postres'])
+      expect(second.toPersist).toEqual(['vinos'])
+      expect(second.duplicates).toEqual([])
+    })
+
+    test('returns nothing to persist when every value is a saved duplicate', () => {
+      const result = resolveTagsToPersist(['postres'], ['postres'])
+
+      expect(result.toPersist).toEqual([])
+      expect(result.duplicates).toEqual(['postres'])
     })
   })
 

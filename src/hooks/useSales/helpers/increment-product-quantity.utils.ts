@@ -1,3 +1,5 @@
+import { recalculateCounter } from './recalculateCounter.utils';
+
 import type { SendNotificationFn } from 'typesdefs';
 
 /**
@@ -70,9 +72,12 @@ export const incrementProductQuantity = ({
     }
   })
 
+  // Derive the counter from the real cart instead of a blind +1. If the
+  // increment was blocked (no stock / stock exceeded) the quantities are
+  // unchanged, so the counter stays correct automatically.
   return {
     ...state,
-    counter: state.counter + 1,
+    counter: recalculateCounter(PRODUCT),
     PRODUCT
   }
 }

@@ -1,3 +1,4 @@
+import { recalculateCounter } from './recalculateCounter.utils'
 import { SalesReducerAction, SalesState } from '../types'
 
 import type {
@@ -572,30 +573,20 @@ function handleRemoveProduct({
         oneProduct.pName ?? 'producto'
     )
 
-    const currentQuantity =
-        Number(oneProduct.ProQuantity)
-
-    const safeCurrentQuantity =
-        Number.isFinite(currentQuantity) &&
-        currentQuantity > 0
-            ? currentQuantity
-            : 0
-
     const normalizedId =
         normalizeProductId(id)
 
-    return {
-        ...state,
-        PRODUCT: state.PRODUCT.filter(
+    const remainingProducts =
+        state.PRODUCT.filter(
             (item: Product) =>
                 normalizeProductId(item.pId) !==
                 normalizedId
-        ),
-        counter: Math.max(
-            0,
-            (Number(state.counter) || 0) -
-            safeCurrentQuantity
         )
+
+    return {
+        ...state,
+        PRODUCT: remainingProducts,
+        counter: recalculateCounter(remainingProducts)
     }
 }
 
@@ -801,21 +792,9 @@ export const handleChangeNumber = (
             : 0
 
     /**
-     * Counter must reflect the DELTA in quantity.
-     *
-     * Example:
-     * 2 -> 5 = +3
-     * 5 -> 2 = -3
-     * 5 -> 5 =  0
-     */
-    const quantityDelta =
-        finalQuantity -
-        safeCurrentQuantity
-
-    /**
      * No change means no new state object.
      */
-    if (quantityDelta === 0) {
+    if (finalQuantity === safeCurrentQuantity) {
         return state
     }
 
@@ -827,18 +806,14 @@ export const handleChangeNumber = (
             unitPrice
         )
 
-    const currentCounter =
-        Number(state.counter) || 0
-
-    const nextCounter =
-        Math.max(
-            0,
-            currentCounter + quantityDelta
-        )
-
+    /**
+     * The counter is always derived from the real products, never from an
+     * incremental delta. This makes the "number of products" impossible to
+     * desync across editing, cancel, confirm, increment or remove.
+     */
     return {
         ...state,
         PRODUCT: updatedProducts,
-        counter: nextCounter
+        counter: recalculateCounter(updatedProducts)
     }
 }

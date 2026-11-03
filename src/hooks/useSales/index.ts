@@ -44,6 +44,7 @@ import { handleUpdateAllExtraAndOptional } from './helpers/handleUpdateAllExtraA
 import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
 import { initializer } from './helpers/initializer.utils'
 import { paymentMethod } from './helpers/paymentMethod.utils'
+import { recalculateCounter } from './helpers/recalculateCounter.utils'
 import { handleRemoveProduct } from './helpers/remove-product.utils'
 import { searchedInput } from './helpers/searchedInput'
 import { sendAlertStock } from './helpers/sendAlertStock.utils'
@@ -360,6 +361,19 @@ export const useSales = ({
     setOpenCommentModal(false)
   }
 
+  /**
+   * Confirms the edited quantity of a product.
+   *
+   * Closes the editing mode and freezes the confirmed quantity as the new
+   * `oldQuantity`, so a later cancel restores the right baseline. The counter
+   * is recomputed from the real products (single source of truth) so it can
+   * never drift — every ON_CHANGE keystroke that happened during editing is
+   * reconciled here into a correct total.
+   *
+   * @param {SalesState} state - Current sales state.
+   * @param {{ pId: string }} action - Product being confirmed.
+   * @returns {SalesState} State with the product committed and counter in sync.
+   */
   const handleSuccessUpdateQuantity = (
     state: SalesState,
     action: { pId: string }
@@ -380,10 +394,17 @@ export const useSales = ({
 
     const target = state.PRODUCT[index]
 
+    const rawQuantity = Number(target.ProQuantity)
+    const confirmedQuantity =
+      Number.isFinite(rawQuantity) && rawQuantity > 0
+        ? rawQuantity
+        : 0
+
     const updatedItem: Product = {
       ...target,
       editing: false,
-      oldQuantity: target.ProQuantity ?? 0
+      ProQuantity: confirmedQuantity,
+      oldQuantity: confirmedQuantity
     }
 
     const PRODUCT = [...state.PRODUCT]
@@ -392,12 +413,13 @@ export const useSales = ({
     sendNotification({
       title: 'Cantidad actualizada',
       backgroundColor: 'success',
-      description: `La cantidad de ${target.pName} ha sido actualizada a ${updatedItem.ProQuantity}.`
+      description: `La cantidad de ${target.pName} ha sido actualizada a ${confirmedQuantity}.`
     })
 
     return {
       ...state,
-      PRODUCT
+      PRODUCT,
+      counter: recalculateCounter(PRODUCT)
     }
   }
 
@@ -430,32 +452,46 @@ export const useSales = ({
 
     const target = state.PRODUCT[index]
 
-    if (
-      typeof target.oldQuantity !== 'number' ||
-      typeof target.unitPrice !== 'number'
-    ) {
-      sendNotification({
-        title: 'Error',
-        backgroundColor: 'error',
-        description: 'No fue posible restaurar la cantidad del producto.'
-      })
+    // Baseline to restore. If oldQuantity was never set (edge cases), fall back
+    // to the current quantity so we never leave the product in a broken state.
+    const restoredQuantity =
+      Number.isFinite(Number(target.oldQuantity)) &&
+      Number(target.oldQuantity) >= 0
+        ? Number(target.oldQuantity)
+        : Math.max(0, Number(target.ProQuantity) || 0)
 
-      return state
-    }
+    // Resolve a safe unit price. Prefer an explicit unitPrice; otherwise derive
+    // it from the current line total / current quantity. This keeps ProPrice
+    // consistent even when unitPrice is missing.
+    const currentQuantity = Number(target.ProQuantity)
+    const derivedUnitPrice =
+      Number.isFinite(currentQuantity) && currentQuantity > 0
+        ? (Number(target.ProPrice) || 0) / currentQuantity
+        : 0
+    const unitPrice =
+      Number.isFinite(Number(target.unitPrice)) &&
+      Number(target.unitPrice) >= 0
+        ? Number(target.unitPrice)
+        : derivedUnitPrice
+
+    const isFree = Boolean(target.free)
 
     const updatedItem: Product = {
       ...target,
       editing: false,
-      ProQuantity: target.oldQuantity,
-      ProPrice: target.oldQuantity * target.unitPrice
+      ProQuantity: restoredQuantity,
+      ProPrice: isFree ? 0 : restoredQuantity * unitPrice
     }
 
     const PRODUCT = [...state.PRODUCT]
     PRODUCT[index] = updatedItem
 
+    // Recompute the counter from the real cart so the badge number stays
+    // in sync after the edit is discarded.
     return {
       ...state,
-      PRODUCT
+      PRODUCT,
+      counter: recalculateCounter(PRODUCT)
     }
   }
 
@@ -479,14 +515,16 @@ export const useSales = ({
         }
       case SalesActionTypes.REMOVE_PRODUCT:
         return handleRemoveProduct(state, action, productsFood)
-      case SalesActionTypes.REMOVE_PRODUCT_TO_CART:
+      case SalesActionTypes.REMOVE_PRODUCT_TO_CART: {
+        const nextProducts = state?.PRODUCT?.filter((t: Product) => {
+          return t.pId !== action?.payload.pId
+        }) ?? []
         return {
           ...state,
-          PRODUCT: state?.PRODUCT?.filter((t: Product) => {
-            return t.pId !== action?.payload.pId
-          }),
-          counter: state.counter - action.payload.ProQuantity
+          PRODUCT: nextProducts,
+          counter: recalculateCounter(nextProducts)
         }
+      }
       case SalesActionTypes.ON_CHANGE: {
         return handleChangeNumber(
           state,
@@ -573,14 +611,11 @@ export const useSales = ({
         const restoredProducts = Array.isArray(payload?.products)
           ? payload.products
           : []
-        const counter = restoredProducts.reduce((total, item) => {
-          return total + Math.max(0, Number(item.ProQuantity) || 0)
-        }, 0)
 
         return {
           ...state,
           PRODUCT: restoredProducts,
-          counter,
+          counter: recalculateCounter(restoredProducts),
           discountType: payload.discountType
             ? payload.discountType as TypeDiscount
             : TypeDiscount.PERCENT,

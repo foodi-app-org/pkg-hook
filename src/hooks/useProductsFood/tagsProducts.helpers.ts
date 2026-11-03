@@ -134,3 +134,65 @@ export const toggleSelectedTag = (
 
   return { id: next.id, tag: next.tag }
 }
+
+/**
+ * Result of resolving which tags should be persisted.
+ */
+export interface ResolveTagsResult {
+  /** Tags that are new and must be sent to the backend. */
+  toPersist: string[]
+  /** Tags that already exist among saved tags (no-op, reuse instead). */
+  duplicates: string[]
+  /** Normalized, non-empty, in-batch-deduped list (before saved check). */
+  normalized: string[]
+}
+
+/**
+ * Pure resolver for the "create & persist" tag flow.
+ *
+ * Given the raw value(s) the user is trying to create and the list of
+ * already-saved tag names, it decides what should actually be persisted.
+ *
+ * Rules (all case-insensitive):
+ * - Trims values and drops empties.
+ * - Removes duplicates inside the same batch.
+ * - Splits out tags that already exist among the saved tags so the caller
+ *   can reuse them instead of creating duplicates.
+ *
+ * It is intentionally framework-free so the behavior can be unit tested
+ * without React or Apollo.
+ *
+ * @param {string | string[]} value - Tag name(s) the user wants to create.
+ * @param {string[]} savedNames - Names of already-saved tags.
+ * @returns {ResolveTagsResult} Resolution describing what to persist.
+ */
+export const resolveTagsToPersist = (
+  value: string | string[],
+  savedNames: string[] = []
+): ResolveTagsResult => {
+  const incoming = Array.isArray(value) ? value : [value]
+
+  const seen = new Set<string>()
+  const normalized = incoming
+    .map((item) => sanitizeTagName(item))
+    .filter((item) => {
+      if (item === '') return false
+
+      const key = item.toLowerCase()
+
+      if (seen.has(key)) return false
+
+      seen.add(key)
+
+      return true
+    })
+
+  const saved = new Set(
+    (savedNames ?? []).map((name) => sanitizeTagName(name).toLowerCase())
+  )
+
+  const duplicates = normalized.filter((tag) => saved.has(tag.toLowerCase()))
+  const toPersist = normalized.filter((tag) => !saved.has(tag.toLowerCase()))
+
+  return { toPersist, duplicates, normalized }
+}

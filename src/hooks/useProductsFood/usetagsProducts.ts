@@ -10,6 +10,7 @@ import {
   canAddDraftTag,
   normalizeTags,
   removeDraftTagAt,
+  resolveTagsToPersist,
   toggleSelectedTag,
   type TagItem
 } from './tagsProducts.helpers'
@@ -170,32 +171,75 @@ export const useTagsProducts = ({
   }
 
   /**
-   * Persists the current draft tags in bulk.
+   * Creates and persists tag(s) in a single, reliable step.
    *
-   * @param {string[]} [draft] - Optional explicit draft list.
-   * @returns {Promise<void>}
+   * This is the single entry point used by the input (Enter and the "+"
+   * button). It intentionally accepts the value(s) explicitly instead of
+   * reading `newTags` from state, which removes the stale-closure bug that
+   * forced the user to press Enter twice and dropped tags.
+   *
+   * Flow:
+   * 1. Normalize and validate the incoming value(s).
+   * 2. Reject empty values.
+   * 3. Reject duplicates (against both draft and already-saved tags).
+   * 4. Persist via the existing bulk mutation (backend `findOrCreate`
+   *    keeps it idempotent, so re-sending is safe).
+   * 5. Return whether the operation succeeded so the input can decide if
+   *    it should clear the field (success) or keep it (error, so the user
+   *    can retry without retyping).
+   *
+   * @param {string | string[]} [value] - Tag name(s). Defaults to the
+   *   current draft list for backward compatibility.
+   * @returns {Promise<boolean>} Whether the tag(s) were persisted.
    */
-  const registerTags = async (draft: string[] = newTags): Promise<void> => {
-    const toSave = (draft ?? []).map((item) => String(item).trim()).filter(Boolean)
+  const registerTags = async (
+    value: string | string[] = newTags
+  ): Promise<boolean> => {
+    const { toPersist, duplicates, normalized } = resolveTagsToPersist(
+      value,
+      (dataTags ?? []).map((t) => t.tag)
+    )
 
-    if (toSave.length === 0) {
+    if (normalized.length === 0) {
       sendNotification({
         title: 'Sin tags',
         description: 'Agrega al menos un tag antes de guardar.',
         backgroundColor: 'warning'
       })
 
-      return
+      return false
+    }
+
+    if (duplicates.length > 0) {
+      sendNotification({
+        title: 'Tag repetido',
+        description:
+          duplicates.length === 1
+            ? `El tag "${duplicates[0]}" ya está guardado.`
+            : `Algunos tags ya estaban guardados: ${duplicates.join(', ')}.`,
+        backgroundColor: 'warning'
+      })
+    }
+
+    if (toPersist.length === 0) {
+      // Everything was a duplicate; nothing to persist but not an error
+      // the user needs to recover from.
+      return true
     }
 
     try {
-      await registerMultipleTags(toSave)
+      const response = await registerMultipleTags(toPersist)
+      const { success = false } = response ?? {}
+
+      return Boolean(success)
     } catch (e) {
       sendNotification({
         title: 'Error',
         description: e instanceof Error ? e.message : 'No fue posible guardar los tags.',
         backgroundColor: 'error'
       })
+
+      return false
     }
   }
 

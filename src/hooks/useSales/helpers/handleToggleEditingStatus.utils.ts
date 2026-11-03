@@ -29,10 +29,20 @@ export const handleToggleEditingStatus = (
 
     const target = state.PRODUCT[index]
 
+    const nextEditing = !target.editing
+
+    // Only snapshot the baseline quantity when ENTERING edit mode. Capturing it
+    // again on exit would overwrite the original value and break a later cancel.
+    const nextOldQuantity = nextEditing
+        ? (Number.isFinite(Number(target.ProQuantity))
+            ? Number(target.ProQuantity)
+            : 0)
+        : target.oldQuantity
+
     const updatedItem: Product = {
         ...target,
-        editing: !target.editing,
-        oldQuantity: target.ProQuantity ?? 0
+        editing: nextEditing,
+        oldQuantity: nextOldQuantity
     }
 
     const PRODUCT = [...state.PRODUCT]

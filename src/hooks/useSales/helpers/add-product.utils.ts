@@ -2,6 +2,7 @@
 import { SalesReducerAction, SalesState } from '../types'
 
 import { isStockInsufficient } from './isStockInsufficient'
+import { recalculateCounter } from './recalculateCounter.utils'
 
 import type { Product, SendNotificationFn } from 'typesdefs'
 
@@ -74,10 +75,11 @@ export const addToCartFunc = ({
   // Calculate final price respecting 'free' mode
   const newPrice = isFree ? 0 : newQuantity * unitPrice
 
-  // COMMON STATE UPDATES
+  // COMMON STATE UPDATES. The counter is derived from the resulting PRODUCT
+  // array in each case (see below), never from a blind +1, so it can never
+  // drift out of sync with the real cart.
   const baseState = {
     ...state,
-    counter: state.counter + 1,
     totalAmount: state.totalAmount + ProPrice,
     startAnimateUp: 'start-animate-up'
   }
@@ -97,12 +99,16 @@ export const addToCartFunc = ({
       stock,
       ProDescuento,
       ProQuantity: 1,
+      oldQuantity: 1,
       free: false
     }
 
+    const nextProducts = [...state.PRODUCT, newProduct]
+
     return {
       ...baseState,
-      PRODUCT: [...state.PRODUCT, newProduct]
+      PRODUCT: nextProducts,
+      counter: recalculateCounter(nextProducts)
     }
   }
 
@@ -122,6 +128,7 @@ export const addToCartFunc = ({
 
   return {
     ...baseState,
-    PRODUCT: newList
+    PRODUCT: newList,
+    counter: recalculateCounter(newList)
   }
 }
