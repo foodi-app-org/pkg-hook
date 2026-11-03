@@ -70,25 +70,39 @@ export const fillMissingDates = (
   const firstData = dataKeys[0]
   const lastData = dataKeys[dataKeys.length - 1]
 
-  const startKey = range.from || firstData
-  const endKey = range.to || lastData
-
-  // No data and no range: fall back to the last MIN_DAYS ending today so the
-  // widget still renders an (empty) continuous axis.
   const today = new Date()
-  let start = startKey ? parseDateKey(startKey) : null
-  let end = endKey ? parseDateKey(endKey) : null
+  const todayAtNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0, 0)
 
-  if (!start || !end) {
-    end = end ?? new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12)
-    start = start ?? new Date(end)
-    if (!startKey) start.setDate(end.getDate() - (MIN_DAYS - 1))
+  // Resolve the window bounds. Priority: explicit filter range -> data span.
+  let start = range.from ? parseDateKey(range.from) : (firstData ? parseDateKey(firstData) : null)
+  let end = range.to ? parseDateKey(range.to) : (lastData ? parseDateKey(lastData) : null)
+
+  // When neither a filter range nor data provide a bound, fall back to a window
+  // ending today.
+  if (!end) end = todayAtNoon
+  if (!start) {
+    start = new Date(end)
+    start.setDate(end.getDate() - (MIN_DAYS - 1))
   }
 
   if (start > end) {
     const tmp = start
     start = end
     end = tmp
+  }
+
+  // Enforce a MINIMUM window so a single-movement day (start === end) still
+  // renders a readable, multi-point chart. Without this the series collapses to
+  // one point and the line/area has nothing to draw (the bug where the chart
+  // showed empty even though there was one day of real movements). Only expand
+  // the start backwards (keep the data's end date visible); never shrink an
+  // explicit filter range.
+  if (!range.from) {
+    const spanDays = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1
+    if (spanDays < MIN_DAYS) {
+      start = new Date(end)
+      start.setDate(end.getDate() - (MIN_DAYS - 1))
+    }
   }
 
   // Guard against an unbounded span.

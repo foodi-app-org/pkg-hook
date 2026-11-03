@@ -813,7 +813,14 @@ export const useSales = ({
   const arrayProduct = useMemo(() => {
     if (!Array.isArray(data.PRODUCT) || data.PRODUCT.length === 0) return []
     return data.PRODUCT.map((product: any) => {
-      const filteredDataExtra = (product?.dataExtra ?? []).map(({ ...rest }) => ({ ...rest }))
+      // Only include complementos the customer actually selected (quantity >= 1).
+      // Extras that live in the product's list but were never added have
+      // quantity null/0; sending them makes the backend validator reject the
+      // whole sale ("dataExtra[n].quantity is required"). Filtering here keeps
+      // the payload to the real selection.
+      const filteredDataExtra = (product?.dataExtra ?? [])
+        .filter((extra: any) => Number(extra?.quantity) >= 1)
+        .map(({ ...rest }) => ({ ...rest }))
       const dataOptional = (product?.dataOptional ?? []).map(({ ...rest }) => {
         const { ExtProductFoodsSubOptionalAll, ...r } = rest
         const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map((s: any) => ({ ...s }))
