@@ -5,6 +5,18 @@ mutation  editExtFoodSubsOptional($opSubExPid: ID, $state: Int, $isCustomSubOpEx
   editExtFoodSubsOptional(opSubExPid: $opSubExPid, state: $state, isCustomSubOpExPid: $isCustomSubOpExPid, OptionalSubProName: $OptionalSubProName){
     success,
     message
+    errors {
+      __typename
+      context {
+        key
+        label
+        limit
+        value
+        __typename
+      }
+      path
+      type
+    }
   }
 }
 `

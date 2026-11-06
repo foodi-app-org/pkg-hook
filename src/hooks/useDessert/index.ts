@@ -125,13 +125,8 @@ export const useDessert = ({
     sendNotification
   })
   const [DeleteExtFoodSubsOptional] = useDeleteSubProductOptional()
-  const editSubProductOptionalResult = useEditSubProductOptional()
-  const editExtFoodSubsOptional = Array.isArray(editSubProductOptionalResult)
-    ? editSubProductOptionalResult[0]
-    : editSubProductOptionalResult
-  const loadingEditSubOptional = Array.isArray(editSubProductOptionalResult)
-    ? editSubProductOptionalResult[1]?.loading
-    : undefined
+  const [editExtFoodSubsOptional, { loading: loadingEditSubOptional }] = useEditSubProductOptional()
+
 
   // HANDLESS
   /**
@@ -225,9 +220,23 @@ export const useDessert = ({
       if (forRemove) {
         if (typeof DeleteExtFoodSubsOptional === 'function') {
           DeleteExtFoodSubsOptional({
-            isCustomSubOpExPid,
-            opSubExPid: id,
-            state: 1
+            variables: {
+              isCustomSubOpExPid: isCustomSubOpExPid ?? false,
+              opSubExPid: id,
+              state: 1
+            }
+          }).then((response: any) => {
+            const { DeleteExtFoodSubsOptional: result } = response?.data || {}
+            const { success, message } = result || { success: false }
+            if (success) {
+              sendNotification({
+                description: message,
+                title: message,
+                backgroundColor: 'success'
+              })
+            }
+          }).catch((error: any) => {
+            console.error(error)
           })
         }
       }
@@ -283,7 +292,8 @@ export const useDessert = ({
   const editOneItem = ({
     listID = '',
     id = '',
-    title = null
+    title = null,
+    isCustomSubOpExPid = false
   }) => {
     try {
       setSelectedItem(() => {
@@ -296,18 +306,18 @@ export const useDessert = ({
         if (typeof editExtFoodSubsOptional === 'function') {
           editExtFoodSubsOptional({
             variables: {
-              isCustomSubOpExPid: false,
+              isCustomSubOpExPid: isCustomSubOpExPid ?? false,
               opSubExPid: id,
               OptionalSubProName: title
             }
           }).then((response: any) => {
             const { editExtFoodSubsOptional } = response?.data || {}
-            const { success } = editExtFoodSubsOptional || { success: false }
+            const { success, message } = editExtFoodSubsOptional || { success: false }
             if (success) {
               sendNotification({
-                description: 'El sub item actualizado con éxito',
-                title: 'Actualizado',
-                backgroundColor: 'success'
+                description: message,
+                title: message,
+                backgroundColor: success ? 'success' : 'error'
               })
               const currentList = data.lists[listID]
               const updatedCards = currentList?.cards?.map((card) => {

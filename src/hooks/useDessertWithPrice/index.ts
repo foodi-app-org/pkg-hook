@@ -50,6 +50,24 @@ interface ExtraLine {
   [key: string]: any
 }
 
+/**
+ * Determines whether a line already exists in the database.
+ *
+ * `exPid` is the identifier used throughout this hook to distinguish
+ * persisted extras from rows that only exist in the local editor state.
+ * Numeric IDs (including 0) are treated as valid identifiers.
+ * @param line
+ */
+const hasPersistedExPid = (line?: ExtraLine | null): boolean => {
+  const exPid = line?.exPid
+
+  return (
+    exPid !== undefined &&
+    exPid !== null &&
+    String(exPid).trim() !== ''
+  )
+}
+
 export const useDessertWithPrice = ({
   dataExtra = [],
   sendNotification = ({
@@ -128,8 +146,30 @@ export const useDessertWithPrice = ({
     inputRefs.current = LineItems.Lines.map((_: unknown, i: number) => { return inputRefs.current[i] || createRef() })
   }, [LineItems])
 
-  const handleCleanLines = useCallback(() => {
-    setLine(Array.isArray(dataExtra) && dataExtra.length > 0 ? { Lines: transformedData } : initialLineItems)
+  /**
+   * Removes only local rows that have not been persisted yet.
+   *
+   * Use the latest state instead of rebuilding the list from `dataExtra`:
+   * that prop can be stale inside a callback, and rebuilding from it can
+   * discard database records or overwrite the current values of saved rows.
+   */
+  const handleCleanLines = useCallback((): void => {
+    setLine((currentLineItems) => {
+      const currentLines = Array.isArray(currentLineItems?.Lines)
+        ? currentLineItems.Lines
+        : []
+
+      const persistedLines = currentLines.filter(hasPersistedExPid)
+
+      return {
+        ...currentLineItems,
+        // Keep every saved row. If none remain, preserve the existing
+        // initial UI behavior by restoring the two empty starter rows.
+        Lines: persistedLines.length > 0
+          ? persistedLines
+          : initialLineItems.Lines.map((line) => ({ ...line }))
+      }
+    })
   }, [initialLineItems])
 
   const [updateMultipleExtProduct, { loading }] = useUpdateMultipleExtProduct({
@@ -236,6 +276,7 @@ export const useDessertWithPrice = ({
   /**
    * Removes a line from the local editor state by its exPid. This is the source
    * of truth the modal renders, so it must run regardless of the Apollo cache.
+   * @param exPid
    */
   const removeLineByExPid = (exPid: string | number): void => {
     setLine(prev => {
@@ -247,6 +288,8 @@ export const useDessertWithPrice = ({
   /**
    * Drops the deleted extra from the persisted `ExtProductFoodsAll` cache field
    * by exPid, so other views that read the query stay in sync.
+   * @param dataOld
+   * @param exPid
    */
   function removeFromCacheByExPid(dataOld: any[], exPid: string | number) {
     if (!Array.isArray(dataOld)) return dataOld
