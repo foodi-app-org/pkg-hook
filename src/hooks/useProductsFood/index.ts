@@ -10,6 +10,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useStockUpdatedAllSubscription } from '../useStock'
 
 import {
+  FIND_PRODUCT_BY_BARCODE,
   GET_ALL_EXTRA_PRODUCT,
   GET_ALL_PRODUCT_STORE,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
@@ -364,4 +365,78 @@ export const useGetOneProductsFood = ({ fetchOnlyProduct = false }: UseGetOnePro
     loading,
     error
   }]
+}
+
+/** Estados diferenciados devueltos por la búsqueda por código de barras. */
+export type FindByBarcodeStatus = 'FOUND' | 'NOT_FOUND' | 'INVALID' | 'ERROR'
+
+export interface FindProductByBarcodeResult {
+  success: boolean
+  status: FindByBarcodeStatus
+  message: string
+  /** Código normalizado que consultó el backend (para precargar creación). */
+  barcode: string
+  data: Product | null
+}
+
+/**
+ * Hook para buscar un producto por su código de barras contra el backend real
+ * (query `findProductByBarcode`). La tienda la resuelve el backend desde la
+ * sesión autenticada, por eso solo se envía el código.
+ *
+ * Expone una función `findByBarcode(code)` que devuelve el resultado
+ * diferenciado (FOUND / NOT_FOUND / INVALID / ERROR), para que el controlador
+ * de escaneo decida: agregar al carrito, ofrecer creación, o avisar error.
+ *
+ * @returns `{ findByBarcode, loading, error }` donde `findByBarcode(code)`
+ *   resuelve un `FindProductByBarcodeResult`.
+ */
+export const useFindProductByBarcode = () => {
+  const [runQuery, { loading, error }] = useLazyQuery(FIND_PRODUCT_BY_BARCODE, {
+    fetchPolicy: 'network-only'
+  })
+
+  const findByBarcode = useCallback(
+    async (code: string): Promise<FindProductByBarcodeResult> => {
+      const ProBarCode = `${code ?? ''}`.trim()
+      if (!ProBarCode) {
+        return {
+          success: false,
+          status: 'INVALID',
+          message: 'Código de barras vacío.',
+          barcode: '',
+          data: null
+        }
+      }
+      try {
+        const response = await runQuery({ variables: { ProBarCode } })
+        const result = response?.data?.findProductByBarcode
+        if (!result) {
+          return {
+            success: false,
+            status: 'ERROR',
+            message: 'No se pudo consultar el producto.',
+            barcode: ProBarCode,
+            data: null
+          }
+        }
+        return result as FindProductByBarcodeResult
+      } catch (e) {
+        return {
+          success: false,
+          status: 'ERROR',
+          message: e instanceof Error ? e.message : 'Error de conexión al buscar el producto.',
+          barcode: ProBarCode,
+          data: null
+        }
+      }
+    },
+    [runQuery]
+  )
+
+  return {
+    findByBarcode,
+    loading,
+    error
+  }
 }

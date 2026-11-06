@@ -170,6 +170,7 @@ export * from './useWhatsApp/useWhatsApp'
 export * from './useWhatsApp/useWhatsAppCampaignUpload'
 export * from './useWhatsApp/helpers/campaignExcel'
 export * from './useWhatsApp/useWhatsAppMessageStats'
+export * from './useScanFeedback'
 
 
 

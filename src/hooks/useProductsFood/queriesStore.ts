@@ -976,3 +976,54 @@ export const REGISTER_TAGS_PRODUCT = gql`
     }
   }
 `
+
+/**
+ * Búsqueda de producto por código de barras (escaneo POS).
+ * Devuelve un resultado diferenciado: status = FOUND | NOT_FOUND | INVALID | ERROR.
+ * El backend resuelve la tienda desde la sesión autenticada (nunca del cliente),
+ * así que no se envía idStore. Trae los campos que el carrito necesita para
+ * incorporar el producto sin una consulta adicional.
+ */
+export const FIND_PRODUCT_BY_BARCODE = gql`
+  query findProductByBarcode($ProBarCode: String!) {
+    findProductByBarcode(ProBarCode: $ProBarCode) {
+      success
+      status
+      message
+      barcode
+      data {
+        pId
+        carProId
+        sizeId
+        colorId
+        idStore
+        cId
+        caId
+        dId
+        ctId
+        fId
+        tgId
+        pName
+        pCode
+        ProPrice
+        ProBarCode
+        ProDescuento
+        ValueDelivery
+        ProUniDisponibles
+        ProDescription
+        ProImage
+        ProStar
+        stock
+        manageStock
+        ProQuantity
+        ProOutstanding
+        ProDelivery
+        vat
+        pState
+        sTateLogistic
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`

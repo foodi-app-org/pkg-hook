@@ -23,12 +23,26 @@ type UseCreateProductProps = {
   image?: string | null
   setAlertBox?: (args: { message: string; duration?: number }) => void
   sendNotification?: SendNotificationFn
+  /**
+   * Código de barras para precargar el formulario (p. ej. cuando se llega
+   * desde el escáner de ventas con un código que no existía). Opcional.
+   */
+  initialBarcode?: string | null
+  /**
+   * Callback invocado UNA sola vez por producto tras una creación exitosa.
+   * Recibe el producto recién creado (con pId, precio, barcode, etc.). Lo usa
+   * el flujo de ventas para agregarlo automáticamente al carrito (AC-10) sin
+   * duplicar la lógica de creación. En el catálogo normal se omite.
+   */
+  onProductCreated?: (product: Record<string, any>) => void
 }
 
 export const useCreateProduct = ({
   image,
   setAlertBox = () => {},
-  sendNotification = () => {}
+  sendNotification = () => {},
+  initialBarcode = '',
+  onProductCreated
 }: UseCreateProductProps) => {
   const [errors, setErrors] = useState<{
     names: boolean
@@ -58,7 +72,9 @@ export const useCreateProduct = ({
     ProHeight: '',
     ValueDelivery: 0,
     carProId: '',
-    ProBarCode: ''
+    // Precarga del código de barras cuando llega desde el escáner. El usuario
+    // puede editarlo si el escaneo leyó una etiqueta equivocada.
+    ProBarCode: `${initialBarcode ?? ''}`
   })
 
   const STEPS = Object.freeze({
@@ -98,6 +114,11 @@ export const useCreateProduct = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [arrTags, setTags] = useState<string[]>([])
+
+  // Guard anti-doble: evita que onProductCreated agregue el mismo producto al
+  // carrito dos veces si handleRegister se dispara más de una vez (doble click,
+  // StrictMode, reintentos). Guarda los pId ya notificados.
+  const notifiedCreatedRef = useRef<Set<string>>(new Set())
 
   // Stock
   const [stock, setStock] = useState(1)
@@ -295,6 +316,8 @@ export const useCreateProduct = ({
    * @param root0.productData - Datos del producto devueltos por la mutación.
    * @param root0.formValues  - Valores del formulario para completar campos
    *                            que la mutación no retorna (stock, imagen, etc.).
+   * @returns El objeto de producto enriquecido construido (para el callback de
+   *   auto-add al carrito), o `null` si no hay pId.
    */
   const injectNewProductIntoCache = ({
     productData,
@@ -302,9 +325,9 @@ export const useCreateProduct = ({
   }: {
     productData: any
     formValues: Record<string, any>
-  }) => {
+  }): Record<string, any> | null => {
     const pId = productData?.pId
-    if (!pId) return
+    if (!pId) return null
 
     const nowIso = new Date().toISOString()
     const idStore = dataStore?.idStore || ''
@@ -437,7 +460,7 @@ export const useCreateProduct = ({
       if (insertedSomewhere) {
         // El producto quedó inyectado en al menos un listado cacheado; no es
         // necesario tocar la DB.
-        return
+        return newProduct
       }
     } catch (err) {
       // Si algo falla al manipular la caché, caemos al refetch de la DB.
@@ -453,6 +476,10 @@ export const useCreateProduct = ({
       .catch((err: unknown) => {
         console.error('useCreateProduct: fallo al refetch de productos', err)
       })
+
+    // Aun si no se pudo inyectar en caché, devolvemos el objeto construido para
+    // que el callback (auto-add al carrito) pueda usarlo.
+    return newProduct
   }
 
   // Registro del producto
@@ -567,7 +594,7 @@ export const useCreateProduct = ({
         // Inyecta el producto recién creado en la caché de Apollo para que
         // los listados (productFoodsAll y getCatProductsWithProduct) lo
         // muestren de inmediato sin tener que volver a consultar el servidor.
-        injectNewProductIntoCache({
+        const createdProduct = injectNewProductIntoCache({
           productData,
           formValues: {
             ProPrice: check?.desc ? 0 : ProPrice,
@@ -586,6 +613,22 @@ export const useCreateProduct = ({
             ProDelivery: check?.desc ? 1 : 0
           }
         })
+
+        // Notifica al contexto de ventas (AC-10): agrega el producto creado al
+        // carrito. Guard anti-doble por pId para no agregarlo dos veces si
+        // handleRegister se ejecuta más de una vez.
+        if (
+          typeof onProductCreated === 'function' &&
+          createdProduct?.pId &&
+          !notifiedCreatedRef.current.has(String(createdProduct.pId))
+        ) {
+          notifiedCreatedRef.current.add(String(createdProduct.pId))
+          try {
+            onProductCreated(createdProduct)
+          } catch (cbError) {
+            console.error('useCreateProduct: onProductCreated callback error', cbError)
+          }
+        }
       }
 
       const { errors } = response?.data?.updateProductFoods ?? {

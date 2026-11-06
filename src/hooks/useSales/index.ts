@@ -8,6 +8,7 @@ import {
   useEffect,
   useReducer,
   useMemo,
+  useRef,
   useState
 } from 'react'
 
@@ -19,7 +20,7 @@ import { useCatWithProduct } from '../useCatWithProduct'
 import { CatProductWithProduct, GetCatProductsWithProductResponse } from '../useCatWithProduct/types'
 import { useFormatDate } from '../useFormatDate'
 import { useLogout } from '../useLogout'
-import { useGetOneProductsFood, useProductsFood } from '../useProductsFood'
+import { useFindProductByBarcode, useGetOneProductsFood, useProductsFood } from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
@@ -36,7 +37,12 @@ import { decrementExtra, removeExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
 import { handleAddProduct } from './helpers/handleAddProduct.utils'
-import { findProductByBarcode } from './helpers/resolveProductByBarcode.utils'
+import { findProductByBarcode, normalizeBarcode } from './helpers/resolveProductByBarcode.utils'
+import {
+  processBarcode,
+  type DedupRef,
+  type ProcessBarcodeOutcome
+} from './helpers/processBarcode.utils'
 import { handleChangeNumber } from './helpers/handleChangeNumber.utils'
 import { handleCommentProduct } from './helpers/handleCommentProduct'
 import { handleRemoveComment } from './helpers/handleRemoveComment.utils'
@@ -131,6 +137,12 @@ export const useSales = ({
   const [oneProductToComment, setOneProductToComment] = useState({})
   const { yearMonthDay } = useFormatDate({ date: createdAt })
   const [handleGetOneProduct] = useGetOneProductsFood()
+  // Búsqueda por código de barras contra el backend real (tenant-scoped).
+  const { findByBarcode } = useFindProductByBarcode()
+  // Ref de deduplicación para el controlador central de escaneo. Evita que una
+  // sola lectura física (rebote de cámara, doble callback, StrictMode) agregue
+  // varias unidades, sin impedir que el usuario escanee de nuevo a propósito.
+  const barcodeDedupRef = useRef<DedupRef>({ code: '', at: 0 })
   const [valuesDates, setValuesDates] = useState(() => {
     return { fromDate: yearMonthDay, toDate: '' }
   })
@@ -1432,6 +1444,55 @@ export const useSales = ({
     }
   }
 
+  /**
+   * Agrega un producto al carrito reutilizando el flujo existente
+   * (`handleAddProduct`), que ya incrementa la cantidad si el producto ya está
+   * en el carrito y respeta las reglas (stock, extras, etc.). Es la única vía
+   * de "agregar" que usan tanto el click manual como el escaneo.
+   */
+  const addProductToCart = useCallback((product: Product) => {
+    handleAddProduct({
+      product,
+      dispatch,
+      productsFood,
+      sendNotification,
+      handleGetOneProduct: async ({ pId }: { pId: string }) => {
+        if (typeof handleGetOneProduct === 'function') {
+          const result = await handleGetOneProduct({ variables: { pId } } as any)
+          if (result && result.data && 'productFoodsOne' in result.data) {
+            return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } }
+          }
+          return { data: { productFoodsOne: null } }
+        }
+        throw new Error('handleGetOneProduct is not a function')
+      }
+    })
+  }, [dispatch, productsFood, sendNotification, handleGetOneProduct])
+
+  /**
+   * Controlador central de escaneo. TODAS las fuentes (cámara, lector
+   * USB/Bluetooth, imagen, entrada manual) llaman a esta función con el código
+   * crudo. Normaliza, deduplica el evento, consulta el backend real y:
+   *   - FOUND     → agrega el producto al carrito (o incrementa cantidad).
+   *   - NOT_FOUND → devuelve el estado para que la UI ofrezca crear el producto.
+   *   - INVALID   → código con formato no válido.
+   *   - ERROR     → error de conexión/servidor.
+   * Devuelve el `ProcessBarcodeOutcome` para que la UI reaccione (sonido,
+   * diálogo de creación, notificación) sin duplicar lógica de negocio.
+   */
+  const handleProcessBarcode = useCallback(
+    async (rawBarcode: string | number | null | undefined): Promise<ProcessBarcodeOutcome> => {
+      return await processBarcode({
+        rawBarcode,
+        normalize: normalizeBarcode,
+        findByBarcode,
+        addProductToCart,
+        dedupRef: barcodeDedupRef
+      })
+    },
+    [findByBarcode, addProductToCart]
+  )
+
   useEffect(() => {
     Cookies.set(keyToSaveData, JSON.stringify(data), { domain: typeof domain === 'string' ? domain : undefined, path: '/' })
   }, [data, domain])
@@ -1507,38 +1568,62 @@ export const useSales = ({
       })
     },
     /**
-     * Resuelve y agrega al carrito un producto a partir de un código de barras
-     * (p. ej. el leído por un escáner). Busca por `ProBarCode` en la lista de
-     * productos ya cargada; si lo encuentra, lo agrega con el mismo flujo que
-     * `handleAddProduct`. Devuelve el producto agregado o `null` si no existe.
+     * Controlador central de escaneo (fuente única de verdad para cámara,
+     * lector USB/Bluetooth, imagen y entrada manual). Devuelve el resultado
+     * diferenciado (FOUND/NOT_FOUND/INVALID/ERROR/DUPLICATE_EVENT) para que la
+     * UI reaccione (agregar, ofrecer creación, avisar, sonido).
      */
-    handleAddProductByBarcode: (barcode: string | number): Product | null => {
-      const found = findProductByBarcode(barcode, allProducts)
-      if (!found) {
+    processBarcode: handleProcessBarcode,
+    /**
+     * Agrega al carrito un producto por su código de barras consultando el
+     * BACKEND real (ya no solo la lista en memoria). Internamente usa el
+     * controlador central `processBarcode`. Si el producto no existe o el
+     * código es inválido, notifica y devuelve el resultado para que el llamador
+     * decida (p. ej. ofrecer crear el producto).
+     *
+     * Fast-path: si el producto ya está cargado en memoria se agrega al
+     * instante (sin esperar red), pero igual pasa por el controlador para
+     * mantener la deduplicación y el estado consistentes.
+     */
+    handleAddProductByBarcode: async (
+      barcode: string | number
+    ): Promise<ProcessBarcodeOutcome> => {
+      const outcome = await handleProcessBarcode(barcode)
+
+      if (outcome.status === 'NOT_FOUND') {
+        // Fallback de cortesía: por si el producto está en memoria pero el
+        // backend aún no lo refleja (p. ej. recién creado). No reemplaza la
+        // consulta: solo evita un falso "no encontrado" para datos ya cargados.
+        const memo = findProductByBarcode(outcome.barcode, allProducts)
+        if (memo) {
+          addProductToCart(memo)
+          return {
+            status: 'FOUND',
+            barcode: outcome.barcode,
+            product: memo,
+            message: 'Producto agregado al carrito.'
+          }
+        }
         sendNotification({
           title: 'Producto no encontrado',
           backgroundColor: 'warning',
-          description: `No hay ningún producto con el código de barras ${barcode}.`
+          description: `No hay ningún producto con el código de barras ${outcome.barcode}.`
         })
-        return null
+      } else if (outcome.status === 'INVALID') {
+        sendNotification({
+          title: 'Código inválido',
+          backgroundColor: 'warning',
+          description: outcome.message
+        })
+      } else if (outcome.status === 'ERROR') {
+        sendNotification({
+          title: 'Error',
+          backgroundColor: 'error',
+          description: outcome.message
+        })
       }
-      handleAddProduct({
-        product: found,
-        dispatch,
-        productsFood,
-        sendNotification,
-        handleGetOneProduct: async ({ pId }: { pId: string }) => {
-          if (typeof handleGetOneProduct === 'function') {
-            const result = await handleGetOneProduct({ variables: { pId } } as any)
-            if (result && result.data && 'productFoodsOne' in result.data) {
-              return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } }
-            }
-            return { data: { productFoodsOne: null } }
-          }
-          throw new Error('handleGetOneProduct is not a function')
-        }
-      })
-      return found
+
+      return outcome
     },
     handleRemoveValue: (params: { name: string; pId: string; value: string | null }) => {
       return handleRemoveComment({
