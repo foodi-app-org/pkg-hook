@@ -11,6 +11,7 @@ import {
 import { useTagsProducts } from '../useProductsFood/usetagsProducts'
 import { useSetImageProducts } from '../useSetImageProducts'
 import { useStore } from '../useStore'
+import { useRegisterTagToProduct } from '../useTagProducts'
 
 // import { getCatProductsWithProduct } from './helpers/manageCacheDataCatProduct'
 import { useEditImageProduct } from './helpers/useEditImageProduct'
@@ -134,6 +135,9 @@ export const useCreateProduct = ({
     registerTags: handleRegisterDraftTags,
     loadingTags: loadingRegisterTags
   } = useTagsProducts({ sendNotification })
+
+  // Asocia el tag seleccionado al producto recién creado (FK tgId en producto).
+  const [handleRegisterTagToProduct] = useRegisterTagToProduct()
 
   // Estados de disponibilidad
   const [check, setCheck] = useState({
@@ -540,12 +544,17 @@ export const useCreateProduct = ({
       const { pId } = productData
 
       if (success) {
-        handleRegisterTags({
-          pId,
-          idUser: dataStore?.idUser || '',
-          idStore: dataStore?.idStore || '',
-          nameTag: tags?.tag ?? ''
-        })
+        // Asociamos el tag seleccionado al producto recién creado. El tag ya
+        // existe (lo trae la lista de tags guardados), así que solo enlazamos su
+        // tgId al producto; el backend actualiza la FK tgId del producto y el
+        // campo getOneTags del producto pasa a devolver ese tag.
+        const selectedTagId = tags?.id
+        if (selectedTagId && pId) {
+          await handleRegisterTagToProduct({
+            pId,
+            tgId: selectedTagId
+          })
+        }
 
         // Inyecta el producto recién creado en la caché de Apollo para que
         // los listados (productFoodsAll y getCatProductsWithProduct) lo
