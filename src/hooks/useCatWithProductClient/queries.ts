@@ -29,6 +29,7 @@ query getCatProductsWithProductClient($search: String, $min: Int, $max: Int, $ge
         fId
         pName
         ProPrice
+        ProBarCode
         ProDescuento
         ProUniDisponibles
         ProDescription

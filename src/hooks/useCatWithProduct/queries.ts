@@ -166,6 +166,7 @@ query getCatProductsWithProduct(
         fId
         pName
         ProPrice
+        ProBarCode
         ProDescuento
         ProUniDisponibles
         ProDescription

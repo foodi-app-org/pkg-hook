@@ -36,6 +36,7 @@ import { decrementExtra, removeExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
 import { filterProductsByCarProId } from './helpers/filterProductsByCarProId.utils'
 import { handleAddProduct } from './helpers/handleAddProduct.utils'
+import { findProductByBarcode } from './helpers/resolveProductByBarcode.utils'
 import { handleChangeNumber } from './helpers/handleChangeNumber.utils'
 import { handleCommentProduct } from './helpers/handleCommentProduct'
 import { handleRemoveComment } from './helpers/handleRemoveComment.utils'
@@ -1504,6 +1505,40 @@ export const useSales = ({
           throw new Error('handleGetOneProduct is not a function')
         }
       })
+    },
+    /**
+     * Resuelve y agrega al carrito un producto a partir de un código de barras
+     * (p. ej. el leído por un escáner). Busca por `ProBarCode` en la lista de
+     * productos ya cargada; si lo encuentra, lo agrega con el mismo flujo que
+     * `handleAddProduct`. Devuelve el producto agregado o `null` si no existe.
+     */
+    handleAddProductByBarcode: (barcode: string | number): Product | null => {
+      const found = findProductByBarcode(barcode, allProducts)
+      if (!found) {
+        sendNotification({
+          title: 'Producto no encontrado',
+          backgroundColor: 'warning',
+          description: `No hay ningún producto con el código de barras ${barcode}.`
+        })
+        return null
+      }
+      handleAddProduct({
+        product: found,
+        dispatch,
+        productsFood,
+        sendNotification,
+        handleGetOneProduct: async ({ pId }: { pId: string }) => {
+          if (typeof handleGetOneProduct === 'function') {
+            const result = await handleGetOneProduct({ variables: { pId } } as any)
+            if (result && result.data && 'productFoodsOne' in result.data) {
+              return { data: { productFoodsOne: result.data.productFoodsOne as Product | null } }
+            }
+            return { data: { productFoodsOne: null } }
+          }
+          throw new Error('handleGetOneProduct is not a function')
+        }
+      })
+      return found
     },
     handleRemoveValue: (params: { name: string; pId: string; value: string | null }) => {
       return handleRemoveComment({

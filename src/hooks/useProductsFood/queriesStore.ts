@@ -135,6 +135,7 @@ query productFoodsAll(
         nameTag
       }
       ProPrice
+      ProBarCode
       ProDescuento
       free
       ProUniDisponibles
@@ -376,6 +377,7 @@ export const UPDATE_PRODUCT_FOOD = gql`
       pName
       pCode
       ProPrice
+      ProBarCode
       carProId
       ProDescuento
       ProUniDisponibles

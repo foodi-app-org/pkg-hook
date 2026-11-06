@@ -57,7 +57,8 @@ export const useCreateProduct = ({
     ProWeight: '',
     ProHeight: '',
     ValueDelivery: 0,
-    carProId: ''
+    carProId: '',
+    ProBarCode: ''
   })
 
   const STEPS = Object.freeze({
@@ -329,6 +330,7 @@ export const useCreateProduct = ({
       pName: productData?.pName ?? formValues?.pName ?? '',
       getOneTags: null,
       ProPrice: productData?.ProPrice ?? formValues?.ProPrice ?? 0,
+      ProBarCode: productData?.ProBarCode ?? formValues?.ProBarCode ?? null,
       ProDescuento: productData?.ProDescuento ?? formValues?.ProDescuento ?? 0,
       free: productData?.free ?? 0,
       ProUniDisponibles: productData?.ProUniDisponibles ?? null,
@@ -462,7 +464,8 @@ export const useCreateProduct = ({
       ProWeight,
       ProHeight,
       ValueDelivery,
-      carProId
+      carProId,
+      ProBarCode
     } = values ?? {
       ProPrice: 0,
       ProDescuento: 0,
@@ -470,7 +473,8 @@ export const useCreateProduct = ({
       ProWeight: '',
       ProHeight: 0,
       ValueDelivery: 0,
-      carProId: ''
+      carProId: '',
+      ProBarCode: ''
     }
 
     if (!carProId && !names) {
@@ -508,7 +512,11 @@ export const useCreateProduct = ({
         ProHeight: Number.parseFloat(ProHeight),
         ProWeight,
         ProOutstanding: check?.desc ? 1 : 0,
-        ProDelivery: check?.desc ? 1 : 0
+        ProDelivery: check?.desc ? 1 : 0,
+
+        // Enviar el código de barras solo si el usuario lo ingresó; si va vacío
+        // el backend genera un EAN-13 válido automáticamente.
+        ...(ProBarCode ? { ProBarCode: `${ProBarCode}` } : {})
       }
 
       const response = await updateProductFoods({
@@ -573,6 +581,7 @@ export const useCreateProduct = ({
             carProId,
             pName: names,
             ProImage,
+            ProBarCode,
             ProOutstanding: check?.desc ? 1 : 0,
             ProDelivery: check?.desc ? 1 : 0
           }
