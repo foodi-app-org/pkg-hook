@@ -6,22 +6,28 @@ import { getOrientation } from './helper/getOrientation'
 
 /**
  * Read a File as data URL.
- * @param file - File to read.
- * @returns Promise resolving to data URL string.
  */
 const readFile = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
+
     reader.addEventListener(
       'load',
       () => {
         const result = reader.result
+
         if (typeof result === 'string') resolve(result)
         else reject(new Error('Unable to read file as data URL'))
       },
       false
     )
-    reader.addEventListener('error', () => reject(new Error('File read error')), false)
+
+    reader.addEventListener(
+      'error',
+      () => reject(new Error('File read error')),
+      false
+    )
+
     reader.readAsDataURL(file)
   })
 
@@ -65,61 +71,101 @@ export interface UseImageUploaderResult {
 }
 
 /**
- * Hook for image upload + preview + validate + crop.
+ * Hook for image upload, preview, validation and cropping.
  *
- * - Validates type and size
- * - Reads EXIF orientation and rotates image if needed
- * - Provides cropping flow via getCroppedImg/getRotatedImage (from canvasUtils)
- *
- * @param options - configuration for uploader
- * @returns API described in UseImageUploaderResult
+ * - Validates file type and size.
+ * - Validates minimum dimensions for JPG, JPEG and PNG.
+ * - Reads EXIF orientation.
+ * - Crops JPG, JPEG and PNG images.
+ * - Supports GIF without minimum dimension restrictions.
+ * - Preserves original GIF animation.
  */
 export const useImageUploaderProduct = (
   options?: UseImageUploaderOptions
 ): UseImageUploaderResult => {
   const {
-    validTypes = ['image/jpeg', 'image/jpg', 'image/png'],
+    validTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif'
+    ],
     maxSizeMB = 20,
     minWidth = 300,
     minHeight = 275,
     sendNotification = () => {}
   } = options ?? {}
 
-  const readableFormats = validTypes.map((t) => t.split('/')[1].toUpperCase())
-  const formatter = new Intl.ListFormat('es', { style: 'long', type: 'conjunction' })
+  const readableFormats = [
+    ...new Set(
+      validTypes.map((type) => {
+        const format = type.split('/')[1]
+
+        return format === 'jpeg' || format === 'jpg'
+          ? 'JPG'
+          : format.toUpperCase()
+      })
+    )
+  ]
+
+  const formatter = new Intl.ListFormat('es', {
+    style: 'long',
+    type: 'conjunction'
+  })
+
   const formattedList = formatter.format(readableFormats)
 
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
   const [open, setOpen] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [croppedImage, setCroppedImage] = useState<string | null>(null)
+
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
+
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<unknown | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [image, setImage] = useState<File | null>(null)
 
+  /**
+   * Clear uploader state.
+   */
   const clearAll = (): void => {
     setImage(null)
     setPreview(null)
     setImageSrc(null)
     setCroppedImage(null)
+
     setZoom(1)
     setCrop({ x: 0, y: 0 })
     setRotation(0)
+
+    setCroppedAreaPixels(null)
     setError(null)
-    if (inputRef.current) inputRef.current.value = ''
+    setOpen(false)
+
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
   }
 
+  /**
+   * Remove selected image.
+   */
   const handleRemoveImage = (): void => {
     clearAll()
   }
 
+  /**
+   * Display validation errors and notifications.
+   */
   const notifyError = (msg: string): void => {
     setError(msg)
+
     try {
       sendNotification({
         description: msg,
@@ -127,158 +173,260 @@ export const useImageUploaderProduct = (
         backgroundColor: 'error'
       })
     } catch {
-      // swallow notification errors to avoid breaking flow
+      // Prevent notification errors from breaking the uploader.
     }
   }
 
+  /**
+   * Validate file type and size.
+   */
   const validateFile = (file: File): string | null => {
     if (!validTypes.includes(file.type)) {
       return `Formato inválido. Solo se permiten: ${formattedList}.`
     }
+
     if (file.size > maxSizeMB * 1024 * 1024) {
       return `El archivo supera los ${maxSizeMB} MB.`
     }
+
     return null
   }
 
-  const processLoadedImage = async (file: File, imageDataUrl: string) => {
-    try {
-      const orientation = await getOrientation(file, validTypes)
-      const rot = ORIENTATION_TO_ANGLE[orientation as keyof typeof ORIENTATION_TO_ANGLE]
-      if (rot) {
-        const rotated = (await getRotatedImage(imageDataUrl, rot)) as string
-        setRotation(rot)
-        setImageSrc(rotated)
-      } else {
-        setImageSrc(imageDataUrl)
+  /**
+   * Validate image dimensions.
+   */
+  const validateImageDimensions = async (
+    imageDataUrl: string
+  ): Promise<void> => {
+    const img = new Image()
+    img.src = imageDataUrl
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => {
+        if (img.width < minWidth || img.height < minHeight) {
+          reject(
+            new Error(`Resolución mínima: ${minWidth}x${minHeight}px.`)
+          )
+        } else {
+          resolve()
+        }
       }
+
+      img.onerror = () => {
+        reject(new Error('Invalid image data'))
+      }
+    })
+  }
+
+  /**
+   * Process a loaded image.
+   *
+   * GIF:
+   * - Does not validate minimum dimensions.
+   * - Does not use canvas.
+   * - Does not open cropping modal.
+   * - Preserves original animation.
+   *
+   * JPG, JPEG and PNG:
+   * - Validates minimum dimensions.
+   * - Reads EXIF orientation.
+   * - Opens cropping modal.
+   */
+  const processLoadedImage = async (
+    file: File,
+    imageDataUrl: string
+  ): Promise<void> => {
+    // GIF: preserve original animation without dimension restrictions.
+    if (file.type === 'image/gif') {
       setImage(file)
-      setOpen(true)
+      setImageSrc(imageDataUrl)
+      setPreview(imageDataUrl)
+      setCroppedImage(imageDataUrl)
+      setOpen(false)
+
+      return
+    }
+
+    let processedImage = imageDataUrl
+
+    try {
+      // Read EXIF orientation.
+      const orientation = await getOrientation(file, validTypes)
+
+      const rot = ORIENTATION_TO_ANGLE[
+        orientation as keyof typeof ORIENTATION_TO_ANGLE
+      ]
+
+      if (rot) {
+        processedImage = await getRotatedImage(
+          imageDataUrl,
+          rot
+        ) as string
+
+        setRotation(rot)
+      }
     } catch (err) {
       if (err instanceof Error && err.message === 'Invalid image data') {
         notifyError('No se pudo leer la orientación de la imagen.')
         return
       }
-        // If orientation fails due to invalid image, notify
-      // If orientation fails, still attempt to use the image; validate dimensions
-      const img = new Image()
-      img.src = imageDataUrl
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => {
-          if (img.width < minWidth || img.height < minHeight) {
-            reject(new Error(`Resolución mínima: ${minWidth}x${minHeight}px.`))
-          } else resolve()
-        }
-        img.onerror = () => reject(new Error('Invalid image data'))
-      })
-      // If successful, set image
-      setImageSrc(imageDataUrl)
-      setImage(file)
-      setOpen(true)
 
+      // Continue without EXIF rotation if orientation is unavailable.
     }
+
+    // Validate dimensions for regular images only.
+    await validateImageDimensions(processedImage)
+
+    setImage(file)
+    setImageSrc(processedImage)
+    setOpen(true)
   }
 
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  /**
+   * Handle file selection.
+   */
+  const onFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
     const file = e.target.files?.[0] ?? null
+
     clearAll()
+
     if (!file) return
 
     const validationError = validateFile(file)
+
     if (validationError) {
       notifyError(validationError)
       return
     }
 
     setLoading(true)
+
     try {
       const imageDataUrl = await readFile(file)
+
       await processLoadedImage(file, imageDataUrl)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error while reading file'
+      const msg = err instanceof Error
+        ? err.message
+        : 'Unknown error while reading file'
+
       notifyError(msg)
     } finally {
       setLoading(false)
     }
   }
 
-  const onCropComplete = (_croppedArea: unknown, croppedPixels: unknown): void => {
+  /**
+   * Save crop area.
+   */
+  const onCropComplete = (
+    _croppedArea: unknown,
+    croppedPixels: unknown
+  ): void => {
     setCroppedAreaPixels(croppedPixels)
   }
 
+  /**
+   * Generate cropped image.
+   *
+   * GIF images bypass canvas cropping.
+   */
   const showCroppedImage = async (): Promise<void> => {
-    if (!imageSrc || !croppedAreaPixels) {
-      notifyError('No image or crop area available.')
+    if (!imageSrc || !image) {
+      notifyError('No image available.')
+      return
+    }
+
+    // GIF: use original image and preserve animation.
+    if (image.type === 'image/gif') {
+      setPreview(imageSrc)
+      setCroppedImage(imageSrc)
+      setOpen(false)
+
+      return
+    }
+
+    if (!croppedAreaPixels) {
+      notifyError('No crop area available.')
       return
     }
 
     try {
       setLoading(true)
-      const base64Image = (await getCroppedImg(imageSrc, croppedAreaPixels, rotation)) as string
+
+      const base64Image = await getCroppedImg(
+        imageSrc,
+        croppedAreaPixels,
+        rotation
+      ) as string
+
       setCroppedImage(base64Image)
       setPreview(base64Image)
 
-      // Convert base64 to blob and file
+      // Convert cropped image to blob and file.
       const blob = await (await fetch(base64Image)).blob()
-      const file = new File([blob], image?.name ?? 'cropped.jpeg', { type: blob.type })
-      setImage(file)
+
+      const croppedFile = new File(
+        [blob],
+        image.name || 'cropped.jpeg',
+        { type: blob.type }
+      )
+
+      setImage(croppedFile)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error while cropping image'
+      const msg = err instanceof Error
+        ? err.message
+        : 'Error while cropping image'
+
       notifyError(msg)
     } finally {
       setLoading(false)
     }
   }
 
+  /**
+   * Close cropping modal.
+   */
   const handleClose = (): void => {
     setOpen(false)
   }
 
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>): Promise<void> => {
+  /**
+   * Handle drag and drop.
+   */
+  const handleDrop = async (
+    event: React.DragEvent<HTMLDivElement>
+  ): Promise<void> => {
     event.preventDefault()
-    clearAll()
+
+    if (loading) return
+
     const file = event.dataTransfer.files?.[0] ?? null
+
     if (!file) return
 
+    clearAll()
+
     const validationError = validateFile(file)
+
     if (validationError) {
       notifyError(validationError)
       return
     }
 
     setLoading(true)
+
     try {
       const imageDataUrl = await readFile(file)
-      try {
-        const orientation = await getOrientation(file, validTypes)
-        const rot = ORIENTATION_TO_ANGLE[orientation as keyof typeof ORIENTATION_TO_ANGLE]
-        if (rot) {
-          const rotated = (await getRotatedImage(imageDataUrl, rot)) as string
-          setRotation(rot)
-          setImageSrc(rotated)
-        } else {
-          setImageSrc(imageDataUrl)
-        }
-        setImage(file)
-        setOpen(true)
-      } catch {
-        // fallback: validate dims and set
-        const img = new Image()
-        img.src = imageDataUrl
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            if (img.width < minWidth || img.height < minHeight) {
-              reject(new Error(`Resolución mínima: ${minWidth}x${minHeight}px.`))
-            } else resolve()
-          }
-          img.onerror = () => reject(new Error('Invalid image data'))
-        })
-        setImageSrc(imageDataUrl)
-        setImage(file)
-        setOpen(true)
-      }
+
+      await processLoadedImage(file, imageDataUrl)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error processing dropped file'
+      const msg = err instanceof Error
+        ? err.message
+        : 'Error processing dropped file'
+
       notifyError(msg)
     } finally {
       setLoading(false)

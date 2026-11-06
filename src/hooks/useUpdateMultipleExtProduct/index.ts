@@ -21,7 +21,6 @@ export const useUpdateMultipleExtProduct = (
     UPDATE_MULTI_EXTRAS_PRODUCT_FOOD,
     {
       onCompleted: (data) => {
-        console.log(data)
         const result = data?.updateMultipleExtProduct
         const { success, message } = result ?? {}
 

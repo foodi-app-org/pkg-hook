@@ -192,6 +192,7 @@ query getCatProductsWithProduct(
           dayAvailable
           startDate
           endDate
+          state
           createdAt
           updatedAt
         }

@@ -658,6 +658,7 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
       ProOutstanding
       ProDelivery
       ProVoltaje
+      vat
       pState
       sTateLogistic
       createdAt
@@ -675,6 +676,9 @@ export const GET_ONE_PRODUCTS_FOOD = gql`
         idStore
         pId
         dayAvailable
+        startDate
+        endDate
+        state
         createdAt
         updatedAt
       }
