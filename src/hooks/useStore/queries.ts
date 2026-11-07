@@ -5,6 +5,7 @@ mutation  newRegisterStore($input: IStore){
   newRegisterStore(input: $input){
     success
     message
+    code
     idStore
   }
 }
