@@ -24,11 +24,12 @@ const GET_TOTAL_SALES = gql`
 export const useTotalAllSales = () => {
   const { data, loading, error, refetch } = useQuery(GET_TOTAL_SALES)
 
-  return [data?.totalSales?.totalSales, {
+  return {
     loading,
     error,
     refetch,
+    totalSales: data?.totalSales?.totalSales,
     totalDiscount: data?.totalSales?.totalDiscount,
     netTotal: data?.totalSales?.netTotal
-  }]
+  }
 }

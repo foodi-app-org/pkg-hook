@@ -16,6 +16,9 @@ const GET_RECENT_ORDERS = gql`
         createdAt
         statusState
         total
+        discountType
+        discountAmount
+        netTotal
       }
     }
   }
