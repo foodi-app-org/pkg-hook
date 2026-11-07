@@ -1,3 +1,5 @@
+import { resolveBaseLineTotal, restoreProductPricing } from './pricing.utils'
+
 export enum TypeDiscount {
   PERCENT = 'PERCENT',
   AMOUNT = 'AMOUNT'
@@ -88,17 +90,19 @@ export const applyDiscountToCart = (
   const fromCents = (c: number) => { return c / 100 }
 
   // --- Normalize / Restore originals to avoid stacking discounts ---
-  // For each product, use saved original prices if present; otherwise use current as "original"
+  // For each product, derive the NON-discounted base via the shared pricing
+  // helper (free → 0; otherwise unitPrice*qty, originalProPrice or ProPrice, in
+  // that order). `free` products are courtesy lines with ABSOLUTE priority:
+  // their base and extras are forced to 0 so they are never discountable and
+  // never contribute to the discountable cart total.
   const normalizedItems = state.PRODUCT.map((item: any) => {
-    // Determine original base price (prefer originalProPrice if present)
-    const origBaseRaw =
-      item.originalProPrice !== undefined && item.originalProPrice !== null
-        ? Number(item.originalProPrice)
-        : Number(item.ProPrice || 0)
+    const isFree = item?.free === true
 
-    const baseCents = toCents(origBaseRaw)
+    // Base = non-discounted line total for this product (0 when free).
+    const baseCents = isFree ? 0 : toCents(resolveBaseLineTotal(item))
 
-    // Normalize extras: preserve originalNewExtraPrice if exists, else take current newExtraPrice
+    // Normalize extras: preserve originalNewExtraPrice if exists, else take
+    // current newExtraPrice. Free lines contribute 0 for extras too.
     const extrasRaw = Array.isArray(item.dataExtra) ? item.dataExtra : []
     const extrasNormalized = extrasRaw.map((ex: any) => {
       const origExRaw =
@@ -108,7 +112,7 @@ export const applyDiscountToCart = (
       return {
         originalExtraObject: ex,
         originalNewExtraPriceRaw: origExRaw,
-        originalNewExtraPriceCents: toCents(origExRaw)
+        originalNewExtraPriceCents: isFree ? 0 : toCents(origExRaw)
       }
     })
 
@@ -118,6 +122,7 @@ export const applyDiscountToCart = (
 
     return {
       originalItem: item,
+      isFree,
       baseCents,
       extrasNormalized,
       extrasCentsList,
@@ -134,8 +139,12 @@ export const applyDiscountToCart = (
       backgroundColor: 'warning',
       description: 'Cart total is zero; nothing to discount.'
     })
+    // Nothing is discountable (empty cart or all-free). Restore every product to
+    // its non-discounted price so a previous discount never lingers, and reset
+    // the discount metadata.
     return {
       ...state,
+      PRODUCT: state.PRODUCT.map((item: any) => restoreProductPricing(item)),
       discountType,
       discountPercent: 0,
       discountAmount: 0,
@@ -155,7 +164,11 @@ export const applyDiscountToCart = (
     }
   }
 
-  // If no discount to apply
+  // No discount to apply. This is the path taken by "Eliminar descuento"
+  // (value 0) and by a 0% / $0 entry. We RESTORE every product to its
+  // non-discounted price (from originalProPrice or unitPrice*qty, free → 0) and
+  // strip the per-item discount footprint, so removing a discount always brings
+  // the prices back to what the product configuration dictates.
   if (totalDiscountCents <= 0) {
     sendNotification?.({
       title: 'Notice',
@@ -164,9 +177,12 @@ export const applyDiscountToCart = (
     })
     return {
       ...state,
+      PRODUCT: state.PRODUCT.map((item: any) => restoreProductPricing(item)),
       discountType,
-      // eslint-disable-next-line
-      discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : +((totalDiscountCents / cartTotalCents) * 100).toFixed(2),
+      // For AMOUNT discounts the percentage is not a user-provided figure, so we
+      // keep it at 0 to avoid persisting a misleading value. `discountType` is
+      // the single source of truth for the mode; `discountAmount` holds the money.
+      discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : 0,
       discountAmount: fromCents(totalDiscountCents),
       discountBreakdown: []
     }
@@ -243,13 +259,30 @@ export const applyDiscountToCart = (
     const appliedDiscountCents = allocated - remainingToTake
     breakdown.push({ pId: it.originalItem.pId, discountAmount: fromCents(appliedDiscountCents) })
 
+    // FREE lines have absolute priority: they are never discounted. Keep the
+    // courtesy price at 0, carry no `originalProPrice` and record a 0 discount
+    // in the breakdown, so a gift stays out of the discount accounting even
+    // when a global discount is applied to the rest of the cart.
+    if (it.isFree) {
+      const { originalProPrice, ...restFree } = it.originalItem ?? {}
+      return {
+        ...restFree,
+        ProPrice: 0,
+        dataExtra: newDataExtra,
+        discountAmount: 0,
+        discountPercent: 0
+      }
+    }
+
     const itemTotalCentsBefore = it.itemTotalCents || 0
     // eslint-disable-next-line
     const itemDiscountPercent = itemTotalCentsBefore > 0 ? +((appliedDiscountCents / itemTotalCentsBefore) * 100).toFixed(4) : 0
 
     return {
       ...it.originalItem,
-      // save originalProPrice if not present (so future calls can restore)
+      // Save the non-discounted base so future calls (edit/remove) can restore
+      // it. Prefer the already-saved originalProPrice to stay idempotent across
+      // repeated applications.
       originalProPrice:
         it.originalItem.originalProPrice ?? fromCents(it.baseCents),
       ProPrice: newProPrice,
@@ -260,21 +293,21 @@ export const applyDiscountToCart = (
     }
   })
 
-  // Final safety check & tiny correction if needed
+  // Final safety check & tiny correction if needed. The adjustment is applied
+  // to the first NON-FREE product so a rounding cent is never charged against a
+  // courtesy line (which must always stay at 0).
   const allocatedSumCents = breakdown.reduce((s, b) => { return s + toCents(Number(b.discountAmount) || 0) }, 0)
   if (allocatedSumCents !== totalDiscountCents) {
     const diff = totalDiscountCents - allocatedSumCents
-    if (newProducts.length > 0 && diff !== 0) {
-      const first = newProducts[0]
-      first.discountAmount = Number(first.discountAmount || 0) + fromCents(diff)
-      const adjustOnBase = Math.min(toCents(first.ProPrice), diff)
-      first.ProPrice = fromCents(Math.max(0, toCents(first.ProPrice) - adjustOnBase))
-      breakdown[0].discountAmount = Number(breakdown[0].discountAmount || 0) + fromCents(diff)
+    const adjustIndex = newProducts.findIndex((p: any) => p?.free !== true)
+    if (adjustIndex !== -1 && diff !== 0) {
+      const target = newProducts[adjustIndex]
+      target.discountAmount = Number(target.discountAmount || 0) + fromCents(diff)
+      const adjustOnBase = Math.min(toCents(target.ProPrice), diff)
+      target.ProPrice = fromCents(Math.max(0, toCents(target.ProPrice) - adjustOnBase))
+      breakdown[adjustIndex].discountAmount = Number(breakdown[adjustIndex].discountAmount || 0) + fromCents(diff)
     }
   }
-  // eslint-disable-next-line
-  const overallPercent = +((totalDiscountCents / cartTotalCents) * 100).toFixed(4)
-
   sendNotification?.({
     title: 'Discount applied',
     backgroundColor: 'success',
@@ -285,8 +318,48 @@ export const applyDiscountToCart = (
     ...state,
     PRODUCT: newProducts,
     discountType,
-    discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : overallPercent,
+    // PERCENT → store the user-entered percentage (0-100). AMOUNT → the
+    // percentage is not meaningful, so it stays 0; `discountAmount` carries the
+    // exact money discounted and `discountType` identifies the mode.
+    discountPercent: discountType === TypeDiscount.PERCENT ? rawValue : 0,
     discountAmount: fromCents(totalDiscountCents),
     discountBreakdown: breakdown
   }
+}
+
+/**
+ * Re-run the currently active global discount over the given state.
+ *
+ * Use this after any mutation that changes what is discountable (e.g. toggling
+ * a product's `free` flag, changing a quantity) so the global discount figures
+ * (`discountAmount`, `discountPercent`, `discountBreakdown`) and each product's
+ * `ProPrice` are recomputed from the clean base. Because `applyDiscountToCart`
+ * always restores from `originalProPrice`/`unitPrice*qty` before applying, this
+ * never stacks discounts.
+ *
+ * It is a no-op (returns the state unchanged) when there is no active discount,
+ * so it is always safe to call.
+ *
+ * @param {any} state - current reducer state (after the mutation).
+ * @returns {any} state with the active discount re-applied, or the same state.
+ */
+export const reapplyActiveDiscount = (state: any) => {
+  const type = (state?.discountType ?? TypeDiscount.PERCENT).toString().toUpperCase()
+
+  const value = type === TypeDiscount.AMOUNT
+    ? Number(state?.discountAmount)
+    : Number(state?.discountPercent)
+
+  // No active discount → nothing to recompute.
+  if (!Number.isFinite(value) || value <= 0) {
+    return state
+  }
+
+  // Re-apply quietly (no notification): this is an internal reconciliation,
+  // not a user-initiated discount action.
+  return applyDiscountToCart(
+    state,
+    { type: type as TypeDiscount, value },
+    undefined
+  )
 }

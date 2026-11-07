@@ -31,7 +31,7 @@ import { useStore } from '../useStore'
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
 
 import { addToCartFunc } from './helpers/add-product.utils'
-import { applyDiscountToCart, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
+import { applyDiscountToCart, reapplyActiveDiscount, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
 import { decrementExtra, removeExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
@@ -651,8 +651,16 @@ export const useSales = ({
           discountBreakdown: []
         }
 
-      case SalesActionTypes.TOGGLE_FREE_PRODUCT:
-        return toggleFreeProducts(state, action.payload, productsFood)
+      case SalesActionTypes.TOGGLE_FREE_PRODUCT: {
+        // Toggle the courtesy flag first (sets the product's ProPrice to 0 or
+        // restores its base price). Then re-run the active global discount over
+        // the resulting cart so every total stays coherent: a product that just
+        // became free leaves the discountable base, and one that stopped being
+        // free rejoins it. reapplyActiveDiscount is a no-op when no discount is
+        // active, so normal carts are unaffected.
+        const toggled = toggleFreeProducts(state, action.payload, productsFood)
+        return reapplyActiveDiscount(toggled)
+      }
       case SalesActionTypes.TOGGLE_EDITING_PRODUCT: {
         return handleToggleEditingStatus(state, action.payload)
       }
@@ -963,7 +971,13 @@ export const useSales = ({
         comments: product?.comment ?? '',
         dataOptional: dataOptional ?? [],
         dataExtra: filteredDataExtra,
-        ProPrice: product.ProPrice
+        // Precio unitario real del producto. Cuando el item está marcado como
+        // gratis (free === true) el reducer ya puso ProPrice en 0, pero igual
+        // enviamos el flag `free` para que el backend sepa que es cortesía y
+        // excluya el valor real del producto de contaduría/reportes/venta del
+        // día y venta general de la tienda.
+        ProPrice: product.ProPrice,
+        free: Boolean(product?.free)
       }
     })
   }, [data.PRODUCT, values?.cliId])
@@ -1088,6 +1102,49 @@ export const useSales = ({
         shoppingCartRefCode
       }))
     )
+
+    // Build the discount payload the backend expects. `DiscountInput.value` is
+    // an Int that the sale-detail/invoice read path interprets as a PERCENTAGE
+    // (exact-cart-totals only supports `globalDiscountPercent`). Sending the
+    // money amount here made the backend read it back as a huge percentage
+    // (e.g. a $1.000 discount became "1000%"), corrupting the invoice totals.
+    //
+    // So we always send an integer percentage:
+    //   - PERCENT discount → the entered percent (0-100).
+    //   - AMOUNT discount  → the equivalent percent of the pre-discount cart
+    //     total, derived from each product's `originalProPrice` (the price
+    //     saved by applyDiscountToCart before the discount was applied).
+    const discountType = data.discountType
+      ? String(data.discountType)
+      : TypeDiscount.PERCENT
+
+    const resolveDiscountPercentValue = (): number => {
+      if (discountType === TypeDiscount.PERCENT) {
+        const pct = Number(data.discountPercent) || 0
+        return Math.min(100, Math.max(0, Math.round(pct)))
+      }
+      // AMOUNT → convert the discounted money to a percentage of the original
+      // (pre-discount) cart total so the backend renders a coherent figure.
+      const amount = Number(data.discountAmount) || 0
+      if (amount <= 0) return 0
+      const originalCartTotal = (Array.isArray(data?.PRODUCT) ? data.PRODUCT : [])
+        .reduce((acc: number, item: any) => {
+          const base = Number(
+            item?.originalProPrice ?? item?.ProPrice ?? 0
+          ) || 0
+          const extras = (Array.isArray(item?.dataExtra) ? item.dataExtra : [])
+            .reduce((exAcc: number, ex: any) => {
+              const exBase = Number(
+                ex?.originalNewExtraPrice ?? ex?.newExtraPrice ?? 0
+              ) || 0
+              return exAcc + exBase
+            }, 0)
+          return acc + base + extras
+        }, 0)
+      if (originalCartTotal <= 0) return 0
+      return Math.min(100, Math.max(0, Math.round((amount / originalCartTotal) * 100)))
+    }
+
     return registerSalesStore({
       variables: {
         input,
@@ -1100,8 +1157,8 @@ export const useSales = ({
         pickUp: 1,
         shoppingCartRefCode,
         discount: {
-          type: data.discountType ? String(data.discountType) : TypeDiscount.PERCENT,
-          value: data.discountAmount ?? 0
+          type: discountType,
+          value: resolveDiscountPercentValue()
         },
         totalProductsPrice: convertInteger(totalProductsPrice) || 0
       },

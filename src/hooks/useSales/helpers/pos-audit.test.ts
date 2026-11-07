@@ -1008,3 +1008,344 @@ describe('REMOVE_ALL_PRODUCTS — discount fields reset', () => {
     expect(cleared.discountPercent).toBe(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// 10. Free vs Discount — price integrity (BUG: free + discount interaction)
+// ---------------------------------------------------------------------------
+
+import { resolveBaseLineTotal, restoreProductPricing } from './pricing.utils'
+import { reapplyActiveDiscount } from './apply-discount-to-cart.utils'
+
+describe('pricing.utils', () => {
+  describe('resolveBaseLineTotal', () => {
+    test('free product resolves to 0 regardless of price', () => {
+      const item = { ...makeCartItem('p1', 10_000, 3), free: true }
+      expect(resolveBaseLineTotal(item)).toBe(0)
+    })
+
+    test('uses unitPrice × quantity when available', () => {
+      const item = makeCartItem('p1', 10_000, 3)
+      expect(resolveBaseLineTotal(item)).toBe(30_000)
+    })
+
+    test('falls back to originalProPrice when no unitPrice', () => {
+      const item = { pId: 'p1', ProQuantity: 0, originalProPrice: 12_345, ProPrice: 9_000 }
+      expect(resolveBaseLineTotal(item as any)).toBe(12_345)
+    })
+
+    test('falls back to ProPrice when neither unitPrice nor originalProPrice', () => {
+      const item = { pId: 'p1', ProQuantity: 0, ProPrice: 7_000 }
+      expect(resolveBaseLineTotal(item as any)).toBe(7_000)
+    })
+
+    test('never returns a negative value', () => {
+      const item = { pId: 'p1', ProQuantity: 0, ProPrice: -100 }
+      expect(resolveBaseLineTotal(item as any)).toBe(0)
+    })
+  })
+
+  describe('restoreProductPricing', () => {
+    test('restores a discounted product to its base price and strips footprint', () => {
+      const item = {
+        ...makeCartItem('p1', 10_000, 1),
+        ProPrice: 9_000,
+        originalProPrice: 10_000,
+        discountAmount: 1_000,
+        discountPercent: 10
+      }
+      const restored = restoreProductPricing(item as any)
+
+      expect(restored.ProPrice).toBe(10_000)
+      expect(restored).not.toHaveProperty('originalProPrice')
+      expect(restored).not.toHaveProperty('discountAmount')
+      expect(restored).not.toHaveProperty('discountPercent')
+    })
+
+    test('free product is restored to 0', () => {
+      const item = {
+        ...makeCartItem('p1', 10_000, 2),
+        free: true,
+        ProPrice: 0,
+        originalProPrice: 20_000
+      }
+      const restored = restoreProductPricing(item as any)
+      expect(restored.ProPrice).toBe(0)
+      expect(restored).not.toHaveProperty('originalProPrice')
+    })
+
+    test('restores extras newExtraPrice from originalNewExtraPrice and drops it', () => {
+      const item = {
+        ...makeCartItem('p1', 10_000, 1),
+        ProPrice: 9_000,
+        originalProPrice: 10_000,
+        dataExtra: [
+          { exPid: 'e1', extraPrice: 2_500, quantity: 2, newExtraPrice: 4_500, originalNewExtraPrice: 5_000 }
+        ]
+      }
+      const restored = restoreProductPricing(item as any)
+      expect(restored.dataExtra[0].newExtraPrice).toBe(5_000)
+      expect(restored.dataExtra[0]).not.toHaveProperty('originalNewExtraPrice')
+    })
+  })
+})
+
+describe('Free vs Discount — free has absolute priority', () => {
+  const makeState = (...items: any[]) => ({ ...initialStateSales, PRODUCT: items })
+
+  test('BUG-1: marking a product free THEN applying a percent discount keeps it at 0', () => {
+    // User flow: toggle free first, then apply discount.
+    const freeItem = { ...makeCartItem('p1', 10_000, 1), free: true, ProPrice: 0 }
+    const state = makeState(freeItem)
+
+    const result = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 15 }, noop)
+
+    const p = result.PRODUCT[0]
+    expect(p.free).toBe(true)
+    expect(p.ProPrice).toBe(0)
+    // No discount footprint must be attached to a free line.
+    expect(p.originalProPrice).toBeUndefined()
+    // A free line carries no discount charge (either absent or 0).
+    expect(p.discountAmount ?? 0).toBe(0)
+  })
+
+  test('BUG-1: applying an AMOUNT discount never charges a free product', () => {
+    const freeItem = { ...makeCartItem('p1', 10_000, 1), free: true, ProPrice: 0 }
+    const state = makeState(freeItem)
+
+    const result = applyDiscountToCart(state as any, { type: TypeDiscount.AMOUNT, value: 5_000 }, noop)
+
+    expect(result.PRODUCT[0].ProPrice).toBe(0)
+  })
+
+  test('free product is excluded from the discountable total; only paid items are discounted', () => {
+    // Cart: a free item (10_000) + a paid item (10_000). A 10% discount must be
+    // computed only on the paid 10_000 → 1_000 discount, not on 20_000.
+    const freeItem = { ...makeCartItem('p1', 10_000, 1), free: true, ProPrice: 0 }
+    const paidItem = makeCartItem('p2', 10_000, 1)
+    const state = makeState(freeItem, paidItem)
+
+    const result = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 10 }, noop)
+
+    expect(result.discountAmount).toBe(1_000)
+    const free = result.PRODUCT.find((p: any) => p.pId === 'p1')
+    const paid = result.PRODUCT.find((p: any) => p.pId === 'p2')
+    expect(free.ProPrice).toBe(0)
+    expect(paid.ProPrice).toBe(9_000)
+  })
+
+  test('toggling free ON after a discount zeroes the price and drops the footprint', () => {
+    // Apply a discount first, then mark the product free.
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 10 }, noop)
+    expect(discounted.PRODUCT[0].ProPrice).toBe(9_000)
+
+    const productsFood = [makeCatalogItem('p1', 10_000)]
+    const freed = toggleFreeProducts(discounted as any, { pId: 'p1' }, productsFood as any)
+
+    const p = freed.PRODUCT[0]
+    expect(p.free).toBe(true)
+    expect(p.ProPrice).toBe(0)
+    expect(p.originalProPrice).toBeUndefined()
+    expect(p.discountAmount).toBeUndefined()
+  })
+})
+
+describe('Remove discount — restores product prices (BUG-2)', () => {
+  const makeState = (...items: any[]) => ({ ...initialStateSales, PRODUCT: items })
+
+  test('removing a PERCENT discount restores the original price', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 20 }, noop)
+    expect(discounted.PRODUCT[0].ProPrice).toBe(8_000)
+
+    // "Eliminar descuento" dispatches a 0% discount.
+    const removed = applyDiscountToCart(discounted as any, { type: TypeDiscount.PERCENT, value: 0 }, noop)
+
+    const p = removed.PRODUCT[0]
+    expect(p.ProPrice).toBe(10_000)
+    expect(p.originalProPrice).toBeUndefined()
+    expect(removed.discountAmount).toBe(0)
+  })
+
+  test('removing an AMOUNT discount restores the original price', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 2)) // base 20_000
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.AMOUNT, value: 5_000 }, noop)
+    expect(discounted.PRODUCT[0].ProPrice).toBe(15_000)
+
+    const removed = applyDiscountToCart(discounted as any, { type: TypeDiscount.AMOUNT, value: 0 }, noop)
+
+    expect(removed.PRODUCT[0].ProPrice).toBe(20_000)
+    expect(removed.PRODUCT[0].originalProPrice).toBeUndefined()
+  })
+
+  test('removing a discount restores extras too', () => {
+    const item = {
+      ...makeCartItem('p1', 10_000, 1),
+      dataExtra: [{ exPid: 'e1', extraPrice: 2_500, quantity: 2, newExtraPrice: 5_000 }]
+    }
+    const state = makeState(item) // base 10_000 + extra 5_000 = 15_000
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 20 }, noop)
+
+    const removed = applyDiscountToCart(discounted as any, { type: TypeDiscount.PERCENT, value: 0 }, noop)
+    const p = removed.PRODUCT[0]
+    expect(p.ProPrice).toBe(10_000)
+    expect(p.dataExtra[0].newExtraPrice).toBe(5_000)
+    expect(p.dataExtra[0].originalNewExtraPrice).toBeUndefined()
+  })
+})
+
+describe('Edit discount — recomputes from a clean base (BUG-3)', () => {
+  const makeState = (...items: any[]) => ({ ...initialStateSales, PRODUCT: items })
+
+  test('editing a PERCENT discount recomputes from the original price, not the discounted one', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const first = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 10 }, noop)
+    expect(first.PRODUCT[0].ProPrice).toBe(9_000)
+
+    // Edit: change 10% → 25%. Must apply 25% on 10_000 (not on 9_000).
+    const edited = applyDiscountToCart(first as any, { type: TypeDiscount.PERCENT, value: 25 }, noop)
+    expect(edited.PRODUCT[0].ProPrice).toBe(7_500)
+    expect(edited.discountAmount).toBe(2_500)
+  })
+
+  test('editing down (25% → 5%) recomputes correctly', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const first = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 25 }, noop)
+    const edited = applyDiscountToCart(first as any, { type: TypeDiscount.PERCENT, value: 5 }, noop)
+
+    expect(edited.PRODUCT[0].ProPrice).toBe(9_500)
+    expect(edited.discountAmount).toBe(500)
+  })
+
+  test('editing from AMOUNT to PERCENT recomputes from the original price', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const amount = applyDiscountToCart(state as any, { type: TypeDiscount.AMOUNT, value: 3_000 }, noop)
+    expect(amount.PRODUCT[0].ProPrice).toBe(7_000)
+
+    const percent = applyDiscountToCart(amount as any, { type: TypeDiscount.PERCENT, value: 10 }, noop)
+    expect(percent.PRODUCT[0].ProPrice).toBe(9_000)
+    expect(percent.discountAmount).toBe(1_000)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 11. reapplyActiveDiscount — recompute totals after free toggle / mutation
+// ---------------------------------------------------------------------------
+
+describe('reapplyActiveDiscount', () => {
+  const makeState = (...items: any[]) => ({ ...initialStateSales, PRODUCT: items })
+
+  test('no-op when there is no active discount', () => {
+    const state = makeState(makeCartItem('p1', 10_000, 1))
+    const result = reapplyActiveDiscount(state as any)
+
+    expect(result.PRODUCT[0].ProPrice).toBe(10_000)
+    expect(result.discountAmount).toBe(0)
+  })
+
+  test('marking a product free with an active PERCENT discount recomputes the global total', () => {
+    // Two paid items: 10_000 + 10_000 = 20_000. Apply 10% → discount 2_000.
+    const state = makeState(
+      makeCartItem('p1', 10_000, 1),
+      makeCartItem('p2', 10_000, 1)
+    )
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.PERCENT, value: 10 }, noop)
+    expect(discounted.discountAmount).toBe(2_000)
+
+    // Mark p1 free → it leaves the discountable base (only p2's 10_000 remains).
+    const freed = toggleFreeProducts(discounted as any, { pId: 'p1' }, [
+      makeCatalogItem('p1', 10_000),
+      makeCatalogItem('p2', 10_000)
+    ] as any)
+
+    // Recompute the active discount over the new cart.
+    const result = reapplyActiveDiscount(freed as any)
+
+    const p1 = result.PRODUCT.find((p: any) => p.pId === 'p1')
+    const p2 = result.PRODUCT.find((p: any) => p.pId === 'p2')
+
+    // Free product stays at 0 and is excluded from the discount.
+    expect(p1.free).toBe(true)
+    expect(p1.ProPrice).toBe(0)
+    // 10% now applies only to p2's 10_000 → 1_000 discount → 9_000.
+    expect(result.discountAmount).toBe(1_000)
+    expect(p2.ProPrice).toBe(9_000)
+  })
+
+  test('un-marking free with an active discount brings the product back into the discount', () => {
+    // Start: p1 free, p2 paid 10_000, with a 10% discount active.
+    const state = {
+      ...initialStateSales,
+      PRODUCT: [
+        { ...makeCartItem('p1', 10_000, 1), free: true, ProPrice: 0 },
+        makeCartItem('p2', 10_000, 1)
+      ],
+      discountType: TypeDiscount.PERCENT,
+      discountPercent: 10,
+      discountAmount: 1_000
+    }
+
+    // Un-free p1 → it rejoins the discountable base (now 20_000).
+    const unfreed = toggleFreeProducts(state as any, { pId: 'p1' }, [
+      makeCatalogItem('p1', 10_000),
+      makeCatalogItem('p2', 10_000)
+    ] as any)
+    const result = reapplyActiveDiscount(unfreed as any)
+
+    const p1 = result.PRODUCT.find((p: any) => p.pId === 'p1')
+    const p2 = result.PRODUCT.find((p: any) => p.pId === 'p2')
+
+    expect(p1.free).toBe(false)
+    // 10% now applies to both → 2_000 total, each line 9_000.
+    expect(result.discountAmount).toBe(2_000)
+    expect(p1.ProPrice).toBe(9_000)
+    expect(p2.ProPrice).toBe(9_000)
+  })
+
+  test('reapplying an AMOUNT discount after free toggle caps and recomputes correctly', () => {
+    // Paid 10_000 + paid 10_000, AMOUNT discount 5_000.
+    const state = makeState(
+      makeCartItem('p1', 10_000, 1),
+      makeCartItem('p2', 10_000, 1)
+    )
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.AMOUNT, value: 5_000 }, noop)
+    expect(discounted.discountAmount).toBe(5_000)
+
+    // Mark p1 free → discountable base shrinks to 10_000. The 5_000 fixed
+    // discount still fits, so it stays 5_000 but now only hits p2.
+    const freed = toggleFreeProducts(discounted as any, { pId: 'p1' }, [
+      makeCatalogItem('p1', 10_000),
+      makeCatalogItem('p2', 10_000)
+    ] as any)
+    const result = reapplyActiveDiscount(freed as any)
+
+    const p1 = result.PRODUCT.find((p: any) => p.pId === 'p1')
+    const p2 = result.PRODUCT.find((p: any) => p.pId === 'p2')
+
+    expect(p1.ProPrice).toBe(0)
+    expect(result.discountAmount).toBe(5_000)
+    expect(p2.ProPrice).toBe(5_000) // 10_000 - 5_000
+  })
+
+  test('AMOUNT discount is capped when the discountable base shrinks below it', () => {
+    // Paid 10_000 + paid 4_000, AMOUNT discount 8_000 (fits in 14_000).
+    const state = makeState(
+      makeCartItem('p1', 10_000, 1),
+      makeCartItem('p2', 4_000, 1)
+    )
+    const discounted = applyDiscountToCart(state as any, { type: TypeDiscount.AMOUNT, value: 8_000 }, noop)
+    expect(discounted.discountAmount).toBe(8_000)
+
+    // Mark p1 free → discountable base is now just 4_000, so the 8_000 fixed
+    // discount must be capped to 4_000.
+    const freed = toggleFreeProducts(discounted as any, { pId: 'p1' }, [
+      makeCatalogItem('p1', 10_000),
+      makeCatalogItem('p2', 4_000)
+    ] as any)
+    const result = reapplyActiveDiscount(freed as any)
+
+    const p2 = result.PRODUCT.find((p: any) => p.pId === 'p2')
+    expect(result.discountAmount).toBe(4_000)
+    expect(p2.ProPrice).toBe(0)
+  })
+})

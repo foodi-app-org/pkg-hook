@@ -5,7 +5,7 @@ import { SPANISH_MONTHS } from '../../../utils/index'
 import { GET_ALL_SALES } from '../../useReport/queries'
 
 // Función para calcular el total de ventas por mes
-const calculateSalesByMonth = (salesData: { pDatCre: string; totalProductsPrice: number }[]) => {
+const calculateSalesByMonth = (salesData: { pDatCre: string; totalProductsPrice: number; netTotal?: number | null }[]) => {
   try {
     const result = Array.from({ length: 12 }, (_, mes) => {
       return {
@@ -15,9 +15,12 @@ const calculateSalesByMonth = (salesData: { pDatCre: string; totalProductsPrice:
       }
     })
 
-    salesData?.forEach((value: { pDatCre: string; totalProductsPrice: number }) => {
+    salesData?.forEach((value: { pDatCre: string; totalProductsPrice: number; netTotal?: number | null }) => {
       const mes = new Date(value.pDatCre).getMonth()
-      result[mes].totalProductsPrice += value.totalProductsPrice
+      // Prefer the discount-aware net income; fall back to the gross total for
+      // legacy rows that predate the netTotal column.
+      const income = value?.netTotal != null ? Number(value.netTotal) : Number(value.totalProductsPrice ?? 0)
+      result[mes].totalProductsPrice += Number.isFinite(income) ? income : 0
     })
 
     return result

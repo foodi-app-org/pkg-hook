@@ -8,6 +8,8 @@ export * from './useChartDataAllOrders'
 type Sale = {
   pDatCre: string | Date
   totalProductsPrice: number
+  /** Net income (after global discount); falls back to totalProductsPrice. */
+  netTotal?: number | null
 }
 
 type ResultItem = {
@@ -43,7 +45,10 @@ export const useChartData = (_: { year?: number }) => {
       result.push(sumByMonth[key])
     }
 
-    sumByMonth[key].totalProductsPrice += value.totalProductsPrice
+    // Prefer the discount-aware net income; fall back to the gross total for
+    // legacy rows that predate the netTotal column.
+    const income = value?.netTotal != null ? Number(value.netTotal) : Number(value.totalProductsPrice ?? 0)
+    sumByMonth[key].totalProductsPrice += Number.isFinite(income) ? income : 0
   })
 
   const allMonths = Array.from({ length: 12 }, (_, i) => i)

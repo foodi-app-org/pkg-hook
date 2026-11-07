@@ -4,6 +4,10 @@ export const GET_ALL_SALES = gql`
 query getAllSalesStore($idStore: ID,$search: String, $min: Int, $max: Int $fromDate: String, $toDate: String ) {
   getAllSalesStore(idStore: $idStore, search: $search, min: $min, max: $max, toDate: $toDate, fromDate: $fromDate) {
     totalProductsPrice
+    discountType
+    discountValue
+    discountAmount
+    netTotal
     channel
     pDatCre
     pCodeRef
@@ -29,6 +33,10 @@ query getAllSalesStoreStatistic($idStore: ID,$search: String, $min: Int, $max: I
     payId
     pPRecoger
     totalProductsPrice
+    discountType
+    discountValue
+    discountAmount
+    netTotal
     pSState
     pDatCre
     locationUser

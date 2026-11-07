@@ -66,6 +66,10 @@ export const GET_ALL_SALES_STATISTICS = gql`
       payId
       pPRecoger
       totalProductsPrice
+      discountType
+      discountValue
+      discountAmount
+      netTotal
       pSState
       pDatCre
       locationUser
@@ -272,6 +276,10 @@ query getOneSalesStore($pCodeRef: String) {
       shoppingCartRefCode
       pSState
       totalProductsPrice
+      discountType
+      discountValue
+      discountAmount
+      netTotal
       unidProducts
       updatedAt
       createdAt
