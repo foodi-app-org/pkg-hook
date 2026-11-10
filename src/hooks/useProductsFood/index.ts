@@ -181,91 +181,326 @@ export const useProductsFood = ({
   ]
 }
 
-type NotificationFn = (args: { title: string; description: string; backgroundColor: string }) => any;
-type SuccessFn = (args?: any) => any;
-
 interface UseDeleteProductsFoodOptions {
   sendNotification?: NotificationFn;
   onSuccess?: SuccessFn;
 }
 
-export const useDeleteProductsFood = ({
-  sendNotification = (arg: { title: string; description: string; backgroundColor: string }) => arg,
-  onSuccess = (arg?: any) => arg
-}: UseDeleteProductsFoodOptions = {}) => {
-  const [updateProductFoods, { data, loading, error }] = useMutation(UPDATE_PRODUCT_FOOD)
 
-  const handleDelete = async (product: Product) => {
-    const { pId, pState } = product || {};
-    return updateProductFoods({
-      variables: {
-        input: {
-          pId,
-          pState
-        }
-      },
-      update(cache) {
-        cache.modify({
-          fields: {
-            productFoodsAll(dataOld: readonly Product[] = []) {
-              if (Array.isArray(dataOld) && dataOld.length) {
-                const foundProduct = dataOld.find((product: Product) => {
-                  return product.pId === pId;
-                });
-                if (foundProduct) {
-                  // Return a new array, do not mutate dataOld
-                  return dataOld.filter((product: Product) => product?.pId !== pId);
-                }
-                return dataOld.slice();
-              }
-              return [];
-            }
-          }
-        });
-        cache.modify({
-          fields: {
-            getCatProductsWithProduct(dataOld: any = []) {
-              if (Array.isArray(dataOld?.catProductsWithProduct) && dataOld?.catProductsWithProduct?.length) {
-                const newListCatProducts = dataOld?.catProductsWithProduct?.map((categories: any) => {
-                  return {
-                    ...categories,
-                    productFoodsAll: categories?.productFoodsAll?.length
-                      ? categories?.productFoodsAll?.filter((product: any) => {
-                        return product?.pId !== pId;
-                      })
-                      : []
-                  };
-                });
-                return {
-                  catProductsWithProduct: newListCatProducts,
-                  totalCount: newListCatProducts?.length
-                };
-              }
-              return dataOld;
-            }
-          }
-        });
-      }
-    }).then((res) => {
-      onSuccess(res);
-      return sendNotification({
-        title: 'Éxito',
-        description: pState === 1 ? 'El producto se ha eliminado correctamente' : 'El producto se ha restaurando correctamente',
-        backgroundColor: 'success'
-      });
-    }).catch((e) => {
-      console.error(e);
-      return sendNotification({
-        title: 'Error',
-        description: 'Ocurrió un error',
-        backgroundColor: 'error'
-      });
-    });
-  };
-  return {
-    handleDelete, data, loading, error
+export const PRODUCT_DELETED_FROM_CART_EVENT =
+  'pos:product-deleted-from-cart'
+
+type NotificationFn = (args: {
+  title: string
+  description: string
+  backgroundColor: string
+}) => any
+
+type SuccessFn = (args?: any) => any
+
+interface UseDeleteProductsFoodOptions {
+  sendNotification?: NotificationFn
+  onSuccess?: SuccessFn
+}
+
+/**
+ * Recalcula el contador del carrito utilizando las cantidades reales.
+ */
+const calculateCartCounter = (products: any[]): number => {
+  return products.reduce((total, product) => {
+    const quantity = Number(product?.ProQuantity)
+
+    return total + (
+      Number.isFinite(quantity) && quantity > 0
+        ? quantity
+        : 0
+    )
+  }, 0)
+}
+
+/**
+ * Elimina un producto de la cookie del carrito.
+ *
+ * No modifica otras propiedades del estado persistido.
+ */
+const removeProductFromSalesCookie = (pId: string): boolean => {
+  const cookieKey = process.env.NEXT_LOCAL_SALES_STORE
+
+  if (!cookieKey) {
+    console.error(
+      'useDeleteProductsFood: NEXT_LOCAL_SALES_STORE no está configurada.'
+    )
+    return false
+  }
+
+  try {
+    const cookieValue = Cookies.get(cookieKey)
+
+    if (!cookieValue) return false
+
+    const savedState = JSON.parse(cookieValue)
+
+    if (
+      !savedState ||
+      typeof savedState !== 'object' ||
+      Array.isArray(savedState) ||
+      !Array.isArray(savedState.PRODUCT)
+    ) {
+      return false
+    }
+
+    const currentProducts = savedState.PRODUCT
+
+    const nextProducts = currentProducts.filter(
+      (product: any) => product?.pId !== pId
+    )
+
+    // Evitamos reescribir la cookie cuando no existe el producto.
+    if (nextProducts.length === currentProducts.length) {
+      return false
+    }
+
+    const nextState = {
+      ...savedState,
+      PRODUCT: nextProducts,
+      counter: calculateCartCounter(nextProducts)
+    }
+
+    const domain = getCurrentDomain()
+
+    Cookies.set(cookieKey, JSON.stringify(nextState), {
+      domain: typeof domain === 'string' ? domain : undefined,
+      path: '/'
+    })
+
+    return true
+  } catch (error) {
+    console.error(
+      'useDeleteProductsFood: error eliminando producto de la cookie',
+      error
+    )
+
+    return false
   }
 }
+
+/**
+ * Hook responsable de actualizar el estado de un producto.
+ *
+ * Orquesta:
+ * 1. Actualización GraphQL.
+ * 2. Invalidación de caché Apollo.
+ * 3. Limpieza de cookie cuando se elimina.
+ * 4. Sincronización con el reducer del carrito.
+ * 5. Notificaciones y callback.
+ */
+export const useDeleteProductsFood = ({
+  sendNotification = (args) => args,
+  onSuccess = (args) => args
+}: UseDeleteProductsFoodOptions = {}) => {
+  const client = useApolloClient()
+
+  const [
+    updateProductFoods,
+    { data, loading, error }
+  ] = useMutation(UPDATE_PRODUCT_FOOD)
+
+  /**
+   * Invalida las consultas afectadas.
+   *
+   * Se eliminan todas las variantes cacheadas de las listas para evitar
+   * conservar productos en consultas con diferentes filtros o páginas.
+   */
+  const invalidateProductCache = useCallback(async () => {
+    client.cache.batch({
+      update(cache) {
+        cache.evict({
+          id: 'ROOT_QUERY',
+          fieldName: 'productFoodsAll'
+        })
+
+        cache.evict({
+          id: 'ROOT_QUERY',
+          fieldName: 'getCatProductsWithProduct'
+        })
+
+        cache.evict({
+          id: 'ROOT_QUERY',
+          fieldName: 'productFoodsOne'
+        })
+      }
+    })
+
+    client.cache.gc()
+
+    // Actualiza las consultas activas relacionadas con productos.
+    await client.refetchQueries({
+      include: [
+        GET_ALL_PRODUCT_STORE,
+        GET_ONE_PRODUCTS_FOOD
+      ]
+    })
+  }, [client])
+
+  /**
+   * Elimina o restaura un producto.
+   *
+   * pState === 1: eliminación.
+   * Otros estados: restauración.
+   */
+  const handleDelete = useCallback(
+    async (product: Product) => {
+      const { pId, pState } = product || {}
+
+      if (!pId) {
+        sendNotification({
+          title: 'Error',
+          description: 'No se encontró el identificador del producto.',
+          backgroundColor: 'error'
+        })
+
+        return null
+      }
+
+      const isDeleting = Number(pState) === 1
+
+      let response: any
+
+      // =====================================================
+      // 1. ACTUALIZAR BACKEND
+      // =====================================================
+
+      try {
+        response = await updateProductFoods({
+          variables: {
+            input: {
+              pId,
+              pState
+            }
+          },
+          errorPolicy: 'none'
+        })
+
+        const responseData = response?.data as
+          | Record<string, any>
+          | undefined
+
+        if (!responseData) {
+          throw new Error(
+            'El servidor no confirmó la actualización del producto.'
+          )
+        }
+
+        const mutationResult = Object.values(responseData)[0] as any
+
+        if (
+          mutationResult === null ||
+          mutationResult === false ||
+          mutationResult?.success === false
+        ) {
+          throw new Error(
+            mutationResult?.message ||
+            'No fue posible actualizar el producto.'
+          )
+        }
+      } catch (mutationError) {
+        console.error(
+          'useDeleteProductsFood: error actualizando producto',
+          mutationError
+        )
+
+        sendNotification({
+          title: 'Error',
+          description:
+            mutationError instanceof Error
+              ? mutationError.message
+              : 'No fue posible actualizar el producto.',
+          backgroundColor: 'error'
+        })
+
+        return null
+      }
+
+      // =====================================================
+      // 2. ACTUALIZAR CACHE APOLLO
+      // =====================================================
+
+      try {
+        await invalidateProductCache()
+      } catch (cacheError) {
+        // Un error de caché no revierte una operación confirmada
+        // por el backend.
+        console.error(
+          'useDeleteProductsFood: error actualizando caché',
+          cacheError
+        )
+      }
+
+      // =====================================================
+      // 3. ELIMINAR COOKIE Y SINCRONIZAR useSales
+      // =====================================================
+
+      if (isDeleting) {
+        // Primera protección: eliminar directamente de la cookie.
+        removeProductFromSalesCookie(pId)
+
+        // Segunda protección: eliminar del reducer en memoria.
+        // useSales recibirá el evento y actualizará el estado.
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent<{ pId: string }>(
+              PRODUCT_DELETED_FROM_CART_EVENT,
+              {
+                detail: { pId }
+              }
+            )
+          )
+        }
+      }
+
+      // =====================================================
+      // 4. CALLBACK DE ÉXITO
+      // =====================================================
+
+      try {
+        await onSuccess(response)
+      } catch (callbackError) {
+        console.error(
+          'useDeleteProductsFood: error ejecutando onSuccess',
+          callbackError
+        )
+      }
+
+      // =====================================================
+      // 5. NOTIFICACIÓN
+      // =====================================================
+
+      sendNotification({
+        title: 'Éxito',
+        description: isDeleting
+          ? 'El producto se ha eliminado correctamente'
+          : 'El producto se ha restaurado correctamente',
+        backgroundColor: 'success'
+      })
+
+      return response
+    },
+    [
+      updateProductFoods,
+      invalidateProductCache,
+      onSuccess,
+      sendNotification
+    ]
+  )
+
+  return {
+    handleDelete,
+    data,
+    loading,
+    error
+  }
+}
+
 
 export const useExtProductFoodsAll = () => {
   const [ExtProductFoodsAll,

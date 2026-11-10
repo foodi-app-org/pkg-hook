@@ -20,7 +20,12 @@ import { useCatWithProduct } from '../useCatWithProduct'
 import { CatProductWithProduct, GetCatProductsWithProductResponse } from '../useCatWithProduct/types'
 import { useFormatDate } from '../useFormatDate'
 import { useLogout } from '../useLogout'
-import { useFindProductByBarcode, useGetOneProductsFood, useProductsFood } from '../useProductsFood'
+import {
+  PRODUCT_DELETED_FROM_CART_EVENT,
+  useFindProductByBarcode,
+  useGetOneProductsFood,
+  useProductsFood
+} from '../useProductsFood'
 import {
   GET_ALL_EXTRA_PRODUCT,
   GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
@@ -550,7 +555,7 @@ export const useSales = ({
     // to the current quantity so we never leave the product in a broken state.
     const restoredQuantity =
       Number.isFinite(Number(target.oldQuantity)) &&
-      Number(target.oldQuantity) >= 0
+        Number(target.oldQuantity) >= 0
         ? Number(target.oldQuantity)
         : Math.max(0, Number(target.ProQuantity) || 0)
 
@@ -564,7 +569,7 @@ export const useSales = ({
         : 0
     const unitPrice =
       Number.isFinite(Number(target.unitPrice)) &&
-      Number(target.unitPrice) >= 0
+        Number(target.unitPrice) >= 0
         ? Number(target.unitPrice)
         : derivedUnitPrice
 
@@ -736,6 +741,45 @@ export const useSales = ({
   }
 
   const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
+
+
+
+  /**
+   * Escucha las eliminaciones realizadas desde useDeleteProductsFood.
+   *
+   * Actualiza el reducer para evitar que el useEffect de persistencia
+   * vuelva a guardar un producto que ya fue eliminado del backend.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleProductDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ pId?: string }>
+      const pId = customEvent.detail?.pId
+
+      if (!pId) return
+
+      dispatch({
+        type: SalesActionTypes.REMOVE_PRODUCT_TO_CART,
+        payload: {
+          pId,
+          ProQuantity: 0
+        }
+      })
+    }
+
+    window.addEventListener(
+      PRODUCT_DELETED_FROM_CART_EVENT,
+      handleProductDeleted
+    )
+
+    return () => {
+      window.removeEventListener(
+        PRODUCT_DELETED_FROM_CART_EVENT,
+        handleProductDeleted
+      )
+    }
+  }, [])
 
 
   const [activePendingOrderId, setActivePendingOrderId] = useState<string | null>(null)
@@ -1099,6 +1143,13 @@ export const useSales = ({
     const input = stripTypename(
       finalArrayProduct.map((item) => ({
         ...item,
+        dataExtra: (item.dataExtra ?? []).map((extra: any) => {
+          const cleanExtra = { ...extra }
+
+          delete cleanExtra.originalNewExtraPrice
+
+          return cleanExtra
+        }),
         shoppingCartRefCode
       }))
     )
@@ -1551,7 +1602,14 @@ export const useSales = ({
   )
 
   useEffect(() => {
-    Cookies.set(keyToSaveData, JSON.stringify(data), { domain: typeof domain === 'string' ? domain : undefined, path: '/' })
+    Cookies.set(
+      keyToSaveData,
+      JSON.stringify(data),
+      {
+        domain: typeof domain === 'string' ? domain : undefined,
+        path: '/'
+      }
+    )
   }, [data, domain])
 
   return {

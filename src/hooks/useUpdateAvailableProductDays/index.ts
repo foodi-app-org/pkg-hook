@@ -1,5 +1,11 @@
-import { useMutation } from '@apollo/client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import { useApolloClient, useMutation } from '@apollo/client'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 
 import {
   type AvailableProductRecord,
@@ -19,58 +25,88 @@ export interface DayConfig {
 export interface UseUpdateAvailableProductDaysParams {
   /** Product id whose schedule is edited. */
   pId?: string | null
+
   /** Store id (sent with each row; backend also derives it from session). */
   idStore?: string | null
+
   /** Current availability records used to preload the editable state. */
   records?: AvailableProductRecord[] | null
+
   /** Called after a successful update with the reconciled schedule. */
   onUpdated?: (data: AvailableProductRecord[]) => void
+}
+
+export interface UpdateAvailableProductDaysResponse {
+  success: boolean
+  message?: string
+  errors?: {
+    message?: string
+    path?: string[]
+  }[]
+  data?: AvailableProductRecord[]
 }
 
 export interface UseUpdateAvailableProductDaysResult {
   /** Selected weekday numbers (0 = Sunday ... 6 = Saturday). */
   selectedDays: number[]
+
   /** Per-day time configuration. */
   dayConfigs: Record<number, DayConfig>
-  /** Weekday catalog for the selector ([{ day, name }]). */
+
+  /** Weekday catalog for the selector. */
   days: typeof weekDays
+
   /** Whether the update mutation is in flight. */
   loading: boolean
-  /** Toggle a weekday on/off, seeding a default range when turned on. */
+
+  /** Toggle a weekday on/off. */
   handleDaySelection: (day: number) => void
+
   /** Update the start/end time of a given day. */
-  handleChange: (day: number, field: 'startTime' | 'endTime', value: string) => void
+  handleChange: (
+    day: number,
+    field: 'startTime' | 'endTime',
+    value: string
+  ) => void
+
   /** Reset the editable state back to the provided records. */
   reset: () => void
-  /** Persist the current selection. Returns the mutation response payload. */
-  save: () => Promise<{
-    success: boolean
-    message?: string
-    errors?: { message?: string; path?: string[] }[]
-    data?: AvailableProductRecord[]
-  }>
+
+  /** Persist the current selection and refresh the Apollo cache. */
+  save: () => Promise<UpdateAvailableProductDaysResponse>
+}
+
+interface EditableAvailabilityState {
+  selectedDays: number[]
+  dayConfigs: Record<number, DayConfig>
 }
 
 /**
- * Builds the editable state (selected days + time ranges) from raw records.
- * @param {AvailableProductRecord[] | null | undefined} records - Raw records.
- * @returns {{ selectedDays: number[]; dayConfigs: Record<number, DayConfig> }} Editable state.
+ * Builds the editable state from the availability records.
+ * @param records
  */
 const buildStateFromRecords = (
   records: AvailableProductRecord[] | null | undefined
-): { selectedDays: number[]; dayConfigs: Record<number, DayConfig> } => {
+): EditableAvailabilityState => {
   const selectedDays: number[] = []
   const dayConfigs: Record<number, DayConfig> = {}
 
   if (Array.isArray(records)) {
     for (const record of records) {
       const day = Number(record?.dayAvailable)
-      if (!Number.isInteger(day) || day < 0 || day > 6) {
+
+      if (
+        !Number.isInteger(day) ||
+        day < 0 ||
+        day > 6
+      ) {
         continue
       }
+
       if (!selectedDays.includes(day)) {
         selectedDays.push(day)
       }
+
       dayConfigs[day] = {
         startTime: record?.startDate ?? DEFAULT_START_TIME,
         endTime: record?.endDate ?? DEFAULT_END_TIME
@@ -78,63 +114,176 @@ const buildStateFromRecords = (
     }
   }
 
-  return { selectedDays: selectedDays.sort((a, b) => a - b), dayConfigs }
+  return {
+    selectedDays: selectedDays.sort((a, b) => a - b),
+    dayConfigs
+  }
 }
 
 /**
- * Hook to UPDATE (synchronize) the weekly availability of a product. It keeps
- * an editable copy of the schedule (selected days + per-day time ranges)
- * preloaded from the current records, and persists it via a single mutation
- * that reconciles the whole set on the backend.
- * @param {UseUpdateAvailableProductDaysParams} [params] - Product and records.
- * @returns {UseUpdateAvailableProductDaysResult} Editable state and actions.
+ * Generates a stable signature for the records.
+ *
+ * This prevents the editing state from resetting when the parent
+ * creates a new array containing exactly the same records.
+ * @param records
+ */
+const getRecordsSignature = (
+  records: AvailableProductRecord[] | null | undefined
+): string => {
+  if (!Array.isArray(records)) {
+    return '[]'
+  }
+
+  return JSON.stringify(
+    records.map((record) => [
+      Number(record?.dayAvailable),
+      record?.startDate ?? DEFAULT_START_TIME,
+      record?.endDate ?? DEFAULT_END_TIME
+    ])
+  )
+}
+
+/**
+ * Synchronizes the weekly availability of a product.
+ *
+ * Responsibilities:
+ * - Keeps an editable copy of the weekly schedule.
+ * - Updates the schedule through a single backend mutation.
+ * - Synchronizes local editable state with the returned records.
+ * - Refreshes active Apollo queries after a successful mutation.
+ *
+ * @param params - Product, store and current availability records.
  */
 export const useUpdateAvailableProductDays = (
   params: UseUpdateAvailableProductDaysParams = {}
 ): UseUpdateAvailableProductDaysResult => {
-  const { pId, idStore, records, onUpdated } = params
+  const {
+    pId,
+    idStore,
+    records,
+    onUpdated
+  } = params
 
-  const initial = useMemo(() => buildStateFromRecords(records), [records])
+  // APOLLO
+  const client = useApolloClient()
 
-  const [selectedDays, setSelectedDays] = useState<number[]>(initial.selectedDays)
-  const [dayConfigs, setDayConfigs] = useState<Record<number, DayConfig>>(initial.dayConfigs)
+  const [runUpdate, { loading }] = useMutation(
+    UPDATE_AVAILABLE_PRODUCTS_DAYS
+  )
 
-  // Keep the editable state in sync when the source records change (e.g. after
-  // reopening the modal for a different product).
+  // REFS
+  const recordsRef = useRef(records)
+
+  // Always maintain the latest records without making the editing
+  // effects depend on the array reference.
+  recordsRef.current = records
+
+  // STATE SIGNATURE
+  const recordsSignature = getRecordsSignature(records)
+
+  // INITIAL STATE
+  const [selectedDays, setSelectedDays] = useState<number[]>(
+    () => buildStateFromRecords(records).selectedDays
+  )
+
+  const [dayConfigs, setDayConfigs] = useState<
+    Record<number, DayConfig>
+  >(
+    () => buildStateFromRecords(records).dayConfigs
+  )
+
+  /**
+   * Refreshes active Apollo queries.
+   *
+   * The mutation can update normalized entities automatically,
+   * but it cannot necessarily reconcile the membership of an
+   * existing list when some weekdays have been removed.
+   */
+  const refreshApolloCache = useCallback(async (): Promise<void> => {
+    await client.refetchQueries({
+      include: 'active'
+    })
+  }, [client])
+
+  /**
+   * Synchronizes the editable state when the actual record content
+   * changes, not merely when the parent passes a new array reference.
+   */
   useEffect(() => {
-    setSelectedDays(initial.selectedDays)
-    setDayConfigs(initial.dayConfigs)
-  }, [initial])
+    const nextState = buildStateFromRecords(recordsRef.current)
 
-  const [runUpdate, { loading }] = useMutation(UPDATE_AVAILABLE_PRODUCTS_DAYS)
+    setSelectedDays(nextState.selectedDays)
+    setDayConfigs(nextState.dayConfigs)
+  }, [recordsSignature])
 
-  const handleDaySelection = useCallback((day: number) => {
+  /**
+   * Toggles a weekday.
+   *
+   * A default time range is assigned the first time a day is enabled.
+   * Existing time configurations are preserved when a day is disabled.
+   */
+  const handleDaySelection = useCallback((day: number): void => {
+    if (
+      !Number.isInteger(day) ||
+      day < 0 ||
+      day > 6
+    ) {
+      return
+    }
+
     setSelectedDays((previous) => {
       if (previous.includes(day)) {
-        return previous.filter((selected) => selected !== day)
+        return previous.filter(
+          (selected) => selected !== day
+        )
       }
+
       return [...previous, day].sort((a, b) => a - b)
     })
 
-    // Seed a default range the first time a day is enabled.
     setDayConfigs((previous) => {
       if (previous[day]) {
         return previous
       }
+
       return {
         ...previous,
-        [day]: { startTime: DEFAULT_START_TIME, endTime: DEFAULT_END_TIME }
+        [day]: {
+          startTime: DEFAULT_START_TIME,
+          endTime: DEFAULT_END_TIME
+        }
       }
     })
   }, [])
 
+  /**
+   * Updates the time range of a weekday.
+   */
   const handleChange = useCallback(
-    (day: number, field: 'startTime' | 'endTime', value: string) => {
+    (
+      day: number,
+      field: 'startTime' | 'endTime',
+      value: string
+    ): void => {
+      if (
+        !Number.isInteger(day) ||
+        day < 0 ||
+        day > 6
+      ) {
+        return
+      }
+
       setDayConfigs((previous) => ({
         ...previous,
         [day]: {
-          startTime: previous[day]?.startTime ?? DEFAULT_START_TIME,
-          endTime: previous[day]?.endTime ?? DEFAULT_END_TIME,
+          startTime:
+            previous[day]?.startTime ??
+            DEFAULT_START_TIME,
+
+          endTime:
+            previous[day]?.endTime ??
+            DEFAULT_END_TIME,
+
           [field]: value
         }
       }))
@@ -142,36 +291,99 @@ export const useUpdateAvailableProductDays = (
     []
   )
 
-  const reset = useCallback(() => {
-    setSelectedDays(initial.selectedDays)
-    setDayConfigs(initial.dayConfigs)
-  }, [initial])
+  /**
+   * Restores the editable state using the latest records received
+   * from the parent component.
+   */
+  const reset = useCallback((): void => {
+    const currentState = buildStateFromRecords(
+      recordsRef.current
+    )
 
-  const save = useCallback(async () => {
-    // Build the full desired schedule from the current selection.
-    const input = selectedDays.map((day) => ({
+    setSelectedDays(currentState.selectedDays)
+    setDayConfigs(currentState.dayConfigs)
+  }, [])
+
+  /**
+   * Persists the selected weekly schedule.
+   *
+   * After a successful mutation:
+   * 1. Synchronizes the editable state with the backend response.
+   * 2. Notifies the parent through onUpdated.
+   * 3. Refetches active Apollo queries to refresh their cache.
+   *
+   * A cache refresh failure does not turn an already successful
+   * backend mutation into a failed save.
+   */
+  const save = useCallback(
+    async (): Promise<UpdateAvailableProductDaysResponse> => {
+      const input = selectedDays.map((day) => ({
+        idStore,
+        pId,
+        dayAvailable: day,
+        startDate:
+          dayConfigs[day]?.startTime ??
+          DEFAULT_START_TIME,
+        endDate:
+          dayConfigs[day]?.endTime ??
+          DEFAULT_END_TIME
+      }))
+
+      const response = await runUpdate({
+        variables: {
+          pId,
+          input
+        }
+      })
+
+      const result = (
+        response?.data?.updateAvailableProduct ?? {
+          success: false,
+          message: 'No response from server'
+        }
+      ) as UpdateAvailableProductDaysResponse
+
+      if (!result.success) {
+        return result
+      }
+
+      // Synchronize the local state with the backend response.
+      if (Array.isArray(result.data)) {
+        const updatedState = buildStateFromRecords(
+          result.data
+        )
+
+        setSelectedDays(updatedState.selectedDays)
+        setDayConfigs(updatedState.dayConfigs)
+      }
+
+      // Notify the parent with the reconciled backend records.
+      onUpdated?.(result.data ?? [])
+
+      // Refresh Apollo queries only after the mutation succeeds.
+      try {
+        await refreshApolloCache()
+      } catch (error) {
+        // The backend mutation was successful.
+        // A refetch failure must not report a failed save.
+        console.error(
+          '[useUpdateAvailableProductDays] Error refreshing Apollo cache:',
+          error
+        )
+      }
+
+      return result
+    },
+    [
+      selectedDays,
+      dayConfigs,
       idStore,
       pId,
-      dayAvailable: day,
-      startDate: dayConfigs[day]?.startTime ?? DEFAULT_START_TIME,
-      endDate: dayConfigs[day]?.endTime ?? DEFAULT_END_TIME
-    }))
-
-    const response = await runUpdate({
-      variables: { pId, input }
-    })
-
-    const result = response?.data?.updateAvailableProduct ?? {
-      success: false,
-      message: 'No response from server'
-    }
-
-    if (result?.success) {
-      onUpdated?.(result.data ?? [])
-    }
-
-    return result
-  }, [dayConfigs, idStore, onUpdated, pId, runUpdate, selectedDays])
+      runUpdate,
+      onUpdated,
+      refreshApolloCache
+    ]
+  )
 
   return {
     selectedDays,
