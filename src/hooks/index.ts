@@ -173,4 +173,4 @@ export * from './useWhatsApp/helpers/campaignExcel'
 export * from './useWhatsApp/useWhatsAppMessageStats'
 export * from './useScanFeedback'
 export * from './useUpdateStatusProduct'
-
+export * from './useAppConfigurations'
