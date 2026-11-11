@@ -1,52 +1,127 @@
-import { useMutation, gql } from '@apollo/client'
+
+import { gql, useMutation } from '@apollo/client'
 
 import type { SendNotificationFn } from 'typesdefs'
 
+type CreateDeliveryTimeResult = {
+    success: boolean
+    message: string
+}
+
+type CreateDeliveryTimeData = {
+    createDeliveryTime: CreateDeliveryTimeResult
+}
+
+type CreateDeliveryTimeVariables = {
+    minutes: number
+}
+
 const CREATE_DELIVERY_TIME = gql`
-  mutation CreateDeliveryTime($minutes: Int!) {
-    createDeliveryTime(minutes: $minutes) {
-      success
-      message
+    mutation CreateDeliveryTime($minutes: Int!) {
+        createDeliveryTime(minutes: $minutes) {
+            success
+            message
+        }
     }
-  }
 `
 
+type UseCreateDeliveryTimeOptions = {
+    sendNotification?: SendNotificationFn
+}
 
 export const useCreateDeliveryTime = ({
-  sendNotification
-}: { sendNotification?: (params: SendNotificationFn) => void }) => {
-  const [createDeliveryTimeMutation, { loading, error }] =
-    useMutation(CREATE_DELIVERY_TIME)
+    sendNotification = () => {}
+}: UseCreateDeliveryTimeOptions = {}) => {
 
-  const createDeliveryTime = async (minutes: number) => {
-    try {
-      if (!minutes) {
-        if (sendNotification) {
-          sendNotification({
-            description: 'The delivery time is required.'
-          })
+    const [
+        createDeliveryTimeMutation,
+        { loading, error }
+    ] = useMutation<
+        CreateDeliveryTimeData,
+        CreateDeliveryTimeVariables
+    >(CREATE_DELIVERY_TIME, {
+        update(cache, { data, variables }) {
+            const result = data?.createDeliveryTime
+
+            if (!result?.success || !variables) return
+
+            const deliveryTimeMinutes = variables.minutes
+
+            /**
+             * Localiza todas las entidades Store normalizadas.
+             */
+            const normalizedCache = cache.extract()
+
+            const storeCacheIds = Object.entries(normalizedCache)
+                .filter(([, value]) => {
+                    if (!value || typeof value !== 'object') {
+                        return false
+                    }
+
+                    const store = value as Record<string, unknown>
+
+                    return store.__typename === 'Store'
+                })
+                .map(([cacheId]) => cacheId)
+
+            /**
+             * Modifica exclusivamente deliveryTimeMinutes.
+             */
+            storeCacheIds.forEach((cacheId) => {
+                cache.modify({
+                    id: cacheId,
+                    fields: {
+                        deliveryTimeMinutes() {
+                            return deliveryTimeMinutes
+                        }
+                    }
+                })
+            })
         }
-        return
-      }
-      const { data } = await createDeliveryTimeMutation({
-        variables: { minutes: Number.parseInt(minutes.toString()) }
-      })
-      if (data?.createDeliveryTime?.success) {
-        if (sendNotification) {
-          sendNotification({
-            description: data.createDeliveryTime.message
-          })
+    })
+
+    const createDeliveryTime = async (minutes: number): Promise<void> => {
+        if (
+            !Number.isInteger(minutes) ||
+            minutes < 1 ||
+            minutes > 60
+        ) {
+            sendNotification({
+              description: 'El tiempo de entrega debe estar entre 1 y 60 minutos.',
+              title: '',
+              backgroundColor: ''
+            })
+            return
         }
-      }
-      // Do not return any value to satisfy consistent-return rule
-    } catch {
-      if (sendNotification) {
-        sendNotification({
-          description: 'An error occurred while creating the delivery time.'
-        })
-      }
+
+        try {
+            const { data } = await createDeliveryTimeMutation({
+                variables: {
+                    minutes
+                }
+            })
+
+            const result = data?.createDeliveryTime
+
+            sendNotification({
+              description: result?.message ||
+                'An error occurred while creating the delivery time.',
+              title: '',
+              backgroundColor: ''
+            })
+
+        } catch {
+            sendNotification({
+              description: 'An error occurred while creating the delivery time.',
+              title: '',
+              backgroundColor: ''
+            })
+        }
     }
-  }
 
-  return { createDeliveryTime, loading, error }
+    return {
+        createDeliveryTime,
+        loading,
+        error
+    }
 }

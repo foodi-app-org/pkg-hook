@@ -1066,7 +1066,6 @@ export const useSales = ({
 
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
-  // Removed console.log(data)
   // Safe monetary converter: strips thousand-separator dots then parses as float,
   // rounds to the nearest integer (Colombian peso — no cents in this POS).
   // parseInt was previously used here but is unsafe because parseInt('10.500', 10)
