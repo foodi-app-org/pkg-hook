@@ -1,0 +1,6 @@
+export type DeliveryMode = 'NONE' | 'MERCHANT' | 'MERCHANT_EXTERNAL' | 'THIRD_PARTY_COLLECTED' | 'THIRD_PARTY_DIRECT' | 'MERCHANT_SUBSIDIZED' | 'MERCHANT_SUBSIDIZED_EXTERNAL'
+export interface DeliveryMethod { id: string; code: string; name: string; mode: DeliveryMode; providerType: 'NONE'|'OWN'|'THIRD_PARTY'; defaultFee: string|null; allowFeeOverride: boolean; active: boolean; revision: number }
+export interface DeliveryDraft { methodId: string; customerFee: string; providerCost: string; providerName: string; providerRef: string }
+export interface DeliveryInput { methodId: string; expectedRevision: number; customerFee?: string; providerCost?: string; providerName?: string; providerRef?: string }
+export interface DeliveryQuote { methodId: string; methodRevision: number; mode: DeliveryMode; methodName: string; providerType: DeliveryMethod['providerType']; currency: string; policyVersion: number; customerFee: string; providerCost: string|null; posCharge: string; externalCharge: string; merchantRevenue: string; thirdPartyPayable: string; merchantCost: string|null; providerName: string|null; providerRef: string|null }
+export type DeliveryTotals = { merchandiseNet: string; posCharge: string; checkoutTotal: string; customerTotal: string; merchantRevenue: string; externalCharge: string; thirdPartyPayable: string; merchantCost: string|null }

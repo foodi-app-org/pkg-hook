@@ -33,9 +33,10 @@ import {
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
 import { useGetAllPaymentMethods } from '../usePaymentMethod/useGetAllPaymentMethods'
+import { useDeliveryCheckout, REGISTER_SALE_WITH_DELIVERY, type DeliveryDraft } from '../useDeliveryCheckout'
 import { calculateCashCheckout, type CashReceivedMode } from './helpers/cash-checkout.utils'
-import { auditCart, auditPayloadSubtotal, buildCartIntegrityDebug, repriceCartAfterMutation, validateDiscountPayload } from './helpers/cart-integrity.utils'
-import { centsToText, multiplyMoneyCents, settledMoneyCents, sumMoneyCents } from './helpers/money-minor.utils'
+import { auditCart, auditPayloadSubtotal, repriceCartAfterMutation, validateDiscountPayload } from './helpers/cart-integrity.utils'
+import { multiplyMoneyCents, sumMoneyCents } from './helpers/money-minor.utils'
 import { clearNonCashChange, dispatchWithPaymentChange, hasUnresolvedChange, paymentChangeForMutation, resolveSelectedPaymentKind } from './helpers/payment-kind.utils'
 
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
@@ -90,8 +91,10 @@ export const useSales = ({
   setAlertBox = (args) => { return args },
   onSaleSuccess = (args) => { return args },
   pendingOrdersPersistence,
-  automaticCashChange = false
-}: UseSalesProps & { automaticCashChange?: boolean }) => {
+  automaticCashChange: requestedAutomaticCashChange = false,
+  deliveryCheckoutEnabled = false
+}: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean }) => {
+  const automaticCashChange = requestedAutomaticCashChange || deliveryCheckoutEnabled
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
   const domain = getCurrentDomain()
@@ -256,7 +259,7 @@ export const useSales = ({
   }
 
   const [registerSalesStore, { loading: loadingRegisterSale }] = useMutation(
-    CREATE_SHOPPING_CARD_TO_USER_STORE,
+    deliveryCheckoutEnabled ? REGISTER_SALE_WITH_DELIVERY : CREATE_SHOPPING_CARD_TO_USER_STORE,
     {
       // 'all' hace que Apollo entregue el `data` parcial a `onCompleted` aunque
       // la respuesta traiga `graphQLErrors`. Esto es clave: el backend puede
@@ -431,17 +434,13 @@ export const useSales = ({
   ) => {
     const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
-    // AmountInput emits a number; store delivery as ungrouped es-CO text so
-    // persisting a pending order never turns 5000.25 into ambiguous "5000.25".
-    const deliveryCents = name === 'valueDelivery' && typeof value === 'number' ? settledMoneyCents(value) : null
-    const nextValue = name === 'valueDelivery' && deliveryCents !== null ? centsToText(deliveryCents) : value
     // Reject stale callbacks/manual input when physical change does not apply.
     if (name === 'change' && (automaticCashChange || paymentKind !== 'cash')) return
     setErrors(previous => ({ ...previous, [name]: error }))
     setValues((prevValues) => {
       return {
         ...prevValues,
-        [name]: nextValue
+        [name]: value
       }
     })
   }
@@ -1108,17 +1107,13 @@ export const useSales = ({
 
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
-  // Safe monetary converter: strips thousand-separator dots then parses as float,
-  // rounds to the nearest integer (Colombian peso — no cents in this POS).
-  // parseInt was previously used here but is unsafe because parseInt('10.500', 10)
-  // returns 10 instead of 10500.
-  const convertInteger = (cadena: string | number): number => {
-    if (typeof cadena === 'number') return Number.isFinite(cadena) ? Math.round(cadena) : 0
-    if (typeof cadena !== 'string' || cadena.trim() === '') return 0
-    // Strip thousand-separator dots (Colombian locale uses '.' as thousands sep)
-    const cleaned = cadena.trim().replace(/\./g, '').replace(',', '.')
-    const parsed = parseFloat(cleaned)
-    return Number.isFinite(parsed) ? Math.round(parsed) : 0
+  // Preserve cents. Numeric fields already use dot decimals; text inputs use es-CO.
+  const convertMoney = (value: string | number): number => {
+    if (value == null || value === '') return 0
+    const text = typeof value === 'number' ? String(value) : value.trim().replace(/\./g, '').replace(',', '.')
+    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) return NaN
+    const amount = Number(text)
+    return Number.isFinite(amount) && Number.isSafeInteger(Math.round(amount * 100)) ? amount : NaN
   }
   const cartIntegrity = useMemo(() => auditCart(data), [data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount])
   const totalProductsPrice = useMemo(() => automaticCashChange
@@ -1126,31 +1121,26 @@ export const useSales = ({
     : finalArrayProduct.reduce((acc: number, item: Product) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0), [automaticCashChange, cartIntegrity.net, finalArrayProduct])
   const discountPayloadType = String(data.discountType ?? TypeDiscount.PERCENT)
   const discountPayloadValue = Number(discountPayloadType === TypeDiscount.AMOUNT ? data.discountAmount ?? 0 : data.discountPercent ?? 0)
-  const discountPayloadIssue = automaticCashChange ? validateDiscountPayload(discountPayloadType, discountPayloadValue) : ''
-  const payloadSubtotalValid = !automaticCashChange || auditPayloadSubtotal(finalArrayProduct, cartIntegrity.net)
+  const discountPayloadIssue = validateDiscountPayload(discountPayloadType, discountPayloadValue)
+
+  const deliveryCheckout = useDeliveryCheckout({storeId: String(idStore ?? ''), enabled: deliveryCheckoutEnabled, net: totalProductsPrice, hasItems: Boolean(data.PRODUCT?.length)})
+  const resetDelivery = deliveryCheckout.reset
+  useEffect(() => { if (deliveryCheckoutEnabled && !data.PRODUCT?.length) resetDelivery() }, [deliveryCheckoutEnabled, data.PRODUCT?.length, resetDelivery])
+  const checkoutDelivery = deliveryCheckoutEnabled ? deliveryCheckout.posCharge : values?.valueDelivery
+  const checkoutBlocking = discountPayloadIssue || (deliveryCheckoutEnabled ? deliveryCheckout.blockingMessage : '')
 
   // Calculate synchronously from the same current cart used by GraphQL, not
   // from the formatted UI price or the previous render's total state.
-  const calculatedCheckout = calculateCashCheckout({
+  const cashCheckout = calculateCashCheckout({
     kind: paymentKind,
     subtotal: totalProductsPrice,
-    delivery: values?.valueDelivery,
+    delivery: checkoutDelivery,
     receivedText: cashReceived,
     receivedMode: cashReceivedMode,
-    integrityMessage: automaticCashChange && !cartIntegrity.valid ? `Los importes del carrito no coinciden. ${cartIntegrity.issues[0] ?? 'Revisa cantidades y descuentos.'}` : !payloadSubtotalValid ? 'El total del carrito no coincide con los importes preparados para el cobro.' : undefined,
-    blockingMessage: discountPayloadIssue,
+    integrityMessage: deliveryCheckoutEnabled && !deliveryCheckout.ready ? deliveryCheckout.blockingMessage : automaticCashChange && !cartIntegrity.valid ? `Los importes del carrito no coinciden. ${cartIntegrity.issues[0] ?? 'Revisa cantidades y descuentos.'}` : undefined,
+    blockingMessage: checkoutBlocking,
     hasItems: Boolean(data.PRODUCT?.length)
   })
-  // Financial diagnostics are safe to share: no IDs, names, session or customer data.
-  const integrityDebug = automaticCashChange && (!cartIntegrity.valid || !payloadSubtotalValid)
-    ? buildCartIntegrityDebug(cartIntegrity, calculatedCheckout, data.discountType, data.discountPercent, data.discountAmount, payloadSubtotalValid)
-    : undefined
-  const cashCheckout = { ...calculatedCheckout, integrityDebug }
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && integrityDebug) {
-      console.warn('[VENTY][CART_INTEGRITY]', integrityDebug)
-    }
-  }, [integrityDebug])
   const handleCashReceivedChange = (value: string, mode: CashReceivedMode = 'manual'): void => {
     if (!automaticCashChange || paymentKind !== 'cash' || !data.PRODUCT?.length ||
         !cashCheckout.amountsValid || cashCheckout.total <= 0 || loadingSale || loadingRegisterSale) return
@@ -1165,24 +1155,29 @@ export const useSales = ({
   }, [automaticCashChange, data.PRODUCT?.length, paymentKind, cashReceivedMode, cashCheckout.amountsValid, cashCheckout.total, clearCashReceived])
 
   const checkoutValues = automaticCashChange
-    ? { ...values, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change).replace('.', ',') : '' }
+    ? { ...values, valueDelivery: deliveryCheckoutEnabled ? String(cashCheckout.delivery).replace('.', ',') : values.valueDelivery, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change).replace('.', ',') : '' }
     : values
 
   const handleSubmit = () => {
     // Double-submit guard: prevent a second mutation while one is already in-flight.
     if (loadingSale || loadingRegisterSale) return
+    if (deliveryCheckoutEnabled && (!deliveryCheckout.ready || !deliveryCheckout.input || !deliveryCheckout.totals)) return sendNotification({title:'Verifica el domicilio',backgroundColor:'warning',description:deliveryCheckout.blockingMessage})
+    const audit = auditCart(data)
+    if (!audit.valid || discountPayloadIssue || !auditPayloadSubtotal(finalArrayProduct, audit.net)) {
+      return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: discountPayloadIssue || audit.issues[0] || 'El subtotal del carrito no coincide.' })
+    }
 
     if (automaticCashChange) {
       const currentIntegrity = auditCart(data)
       const freshCheckout = calculateCashCheckout({
         kind: paymentKind,
         subtotal: currentIntegrity.net,
-        delivery: values?.valueDelivery,
+        delivery: checkoutDelivery,
         receivedText: cashReceived,
         receivedMode: cashReceivedMode,
         hasItems: Boolean(data.PRODUCT?.length),
-        integrityMessage: currentIntegrity.valid ? undefined : `Los importes del carrito no coinciden. ${currentIntegrity.issues[0] ?? ''}`,
-        blockingMessage: discountPayloadIssue
+        integrityMessage: deliveryCheckoutEnabled && !deliveryCheckout.ready ? deliveryCheckout.blockingMessage : currentIntegrity.valid ? undefined : `Los importes del carrito no coinciden. ${currentIntegrity.issues[0] ?? ''}`,
+        blockingMessage: checkoutBlocking
       })
       if (!auditPayloadSubtotal(finalArrayProduct, currentIntegrity.net) ||
           !freshCheckout.canSubmit || freshCheckout.subtotal !== cashCheckout.subtotal ||
@@ -1202,7 +1197,7 @@ export const useSales = ({
       })
     }
 
-    if ((!automaticCashChange && paymentKind === 'cash' && errors?.change) || errors?.valueDelivery) {
+    if ((!automaticCashChange && paymentKind === 'cash' && errors?.change) || (!deliveryCheckoutEnabled && errors?.valueDelivery)) {
       return sendNotification({
         title: 'error',
         backgroundColor: 'warning',
@@ -1273,46 +1268,13 @@ export const useSales = ({
         shoppingCartRefCode
       }))
     )
-    // Build the discount payload the backend expects. `DiscountInput.value` is
-    // an Int that the sale-detail/invoice read path interprets as a PERCENTAGE
-    // (exact-cart-totals only supports `globalDiscountPercent`). Sending the
-    // money amount here made the backend read it back as a huge percentage
-    // (e.g. a $1.000 discount became "1000%"), corrupting the invoice totals.
-    //
-    // So we always send an integer percentage:
-    //   - PERCENT discount → the entered percent (0-100).
-    //   - AMOUNT discount  → the equivalent percent of the pre-discount cart
-    //     total, derived from each product's `originalProPrice` (the price
-    //     saved by applyDiscountToCart before the discount was applied).
-    const discountType = data.discountType
-      ? String(data.discountType)
-      : TypeDiscount.PERCENT
-
-    const resolveDiscountPercentValue = (): number => {
-      if (discountType === TypeDiscount.PERCENT) {
-        const pct = Number(data.discountPercent) || 0
-        return Math.min(100, Math.max(0, Math.round(pct)))
-      }
-      // AMOUNT → convert the discounted money to a percentage of the original
-      // (pre-discount) cart total so the backend renders a coherent figure.
-      const amount = Number(data.discountAmount) || 0
-      if (amount <= 0) return 0
-      const originalCartTotal = (Array.isArray(data?.PRODUCT) ? data.PRODUCT : [])
-        .reduce((acc: number, item: any) => {
-          const base = Number(
-            item?.originalProPrice ?? item?.ProPrice ?? 0
-          ) || 0
-          const extras = (Array.isArray(item?.dataExtra) ? item.dataExtra : [])
-            .reduce((exAcc: number, ex: any) => {
-              const exBase = Number(
-                ex?.originalNewExtraPrice ?? ex?.newExtraPrice ?? 0
-              ) || 0
-              return exAcc + exBase
-            }, 0)
-          return acc + base + extras
-        }, 0)
-      if (originalCartTotal <= 0) return 0
-      return Math.min(100, Math.max(0, Math.round((amount / originalCartTotal) * 100)))
+    // The backend now supports the actual discount type; never convert AMOUNT to PERCENT.
+    const discountType = discountPayloadType
+    const submittedChange = automaticCashChange ? cashCheckout.change : paymentChangeForMutation(paymentKind, change, convertMoney)
+    const submittedDelivery = automaticCashChange ? cashCheckout.delivery : convertMoney(valueDelivery)
+    if (!Number.isFinite(submittedChange) || !Number.isFinite(submittedDelivery)) {
+      setLoadingSale(false)
+      return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: 'Importe de domicilio o vuelto inválido.' })
     }
 
     return registerSalesStore({
@@ -1321,16 +1283,17 @@ export const useSales = ({
         id: values?.cliId,
         pCodeRef: code,
         tableId,
-        change: automaticCashChange ? cashCheckout.change : paymentChangeForMutation(paymentKind, change, convertInteger),
-        valueDelivery: automaticCashChange ? cashCheckout.delivery : convertInteger(valueDelivery),
+        change: submittedChange,
+        valueDelivery: submittedDelivery,
+        ...(deliveryCheckoutEnabled ? { delivery: deliveryCheckout.input, expectedCheckoutTotal: deliveryCheckout.totals?.checkoutTotal } : {}),
         payId: data.payId,
         pickUp: 1,
         shoppingCartRefCode,
         discount: {
           type: discountType,
-          value: automaticCashChange ? discountPayloadValue : resolveDiscountPercentValue()
+          value: discountPayloadValue
         },
-        totalProductsPrice: automaticCashChange ? cashCheckout.subtotal : (convertInteger(totalProductsPrice) || 0)
+        totalProductsPrice: audit.net
       },
       update(cache, { data: mutationData }) {
         // Solo descontamos stock en caché cuando el backend confirmó la venta.
@@ -1365,6 +1328,7 @@ export const useSales = ({
               fetchPolicy: 'network-only'
             })
             if (automaticCashChange) clearCashReceived()
+            if (deliveryCheckoutEnabled) resetDelivery()
             setValues(initialValuesState)
             handleChange({ target: { name: 'tableId', value: '' } }, false)
             getOneSalesStore({
@@ -1456,6 +1420,7 @@ export const useSales = ({
 
   const handleCleanFilter = (): null => {
     if (automaticCashChange) clearCashReceived()
+    if (deliveryCheckoutEnabled) resetDelivery()
     setValues(initialValuesState)
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
     return null
@@ -1512,7 +1477,7 @@ export const useSales = ({
 
     const snapshot = {
       products: data.PRODUCT,
-      values: automaticCashChange ? { ...values, change: '', valueDelivery: typeof values.valueDelivery === 'number' && settledMoneyCents(values.valueDelivery) !== null ? centsToText(settledMoneyCents(values.valueDelivery)!) : values.valueDelivery } : { ...clearNonCashChange(values, paymentKind) },
+      values: automaticCashChange ? { ...values, ...(deliveryCheckoutEnabled ? {deliveryDraft: deliveryCheckout.draft, valueDelivery: String(deliveryCheckout.posCharge).replace('.',',')} : {}), change: '' } : { ...clearNonCashChange(values, paymentKind) },
       total: totalProductsPrice,
       discountType: data.discountType ? String(data.discountType) : String(TypeDiscount.PERCENT),
       discountPercent: Number(data.discountPercent) || 0,
@@ -1592,6 +1557,10 @@ export const useSales = ({
 
     if (automaticCashChange) clearCashReceived()
     setValues(automaticCashChange ? { ...resumedOrder.values, change: '' } : { ...resumedOrder.values })
+    if (deliveryCheckoutEnabled) {
+      const saved = resumedOrder.values as typeof resumedOrder.values & { deliveryDraft?: DeliveryDraft }
+      deliveryCheckout.restore(saved.deliveryDraft ?? null, !saved.deliveryDraft || !saved.deliveryDraft.methodId)
+    }
     setActivePendingOrderId(resumedOrder.id)
 
     sendNotification({
@@ -1698,8 +1667,8 @@ export const useSales = ({
     values: checkoutValues,
     paymentKind,
     cashCheckout: automaticCashChange ? cashCheckout : undefined,
+    deliveryCheckout,
     cartIntegrity: automaticCashChange ? cartIntegrity : undefined,
-    cartIntegrityDebug: integrityDebug,
     handleCashReceivedChange,
     initialStateSales,
     productsFood: allProducts,

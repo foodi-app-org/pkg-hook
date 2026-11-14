@@ -175,3 +175,5 @@ export * from './useScanFeedback'
 export * from './useUpdateStatusProduct'
 export * from './useAppConfigurations'
 export * from './useElectronUpdater/index'
+export * from './useDeliveryCheckout'
+
