@@ -32,11 +32,14 @@ import {
   GET_ONE_PRODUCTS_FOOD
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
+import { useGetAllPaymentMethods } from '../usePaymentMethod/useGetAllPaymentMethods'
+import { calculateCashCheckout } from './helpers/cash-checkout.utils'
+import { clearNonCashChange, dispatchWithPaymentChange, hasUnresolvedChange, paymentChangeForMutation, resolveSelectedPaymentKind } from './helpers/payment-kind.utils'
 
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
 
 import { addToCartFunc } from './helpers/add-product.utils'
-import { applyDiscountToCart, reapplyActiveDiscount, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
+import { applyDiscountToCart, getDiscountableSubtotal, reconcileUnavailableDiscount, reapplyActiveDiscount, TypeDiscount } from './helpers/apply-discount-to-cart.utils'
 import { initialStateSales, SalesActionTypes } from './helpers/constants'
 import { decrementExtra, removeExtra } from './helpers/extras.utils'
 import { filterChecked } from './helpers/filterChecked'
@@ -53,6 +56,7 @@ import { handleCommentProduct } from './helpers/handleCommentProduct'
 import { handleRemoveComment } from './helpers/handleRemoveComment.utils'
 import { handleToggleEditingStatus } from './helpers/handleToggleEditingStatus.utils'
 import { handleUpdateAllExtraAndOptional } from './helpers/handleUpdateAllExtraAndOptional.utils'
+import { filterSelectedOptionals, restoreOptionalSelection, toggleOptionalSelection } from './helpers/selected-optionals.utils'
 import { incrementProductQuantity } from './helpers/increment-product-quantity.utils'
 import { initializer } from './helpers/initializer.utils'
 import { paymentMethod } from './helpers/paymentMethod.utils'
@@ -83,8 +87,9 @@ export const useSales = ({
   sendNotification = (args) => { return args },
   setAlertBox = (args) => { return args },
   onSaleSuccess = (args) => { return args },
-  pendingOrdersPersistence
-}: UseSalesProps) => {
+  pendingOrdersPersistence,
+  automaticCashChange = false
+}: UseSalesProps & { automaticCashChange?: boolean }) => {
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
   const domain = getCurrentDomain()
@@ -131,6 +136,7 @@ export const useSales = ({
     valueDelivery: ''
   }
   const [values, setValues] = useState<ValuesState>(initialValuesState)
+  const [cashReceived, setCashReceived] = useState('')
 
   const [dataStore] = useStore()
   const { createdAt, idStore } = dataStore ?? {
@@ -170,6 +176,7 @@ export const useSales = ({
 
   const [loadingExtraProduct, setLoadingExtraProduct] = useState(false)
   const [dataOptional, setDataOptional] = useState<ExtProductFoodOptional[]>([])
+  const productOptionsRequestRef = useRef(0)
   const [dataExtra, setDataExtra] = useState<ExtProductFoodsAll[]>([])
   /**
    * Renderiza el resultado de `registerSalesStore` (éxito o error de negocio).
@@ -285,18 +292,10 @@ export const useSales = ({
   const [productFoodsOne, { data: dataProduct }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
 
   const [ExtProductFoodsSubOptionalAll, { loading: loadingExtProductFoodsSubOptionalAll }] = useLazyQuery(
-    GET_EXTRAS_PRODUCT_FOOD_OPTIONAL,
-    {
-      onError: () => {
-        setDataOptional([])
-      }
-    }
+    GET_EXTRAS_PRODUCT_FOOD_OPTIONAL
   )
-  const [ExtProductFoodsAll] = useLazyQuery(GET_ALL_EXTRA_PRODUCT, {
-    onError: () => {
-      setDataExtra([])
-    }
-  })
+
+  const [ExtProductFoodsAll] = useLazyQuery(GET_ALL_EXTRA_PRODUCT)
 
   const [productsFood, {
     loading,
@@ -421,11 +420,13 @@ export const useSales = ({
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
-    error: boolean
+    error: boolean = false
   ) => {
     const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
-    setErrors({ ...errors, [name]: error })
+    // Reject stale callbacks/manual input when physical change does not apply.
+    if (name === 'change' && (automaticCashChange || paymentKind !== 'cash')) return
+    setErrors(previous => ({ ...previous, [name]: error }))
     setValues((prevValues) => {
       return {
         ...prevValues,
@@ -594,7 +595,7 @@ export const useSales = ({
     }
   }
 
-  const PRODUCT = (state: SalesState, action: SalesReducerAction) => {
+  const reduceProduct = (state: SalesState, action: SalesReducerAction) => {
     switch (action.type) {
       case SalesActionTypes.ADD_TO_CART:
         return addToCartFunc({
@@ -691,8 +692,8 @@ export const useSales = ({
       case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
         return handleUpdateAllExtraAndOptional(state, {
           payload: action.payload,
-          dataOptional,
-          dataExtra
+          dataOptional: filterSelectedOptionals(action.dataOptional as ExtProductFoodOptional[] | undefined),
+          dataExtra: (action.dataExtra as ExtProductFoodsAll[] | undefined) ?? []
         })
       case SalesActionTypes.PRICE_RANGE:
         return {
@@ -740,7 +741,47 @@ export const useSales = ({
     }
   }
 
-  const [data, dispatch] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initializer)
+  const PRODUCT = (state: SalesState, action: SalesReducerAction): SalesState => {
+    const next = reduceProduct(state, action)
+    // Reconcile only when the cart changes (including resumed pending orders).
+    // Never use the net total: a legitimate 100% discount can make it zero.
+    return next.PRODUCT !== state.PRODUCT || action.type === SalesActionTypes.APPLY_DISCOUNT
+      ? reconcileUnavailableDiscount(next)
+      : next
+  }
+
+  const [data, dispatchReducer] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initial => reconcileUnavailableDiscount(initializer(initial)))
+
+  const discountableSubtotal = useMemo(() => getDiscountableSubtotal(data), [data.PRODUCT])
+
+  // Apollo shares the payment catalog with CreateSales; no new GraphQL fields.
+  const { data: salesPaymentMethods } = useGetAllPaymentMethods()
+  const paymentKind = resolveSelectedPaymentKind(salesPaymentMethods, data.payId)
+
+  // PAYMENT_METHOD must clear the real checkout fields in the same event,
+  // not wait until the receipt opens or the reconciliation effect runs.
+  // Keep the reducer pure and pass every other action through untouched.
+  const dispatch = useCallback((action: SalesReducerAction) => {
+    if (automaticCashChange && (
+      action.type === SalesActionTypes.REMOVE_ALL_PRODUCTS ||
+      action.type === SalesActionTypes.RESTORE_PENDING_ORDER ||
+      (action.type === SalesActionTypes.PAYMENT_METHOD && action.payload !== data.payId)
+    )) setCashReceived('')
+    dispatchWithPaymentChange(action, salesPaymentMethods, () => {
+      setValues(previous => clearNonCashChange(previous, 'non-cash'))
+      setErrors(previous => previous.change ? { ...previous, change: false } : previous)
+    }, dispatchReducer)
+  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId])
+
+  useEffect(() => {
+    if (paymentKind !== 'non-cash') return
+    if (values.change !== '') {
+      setValues(previous => clearNonCashChange(previous, paymentKind))
+    }
+    if (errors.change) {
+      setErrors(previous => ({ ...previous, change: false }))
+    }
+  }, [paymentKind, values.change, errors.change])
 
 
 
@@ -809,43 +850,24 @@ export const useSales = ({
     }
   })
 
-  const handleAddOptional = ({ exOptional = null, codeCategory = null }) => {
-    if (!exOptional || !codeCategory) return
-    const item = dataOptional.find((item) => { return item.code === codeCategory })
-    if (!item) return
-    const idx = item.ExtProductFoodsSubOptionalAll.findIndex(
-      (el: any) => { return el.opSubExPid === exOptional }
-    )
-    if (item && idx !== -1) {
-      const updatedItem = {
-
-        ...item,
-        ExtProductFoodsSubOptionalAll: [
-
-          ...item.ExtProductFoodsSubOptionalAll.slice(0, idx),
-          {
-
-            ...item.ExtProductFoodsSubOptionalAll[idx],
-
-            check: !item.ExtProductFoodsSubOptionalAll[idx].check
-          },
-
-          ...item.ExtProductFoodsSubOptionalAll.slice(idx + 1)
-        ]
-      }
-      const newData = dataOptional.map((el) => { return el.code === codeCategory ? updatedItem : el }
-      )
-
-      setDataOptional(() => { return [...newData] })
-    }
+  const handleAddOptional = ({
+    exOptional = null,
+    codeCategory = null
+  }: {
+    exOptional?: string | number | null
+    codeCategory?: string | number | null
+    index?: number
+  }) => {
+    if (exOptional == null || codeCategory == null) return
+    if (loadingExtraProduct) return
+    setDataOptional(previous => toggleOptionalSelection(previous, codeCategory, exOptional))
   }
 
-  /**
-   * Updates all extra and optional products for the current product.
-   * @returns {void}
-   */
+  /** Confirm only the selected options; an empty selection clears the line. */
   function handleUpdateAllExtra(): void {
-    if (!product?.PRODUCT?.pId) {
+    const pId = product?.PRODUCT?.pId
+    if (loadingExtraProduct) return
+    if (!pId) {
       sendNotification({
         title: 'Error',
         backgroundColor: 'error',
@@ -853,35 +875,23 @@ export const useSales = ({
       })
       return
     }
-    const filteredDataOptional = dataOptional
-      .map((obj) => {
-        const filteredSubOptions = obj?.ExtProductFoodsSubOptionalAll?.filter(
-          (subObj: any) => subObj?.check === true
-        )
-        // Exclude parent object if filteredSubOptions is empty
-        if (!filteredSubOptions || filteredSubOptions.length === 0) {
-          return null
-        }
-        return { ...obj, ExtProductFoodsSubOptionalAll: filteredSubOptions }
-      })
-      .filter(Boolean) // Remove all null objects from array
 
-    const filteredDataExtra = dataExtra?.filter((p) => p?.quantity !== undefined && p?.quantity !== 0)
-    if (product?.PRODUCT?.pId) {
-      dispatch({
-        type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
-        payload: product.PRODUCT.pId,
-        dataOptional: filteredDataOptional,
-        dataExtra: filteredDataExtra
+    const selectedOptional = filterSelectedOptionals(dataOptional)
+    const selectedExtra = dataExtra.filter(extra => Number(extra?.quantity) >= 1)
+
+    dispatch({
+      type: SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT,
+      payload: pId,
+      dataOptional: selectedOptional,
+      dataExtra: selectedExtra
+    })
+
+    if (selectedOptional.length > 0 || selectedExtra.length > 0) {
+      sendNotification({
+        title: 'Success',
+        backgroundColor: 'success',
+        description: 'Items subidos al producto'
       })
-      const updatesOccurred = (dataExtra && dataExtra.length > 0)
-      if (updatesOccurred) {
-        sendNotification({
-          title: 'Success',
-          backgroundColor: 'success',
-          description: 'Items subidos al producto'
-        })
-      }
     }
   }
 
@@ -1002,11 +1012,8 @@ export const useSales = ({
       const filteredDataExtra = (product?.dataExtra ?? [])
         .filter((extra: any) => Number(extra?.quantity) >= 1)
         .map(({ ...rest }) => ({ ...rest }))
-      const dataOptional = (product?.dataOptional ?? []).map(({ ...rest }) => {
-        const { ExtProductFoodsSubOptionalAll, ...r } = rest
-        const adjusted = (ExtProductFoodsSubOptionalAll ?? []).map((s: any) => ({ ...s }))
-        return { ...r, ExtProductFoodsSubOptionalAll: adjusted }
-      })
+      // Re-filter at the payload boundary, including restored cookies/pending orders.
+      const dataOptional = filterSelectedOptionals(product?.dataOptional as ExtProductFoodOptional[] | undefined)
       return {
         pId: product.pId,
         refCodePid: RandomCode(20),
@@ -1078,11 +1085,47 @@ export const useSales = ({
     const parsed = parseFloat(cleaned)
     return Number.isFinite(parsed) ? Math.round(parsed) : 0
   }
+  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: Product) => { return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0) }, 0) }, [finalArrayProduct])
+
+  // Calculate synchronously from the same current cart used by GraphQL, not
+  // from the formatted UI price or the previous render's total state.
+  const cashCheckout = calculateCashCheckout({
+    kind: paymentKind,
+    subtotal: totalProductsPrice,
+    delivery: values?.valueDelivery,
+    receivedText: cashReceived,
+    hasItems: Boolean(data.PRODUCT?.length)
+  })
+  const handleCashReceivedChange = (value: string): void => {
+    if (!automaticCashChange || paymentKind !== 'cash' || !data.PRODUCT?.length ||
+        cashCheckout.total <= 0 || loadingSale || loadingRegisterSale) return
+    setCashReceived(value)
+  }
+  useEffect(() => {
+    if (automaticCashChange && (!data.PRODUCT?.length || paymentKind === 'non-cash' ||
+      (cashCheckout.canSubmit && cashCheckout.total === 0))) setCashReceived('')
+  }, [automaticCashChange, data.PRODUCT?.length, paymentKind, cashCheckout.canSubmit, cashCheckout.total])
+
+  const checkoutValues = automaticCashChange
+    ? { ...values, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change) : '' }
+    : values
+
   const handleSubmit = () => {
     // Double-submit guard: prevent a second mutation while one is already in-flight.
     if (loadingSale || loadingRegisterSale) return
 
-    if (errors?.change || errors?.valueDelivery) {
+    if (automaticCashChange && !cashCheckout.canSubmit) {
+      return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: cashCheckout.message })
+    }
+    if (!automaticCashChange && hasUnresolvedChange(paymentKind, values?.change)) {
+      return sendNotification({
+        title: 'Método de pago pendiente',
+        backgroundColor: 'warning',
+        description: 'Espera a que cargue el método de pago antes de confirmar el cambio.'
+      })
+    }
+
+    if ((!automaticCashChange && paymentKind === 'cash' && errors?.change) || errors?.valueDelivery) {
       return sendNotification({
         title: 'error',
         backgroundColor: 'warning',
@@ -1142,6 +1185,7 @@ export const useSales = ({
     const input = stripTypename(
       finalArrayProduct.map((item) => ({
         ...item,
+        dataOptional: filterSelectedOptionals(item.dataOptional),
         dataExtra: (item.dataExtra ?? []).map((extra: any) => {
           const cleanExtra = { ...extra }
 
@@ -1152,7 +1196,6 @@ export const useSales = ({
         shoppingCartRefCode
       }))
     )
-
     // Build the discount payload the backend expects. `DiscountInput.value` is
     // an Int that the sale-detail/invoice read path interprets as a PERCENTAGE
     // (exact-cart-totals only supports `globalDiscountPercent`). Sending the
@@ -1201,8 +1244,8 @@ export const useSales = ({
         id: values?.cliId,
         pCodeRef: code,
         tableId,
-        change: convertInteger(change),
-        valueDelivery: convertInteger(valueDelivery),
+        change: automaticCashChange ? cashCheckout.change : paymentChangeForMutation(paymentKind, change, convertInteger),
+        valueDelivery: automaticCashChange ? cashCheckout.delivery : convertInteger(valueDelivery),
         payId: data.payId,
         pickUp: 1,
         shoppingCartRefCode,
@@ -1210,7 +1253,7 @@ export const useSales = ({
           type: discountType,
           value: resolveDiscountPercentValue()
         },
-        totalProductsPrice: convertInteger(totalProductsPrice) || 0
+        totalProductsPrice: automaticCashChange ? cashCheckout.subtotal : (convertInteger(totalProductsPrice) || 0)
       },
       update(cache, { data: mutationData }) {
         // Solo descontamos stock en caché cuando el backend confirmó la venta.
@@ -1244,6 +1287,7 @@ export const useSales = ({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only'
             })
+            if (automaticCashChange) setCashReceived('')
             setValues(initialValuesState)
             handleChange({ target: { name: 'tableId', value: '' } }, false)
             getOneSalesStore({
@@ -1282,123 +1326,65 @@ export const useSales = ({
   }
 
   const handleProduct = async (PRODUCT: Product) => {
-    setLoadingExtraProduct(true)
+    const requestId = ++productOptionsRequestRef.current
     const { pId } = PRODUCT || {}
-    try {
-      const originalArray = data.PRODUCT.find((item: Product) => item.pId === pId)
-      // OPTIONAL
-      productFoodsOne({ variables: { pId } })
-      const optionalAll = await ExtProductFoodsSubOptionalAll({
-        variables: { pId }
-      })
-      const optionalFetch = optionalAll.data.ExtProductFoodsOptionalAll
-      setDataOptional(optionalFetch || [])
-      const existOptionalCookies = originalArray?.dataOptional
-      const filteredDataOptional = existOptionalCookies?.length
-        ? existOptionalCookies
-          ?.map((obj: any) => {
-            const filteredSubOptions =
-              obj.ExtProductFoodsSubOptionalAll.filter(
-                (subObj: any) => subObj.check === true
-              )
-            // Exclude parent object if filteredSubOptions is empty
-            if (!filteredSubOptions || filteredSubOptions.length === 0) {
-              return null
-            }
-            return {
-              ...obj,
-              ExtProductFoodsSubOptionalAll: filteredSubOptions
-            }
-          })
-          .filter(Boolean)
-        : []
+    setLoadingExtraProduct(true)
+    setDataOptional([])
+    setDataExtra([])
+    // Do not let a failed request commit another product's options.
+    setProduct({ PRODUCT: { pId: null } })
 
-      // Update optionalAll.data.ExtProductFoodsSubOptionalAll with updated values from originalArray2.ExtProductFoodsSubOptionalAll
-      if (optionalFetch && filteredDataOptional) {
-        const updateOption = optionalFetch
-          .map((obj: any) => {
-            const matchingArray = filteredDataOptional.find(
-              (o: any) => o && o.opExPid === obj.opExPid
-            )
-            if (!matchingArray) {
-              return obj
-            }
-            const extProductFoodsSubOptionalAll =
-              obj.ExtProductFoodsSubOptionalAll || []
-            const updateExtProductSubOptionalAll =
-              extProductFoodsSubOptionalAll.map((subObj: any) => {
-                const newItem =
-                  matchingArray.ExtProductFoodsSubOptionalAll.find(
-                    (newItem: any) => newItem && newItem.opSubExPid === subObj.opSubExPid
-                  )
-                if (newItem) {
-                  return {
-                    ...subObj,
-                    check: true
-                  }
-                }
-                return subObj
-              })
-            return {
-              ...obj,
-              ExtProductFoodsSubOptionalAll:
-                updateExtProductSubOptionalAll
-            }
-          })
-          .filter(Boolean)
-        if (existOptionalCookies) {
-          setDataOptional(updateOption || [])
-        } else {
-          setDataOptional(optionalAll.data.ExtProductFoodsOptionalAll || [])
-        }
-      }
-      // NO OPTIONAL
-      const extProduct = await ExtProductFoodsAll({ variables: { pId } })
-      let finalData
-      if (originalArray?.dataExtra) {
-        const filteredData = originalArray.dataExtra.filter((item: any) => {
-          return extProduct?.data?.ExtProductFoodsAll.some(
-            (newItem: any) => newItem.exPid === item.exPid
-          )
-        })
-        finalData = originalArray?.dataExtra?.concat(
-          extProduct?.data?.ExtProductFoodsAll?.filter(
-            (item: any) => {
-              return !filteredData?.some(
-                (filteredItem: any) => filteredItem.exPid === item.exPid
-              )
-            }
-          )
-        )
-      } else {
-        finalData = extProduct?.data?.ExtProductFoodsAll
-      }
+    try {
+      if (!pId) throw new Error('Producto no válido')
+      const original = data.PRODUCT.find(item => item.pId === pId)
+
+      const [, optionalResult, extrasResult] = await Promise.all([
+        productFoodsOne({ variables: { pId } }),
+        ExtProductFoodsSubOptionalAll({ variables: { pId } }),
+        ExtProductFoodsAll({ variables: { pId } })
+      ])
+      if (requestId !== productOptionsRequestRef.current) return
+      if (optionalResult.error) throw optionalResult.error
+      if (extrasResult.error) throw extrasResult.error
+
+      const catalogue = (optionalResult.data?.ExtProductFoodsOptionalAll ?? []) as ExtProductFoodOptional[]
+      const catalogueExtras = (extrasResult.data?.ExtProductFoodsAll ?? []) as ExtProductFoodsAll[]
+
+      setDataOptional(restoreOptionalSelection(catalogue, original?.dataOptional))
+
+      // Preserve existing extras behavior and selected quantities, but discard
+      // extras no longer in the catalogue. Keep the new catalogue entries too.
+      const savedExtras = original?.dataExtra ?? []
+      const savedIds = new Set(savedExtras.map(extra => extra.exPid))
+      const catalogueIds = new Set(catalogueExtras.map(extra => extra.exPid))
+      const finalData = [
+        ...savedExtras.filter(extra => catalogueIds.has(extra.exPid)),
+        ...catalogueExtras.filter(extra => !savedIds.has(extra.exPid))
+      ]
       setDataExtra(finalData)
-      setProduct(() => {
-        return {
-          PRODUCT
-        }
-      })
-      setLoadingExtraProduct(false)
+      setProduct({ PRODUCT })
     } catch (error) {
-      setLoadingExtraProduct(false)
-      if (error instanceof Error) {
-        sendNotification({
-          title: 'error',
-          backgroundColor: 'error',
-          description: error.message ?? 'Lo sentimos, ocurrió un error'
-        })
+      if (requestId !== productOptionsRequestRef.current) return
+      sendNotification({
+        title: 'error',
+        backgroundColor: 'error',
+        description: error instanceof Error ? error.message : 'Lo sentimos, ocurrió un error'
+      })
+    } finally {
+      if (requestId === productOptionsRequestRef.current) {
+        setLoadingExtraProduct(false)
       }
     }
   }
 
   const handleCleanFilter = (): null => {
+    if (automaticCashChange) setCashReceived('')
     setValues(initialValuesState)
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
     return null
   }
 
-  const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll
+  const disabledModalItems = (dataOptional?.length > 0 || dataExtra?.length > 0) && !loadingExtProductFoodsSubOptionalAll && !loadingExtraProduct
 
   // Obtener los carProIds de productos con checked en true
   const carProIds = filterChecked(categories)
@@ -1421,7 +1407,6 @@ export const useSales = ({
     })
   }, [data.PRODUCT, filteredProducts])
 
-  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: Product) => { return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0) }, 0) }, [finalArrayProduct])
 
 
   /**
@@ -1450,7 +1435,7 @@ export const useSales = ({
 
     const snapshot = {
       products: data.PRODUCT,
-      values: { ...values },
+      values: automaticCashChange ? { ...values, change: '' } : { ...clearNonCashChange(values, paymentKind) },
       total: totalProductsPrice,
       discountType: data.discountType ? String(data.discountType) : String(TypeDiscount.PERCENT),
       discountPercent: Number(data.discountPercent) || 0,
@@ -1528,7 +1513,8 @@ export const useSales = ({
       }
     })
 
-    setValues({ ...resumedOrder.values })
+    if (automaticCashChange) setCashReceived('')
+    setValues(automaticCashChange ? { ...resumedOrder.values, change: '' } : { ...resumedOrder.values })
     setActivePendingOrderId(resumedOrder.id)
 
     sendNotification({
@@ -1619,7 +1605,7 @@ export const useSales = ({
     errorSale,
     openCurrentSale,
     code,
-    totalProductPrice,
+    totalProductPrice: automaticCashChange ? totalProductsPrice : totalProductPrice,
     saveDataState,
     product,
     data,
@@ -1632,7 +1618,10 @@ export const useSales = ({
     finalFilter,
     showMore,
     search,
-    values,
+    values: checkoutValues,
+    paymentKind,
+    cashCheckout: automaticCashChange ? cashCheckout : undefined,
+    handleCashReceivedChange,
     initialStateSales,
     productsFood: allProducts,
     modalItem,
@@ -1643,6 +1632,7 @@ export const useSales = ({
     dataExtra: dataExtra || [],
     fetchMore,
     pagination,
+    discountableSubtotal,
     discount: data.discountAmount ?? 0,
     discountPercent: data.discountPercent ?? 0,
     discountAmount: data.discountAmount ?? 0,
