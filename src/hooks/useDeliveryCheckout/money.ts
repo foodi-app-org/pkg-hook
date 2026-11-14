@@ -1,3 +1,5 @@
+import { computeSaleSettlement } from 'exact-cart-totals'
+
 import type { DeliveryDraft, DeliveryInput, DeliveryMethod, DeliveryQuote, DeliveryTotals } from './types'
 const LIMIT = 9007199254740991n
 export function cents(value: string): bigint {
@@ -38,10 +40,10 @@ export function makeInput(method: DeliveryMethod, draft: DeliveryDraft): Deliver
   return input
 }
 export function checkoutTotals(net: string, q: DeliveryQuote, tip='0.00'): DeliveryTotals {
-  if (q.currency !== 'COP' || q.policyVersion !== 1) throw new Error('Política de domicilio no soportada')
-  const merchandise = cents(net), pos=cents(q.posCharge), ext=cents(q.externalCharge), own=cents(q.merchantRevenue), third=cents(q.thirdPartyPayable), fee=cents(q.customerFee), gratuity=cents(tip)
-  if (pos+ext!==fee || own+third!==pos || (pos>0n && ext>0n)) throw new Error('Cotización inconsistente')
-  return {merchandiseNet:decimal(merchandise),posCharge:decimal(pos),checkoutTotal:decimal(merchandise+pos+gratuity),customerTotal:decimal(merchandise+pos+ext+gratuity),merchantRevenue:decimal(merchandise+own),externalCharge:decimal(ext),thirdPartyPayable:decimal(third),merchantCost:q.merchantCost===null?null:decimal(cents(q.merchantCost))}
+  const result = computeSaleSettlement({ merchandiseNet: net, deliveryTerms: q, tip })
+  return { merchandiseNet:result.merchandiseNet, posCharge:result.posCharge, checkoutTotal:result.checkoutTotal,
+    customerTotal:result.customerTotal!, merchantRevenue:result.merchantRevenue!, externalCharge:result.externalCharge!,
+    thirdPartyPayable:result.thirdPartyPayable!, merchantCost:result.merchantCost }
 }
 
 /** Restore data only, never a quote. Unknown/malformed snapshots require reselection. */
