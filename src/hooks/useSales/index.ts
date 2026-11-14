@@ -33,7 +33,9 @@ import {
 } from '../useProductsFood/queriesStore'
 import { useStore } from '../useStore'
 import { useGetAllPaymentMethods } from '../usePaymentMethod/useGetAllPaymentMethods'
-import { calculateCashCheckout } from './helpers/cash-checkout.utils'
+import { calculateCashCheckout, type CashReceivedMode } from './helpers/cash-checkout.utils'
+import { auditCart, auditPayloadSubtotal, buildCartIntegrityDebug, repriceCartAfterMutation, validateDiscountPayload } from './helpers/cart-integrity.utils'
+import { centsToText, multiplyMoneyCents, settledMoneyCents, sumMoneyCents } from './helpers/money-minor.utils'
 import { clearNonCashChange, dispatchWithPaymentChange, hasUnresolvedChange, paymentChangeForMutation, resolveSelectedPaymentKind } from './helpers/payment-kind.utils'
 
 // import { updateExistingOrders } from '../useUpdateExistingOrders'
@@ -137,6 +139,11 @@ export const useSales = ({
   }
   const [values, setValues] = useState<ValuesState>(initialValuesState)
   const [cashReceived, setCashReceived] = useState('')
+  const [cashReceivedMode, setCashReceivedMode] = useState<CashReceivedMode>('manual')
+  const clearCashReceived = useCallback(() => {
+    setCashReceived('')
+    setCashReceivedMode('manual')
+  }, [])
 
   const [dataStore] = useStore()
   const { createdAt, idStore } = dataStore ?? {
@@ -424,13 +431,17 @@ export const useSales = ({
   ) => {
     const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
+    // AmountInput emits a number; store delivery as ungrouped es-CO text so
+    // persisting a pending order never turns 5000.25 into ambiguous "5000.25".
+    const deliveryCents = name === 'valueDelivery' && typeof value === 'number' ? settledMoneyCents(value) : null
+    const nextValue = name === 'valueDelivery' && deliveryCents !== null ? centsToText(deliveryCents) : value
     // Reject stale callbacks/manual input when physical change does not apply.
     if (name === 'change' && (automaticCashChange || paymentKind !== 'cash')) return
     setErrors(previous => ({ ...previous, [name]: error }))
     setValues((prevValues) => {
       return {
         ...prevValues,
-        [name]: value
+        [name]: nextValue
       }
     })
   }
@@ -665,7 +676,7 @@ export const useSales = ({
         // free rejoins it. reapplyActiveDiscount is a no-op when no discount is
         // active, so normal carts are unaffected.
         const toggled = toggleFreeProducts(state, action.payload, productsFood)
-        return reapplyActiveDiscount(toggled)
+        return automaticCashChange ? toggled : reapplyActiveDiscount(toggled)
       }
       case SalesActionTypes.TOGGLE_EDITING_PRODUCT: {
         return handleToggleEditingStatus(state, action.payload)
@@ -743,14 +754,34 @@ export const useSales = ({
 
   const PRODUCT = (state: SalesState, action: SalesReducerAction): SalesState => {
     const next = reduceProduct(state, action)
-    // Reconcile only when the cart changes (including resumed pending orders).
-    // Never use the net total: a legitimate 100% discount can make it zero.
-    return next.PRODUCT !== state.PRODUCT || action.type === SalesActionTypes.APPLY_DISCOUNT
-      ? reconcileUnavailableDiscount(next)
-      : next
+    // Reprice from original unit prices after every price-affecting mutation.
+    // The original helper is never applied twice for APPLY_DISCOUNT itself.
+    if (next.PRODUCT === state.PRODUCT) return next
+    if (action.type === SalesActionTypes.APPLY_DISCOUNT) return reconcileUnavailableDiscount(next)
+    if (!automaticCashChange) return reconcileUnavailableDiscount(next)
+    switch (action.type) {
+      case SalesActionTypes.ADD_TO_CART:
+      case SalesActionTypes.ADD_PRODUCT:
+      case SalesActionTypes.REMOVE_PRODUCT:
+      case SalesActionTypes.REMOVE_PRODUCT_TO_CART:
+      case SalesActionTypes.ON_CHANGE:
+      case SalesActionTypes.UPDATE_SUCCESS_QUANTITY_EDITING_PRODUCT:
+      case SalesActionTypes.CANCEL_UPDATE_QUANTITY_EDITING_PRODUCT:
+      case SalesActionTypes.INCREMENT:
+      case SalesActionTypes.DECREMENT:
+      case SalesActionTypes.PUT_EXTRA_PRODUCTS_AND_OPTIONAL_PRODUCT:
+      case SalesActionTypes.TOGGLE_FREE_PRODUCT:
+      case SalesActionTypes.RESTORE_PENDING_ORDER:
+        return repriceCartAfterMutation(next)
+      default:
+        return reconcileUnavailableDiscount(next)
+    }
   }
 
-  const [data, dispatchReducer] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initial => reconcileUnavailableDiscount(initializer(initial)))
+  const [data, dispatchReducer] = useReducer<React.Reducer<SalesState, SalesReducerAction>, SalesState>(PRODUCT, initialStateSales, initial => {
+    const restored = initializer(initial)
+    return automaticCashChange ? repriceCartAfterMutation(restored) : reconcileUnavailableDiscount(restored)
+  })
 
   const discountableSubtotal = useMemo(() => getDiscountableSubtotal(data), [data.PRODUCT])
 
@@ -766,12 +797,12 @@ export const useSales = ({
       action.type === SalesActionTypes.REMOVE_ALL_PRODUCTS ||
       action.type === SalesActionTypes.RESTORE_PENDING_ORDER ||
       (action.type === SalesActionTypes.PAYMENT_METHOD && action.payload !== data.payId)
-    )) setCashReceived('')
+    )) clearCashReceived()
     dispatchWithPaymentChange(action, salesPaymentMethods, () => {
       setValues(previous => clearNonCashChange(previous, 'non-cash'))
       setErrors(previous => previous.change ? { ...previous, change: false } : previous)
     }, dispatchReducer)
-  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId])
+  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId, clearCashReceived])
 
   useEffect(() => {
     if (paymentKind !== 'non-cash') return
@@ -931,7 +962,7 @@ export const useSales = ({
         if (exPid === producto.exPid) {
           const initialQuantity = producto?.quantity ? producto?.quantity : 0
           const newQuantity = initialQuantity + 1
-          const newExtraPrice = producto.extraPrice * newQuantity
+          const newExtraPrice = (multiplyMoneyCents(producto.extraPrice, newQuantity) ?? 0) / 100
           return {
             ...producto,
             quantity: newQuantity,
@@ -970,12 +1001,12 @@ export const useSales = ({
 
   const getSortedProduct = useCallback((data: any[], sort: string | null) => {
     if (sort && sort === 'PRICE_HIGH_TO_LOW') {
-      return data.sort((a, b) => {
+      return [...data].sort((a, b) => {
         return b.ProPrice - a.ProPrice
       })
     }
     if (sort && sort === 'PRICE_LOW_TO_HIGH') {
-      return data.sort((a, b) => {
+      return [...data].sort((a, b) => {
         return a.ProPrice - b.ProPrice
       })
     }
@@ -1009,7 +1040,7 @@ export const useSales = ({
       // quantity null/0; sending them makes the backend validator reject the
       // whole sale ("dataExtra[n].quantity is required"). Filtering here keeps
       // the payload to the real selection.
-      const filteredDataExtra = (product?.dataExtra ?? [])
+      const filteredDataExtra = (Array.isArray(product?.dataExtra) ? product.dataExtra : [])
         .filter((extra: any) => Number(extra?.quantity) >= 1)
         .map(({ ...rest }) => ({ ...rest }))
       // Re-filter at the payload boundary, including restored cookies/pending orders.
@@ -1035,10 +1066,13 @@ export const useSales = ({
 
   const finalArrayProduct = useMemo(() => {
     return arrayProduct.map((item: any) => {
-      const totalExtra = (item.dataExtra ?? []).reduce((acc: number, ex: any) => { return acc + (Number(ex.newExtraPrice) || 0) }, 0)
+      const extraCents = automaticCashChange ? sumMoneyCents((item.dataExtra ?? []).map((extra: any) => extra.newExtraPrice)) : null
+      const totalExtra = automaticCashChange
+        ? (extraCents === null ? NaN : extraCents / 100)
+        : (item.dataExtra ?? []).reduce((acc: number, ex: any) => acc + (Number(ex.newExtraPrice) || 0), 0)
       return { ...item, totalExtra }
     })
-  }, [arrayProduct])
+  }, [arrayProduct, automaticCashChange])
 
   /**
    * Sums ProPrice and totalExtra for each item.
@@ -1059,6 +1093,7 @@ export const useSales = ({
     })
   }
   useEffect(() => {
+    if (automaticCashChange) return
     const dataCountTotal = sumProPriceAndTotalExtra(finalArrayProduct)
     let runningTotal = 0
     dataCountTotal.forEach((a: { total: number }) => {
@@ -1069,7 +1104,7 @@ export const useSales = ({
     if (data.PRODUCT.length === 0) {
       setTotalProductPrice(0)
     }
-  }, [data, finalArrayProduct])
+  }, [data, finalArrayProduct, automaticCashChange])
 
   const client = useApolloClient()
   const { getOneSalesStore } = useGetSale()
@@ -1085,35 +1120,77 @@ export const useSales = ({
     const parsed = parseFloat(cleaned)
     return Number.isFinite(parsed) ? Math.round(parsed) : 0
   }
-  const totalProductsPrice = useMemo(() => { return finalArrayProduct.reduce((acc: number, item: Product) => { return acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0) }, 0) }, [finalArrayProduct])
+  const cartIntegrity = useMemo(() => auditCart(data), [data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount])
+  const totalProductsPrice = useMemo(() => automaticCashChange
+    ? cartIntegrity.net
+    : finalArrayProduct.reduce((acc: number, item: Product) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0), [automaticCashChange, cartIntegrity.net, finalArrayProduct])
+  const discountPayloadType = String(data.discountType ?? TypeDiscount.PERCENT)
+  const discountPayloadValue = Number(discountPayloadType === TypeDiscount.AMOUNT ? data.discountAmount ?? 0 : data.discountPercent ?? 0)
+  const discountPayloadIssue = automaticCashChange ? validateDiscountPayload(discountPayloadType, discountPayloadValue) : ''
+  const payloadSubtotalValid = !automaticCashChange || auditPayloadSubtotal(finalArrayProduct, cartIntegrity.net)
 
   // Calculate synchronously from the same current cart used by GraphQL, not
   // from the formatted UI price or the previous render's total state.
-  const cashCheckout = calculateCashCheckout({
+  const calculatedCheckout = calculateCashCheckout({
     kind: paymentKind,
     subtotal: totalProductsPrice,
     delivery: values?.valueDelivery,
     receivedText: cashReceived,
+    receivedMode: cashReceivedMode,
+    integrityMessage: automaticCashChange && !cartIntegrity.valid ? `Los importes del carrito no coinciden. ${cartIntegrity.issues[0] ?? 'Revisa cantidades y descuentos.'}` : !payloadSubtotalValid ? 'El total del carrito no coincide con los importes preparados para el cobro.' : undefined,
+    blockingMessage: discountPayloadIssue,
     hasItems: Boolean(data.PRODUCT?.length)
   })
-  const handleCashReceivedChange = (value: string): void => {
+  // Financial diagnostics are safe to share: no IDs, names, session or customer data.
+  const integrityDebug = automaticCashChange && (!cartIntegrity.valid || !payloadSubtotalValid)
+    ? buildCartIntegrityDebug(cartIntegrity, calculatedCheckout, data.discountType, data.discountPercent, data.discountAmount, payloadSubtotalValid)
+    : undefined
+  const cashCheckout = { ...calculatedCheckout, integrityDebug }
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && integrityDebug) {
+      console.warn('[VENTY][CART_INTEGRITY]', integrityDebug)
+    }
+  }, [integrityDebug])
+  const handleCashReceivedChange = (value: string, mode: CashReceivedMode = 'manual'): void => {
     if (!automaticCashChange || paymentKind !== 'cash' || !data.PRODUCT?.length ||
-        cashCheckout.total <= 0 || loadingSale || loadingRegisterSale) return
-    setCashReceived(value)
+        !cashCheckout.amountsValid || cashCheckout.total <= 0 || loadingSale || loadingRegisterSale) return
+    setCashReceivedMode(mode === 'exact' ? 'exact' : 'manual')
+    // Exact is an intent, not a historical cash amount; derive its value every render.
+    setCashReceived(mode === 'exact' ? '' : value)
   }
   useEffect(() => {
-    if (automaticCashChange && (!data.PRODUCT?.length || paymentKind === 'non-cash' ||
-      (cashCheckout.canSubmit && cashCheckout.total === 0))) setCashReceived('')
-  }, [automaticCashChange, data.PRODUCT?.length, paymentKind, cashCheckout.canSubmit, cashCheckout.total])
+    if (!automaticCashChange) return
+    if (!data.PRODUCT?.length || paymentKind === 'non-cash') clearCashReceived()
+    else if (cashReceivedMode === 'manual' && cashCheckout.amountsValid && cashCheckout.total === 0) setCashReceived('')
+  }, [automaticCashChange, data.PRODUCT?.length, paymentKind, cashReceivedMode, cashCheckout.amountsValid, cashCheckout.total, clearCashReceived])
 
   const checkoutValues = automaticCashChange
-    ? { ...values, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change) : '' }
+    ? { ...values, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change).replace('.', ',') : '' }
     : values
 
   const handleSubmit = () => {
     // Double-submit guard: prevent a second mutation while one is already in-flight.
     if (loadingSale || loadingRegisterSale) return
 
+    if (automaticCashChange) {
+      const currentIntegrity = auditCart(data)
+      const freshCheckout = calculateCashCheckout({
+        kind: paymentKind,
+        subtotal: currentIntegrity.net,
+        delivery: values?.valueDelivery,
+        receivedText: cashReceived,
+        receivedMode: cashReceivedMode,
+        hasItems: Boolean(data.PRODUCT?.length),
+        integrityMessage: currentIntegrity.valid ? undefined : `Los importes del carrito no coinciden. ${currentIntegrity.issues[0] ?? ''}`,
+        blockingMessage: discountPayloadIssue
+      })
+      if (!auditPayloadSubtotal(finalArrayProduct, currentIntegrity.net) ||
+          !freshCheckout.canSubmit || freshCheckout.subtotal !== cashCheckout.subtotal ||
+          freshCheckout.total !== cashCheckout.total || freshCheckout.change !== cashCheckout.change) {
+        return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning',
+          description: freshCheckout.message || 'Los importes del carrito o de la venta cambiaron. Revisa antes de confirmar.' })
+      }
+    }
     if (automaticCashChange && !cashCheckout.canSubmit) {
       return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: cashCheckout.message })
     }
@@ -1251,7 +1328,7 @@ export const useSales = ({
         shoppingCartRefCode,
         discount: {
           type: discountType,
-          value: resolveDiscountPercentValue()
+          value: automaticCashChange ? discountPayloadValue : resolveDiscountPercentValue()
         },
         totalProductsPrice: automaticCashChange ? cashCheckout.subtotal : (convertInteger(totalProductsPrice) || 0)
       },
@@ -1287,7 +1364,7 @@ export const useSales = ({
               query: GET_ALL_COUNT_SALES,
               fetchPolicy: 'network-only'
             })
-            if (automaticCashChange) setCashReceived('')
+            if (automaticCashChange) clearCashReceived()
             setValues(initialValuesState)
             handleChange({ target: { name: 'tableId', value: '' } }, false)
             getOneSalesStore({
@@ -1378,7 +1455,7 @@ export const useSales = ({
   }
 
   const handleCleanFilter = (): null => {
-    if (automaticCashChange) setCashReceived('')
+    if (automaticCashChange) clearCashReceived()
     setValues(initialValuesState)
     setValuesDates({ fromDate: yearMonthDay, toDate: '' })
     return null
@@ -1435,7 +1512,7 @@ export const useSales = ({
 
     const snapshot = {
       products: data.PRODUCT,
-      values: automaticCashChange ? { ...values, change: '' } : { ...clearNonCashChange(values, paymentKind) },
+      values: automaticCashChange ? { ...values, change: '', valueDelivery: typeof values.valueDelivery === 'number' && settledMoneyCents(values.valueDelivery) !== null ? centsToText(settledMoneyCents(values.valueDelivery)!) : values.valueDelivery } : { ...clearNonCashChange(values, paymentKind) },
       total: totalProductsPrice,
       discountType: data.discountType ? String(data.discountType) : String(TypeDiscount.PERCENT),
       discountPercent: Number(data.discountPercent) || 0,
@@ -1513,7 +1590,7 @@ export const useSales = ({
       }
     })
 
-    if (automaticCashChange) setCashReceived('')
+    if (automaticCashChange) clearCashReceived()
     setValues(automaticCashChange ? { ...resumedOrder.values, change: '' } : { ...resumedOrder.values })
     setActivePendingOrderId(resumedOrder.id)
 
@@ -1621,6 +1698,8 @@ export const useSales = ({
     values: checkoutValues,
     paymentKind,
     cashCheckout: automaticCashChange ? cashCheckout : undefined,
+    cartIntegrity: automaticCashChange ? cartIntegrity : undefined,
+    cartIntegrityDebug: integrityDebug,
     handleCashReceivedChange,
     initialStateSales,
     productsFood: allProducts,

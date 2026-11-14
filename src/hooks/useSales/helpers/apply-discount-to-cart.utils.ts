@@ -1,4 +1,5 @@
-import { fromMoneyCents, isCourtesyProduct, resolveBaseLineTotal, resolveExtraBaseTotal, restoreProductPricing, toMoneyCents } from './pricing.utils'
+import { moneyCents, percentMoneyCents } from './money-minor.utils'
+import { hasPricingSources, fromMoneyCents, isCourtesyProduct, resolveBaseLineTotal, resolveExtraBaseTotal, restoreProductPricing, toMoneyCents } from './pricing.utils'
 
 export enum TypeDiscount { PERCENT = 'PERCENT', AMOUNT = 'AMOUNT' }
 interface DiscountPayload { type: TypeDiscount; value: number }
@@ -37,6 +38,7 @@ const buildDiscountLines = (state: { PRODUCT?: unknown } | null | undefined) => 
 }
 
 export const getDiscountableSubtotal = (state: { PRODUCT?: unknown } | null | undefined): number => {
+  if (!hasPricingSources(state?.PRODUCT)) return 0
   const gross = buildDiscountLines(state).reduce((sum, line) => sum + line.discountable, 0)
   return Number.isSafeInteger(gross) && gross > 0 ? fromMoneyCents(gross) : 0
 }
@@ -52,13 +54,21 @@ export const applyDiscountToCart = (state: any, payload: DiscountPayload, sendNo
     sendNotification?.({ title: 'Error', backgroundColor: 'warning', description: 'Descuento no válido.' })
     return state
   }
+  if (!hasPricingSources(state?.PRODUCT)) {
+    sendNotification?.({ title: 'Importes inválidos', backgroundColor: 'warning', description: 'No se puede recalcular sin precios originales válidos. Revisa los productos del carrito.' })
+    return state
+  }
   const lines = buildDiscountLines(state)
   const gross = lines.reduce((sum, line) => sum + line.discountable, 0)
   if (!Number.isSafeInteger(gross)) {
     sendNotification?.({ title: 'Error', backgroundColor: 'error', description: 'El importe supera el rango seguro de cálculo.' })
     return state
   }
-  const requested = type === TypeDiscount.PERCENT ? Math.round(gross * value / 100) : toMoneyCents(value)
+  const requested = type === TypeDiscount.PERCENT ? percentMoneyCents(gross, value) : moneyCents(value)
+  if (requested === null) {
+    sendNotification?.({ title: 'Importe inválido', backgroundColor: 'warning', description: 'El descuento supera el rango monetario permitido.' })
+    return state
+  }
   const applied = Math.min(gross, requested)
   const allocations = allocateCents(lines.map(line => line.discountable), applied)
   const breakdown: { pId: string | number; discountAmount: number }[] = []
@@ -67,7 +77,13 @@ export const applyDiscountToCart = (state: any, payload: DiscountPayload, sendNo
     const restored = restoreProductPricing(line.product)
     if (line.free || applied === 0) {
       breakdown.push({ pId: line.product.pId, discountAmount: 0 })
-      return { ...restored, ...(line.free ? { free: true, ProPrice: 0, discountAmount: 0, discountPercent: 0 } : {}) }
+      // Explicitly strip old metadata even if a consumer has an outdated pricing helper.
+      const { originalProPrice, discountAmount, discountPercent, ...clean } = restored
+      const cleanExtras = Array.isArray(clean.dataExtra) ? clean.dataExtra.map((extra: any) => {
+        const { originalNewExtraPrice, discountAmount, discountPercent, ...rest } = extra
+        return rest
+      }) : undefined
+      return { ...clean, ...(cleanExtras === undefined ? {} : { dataExtra: cleanExtras }), ...(line.free ? { free: true, ProPrice: 0, discountAmount: 0, discountPercent: 0 } : {}) }
     }
     const onBase = Math.min(line.base, allocated)
     const extraAlloc = allocateCents(line.prices, allocated - onBase)
@@ -100,6 +116,7 @@ export const applyDiscountToCart = (state: any, payload: DiscountPayload, sendNo
 
 /** Repairs old cart / pending-order data only for courtesy lines when no discount is active. */
 export const reapplyActiveDiscount = (state: any): any => {
+  if (!hasPricingSources(state?.PRODUCT)) return state
   const type = state?.discountType === TypeDiscount.AMOUNT ? TypeDiscount.AMOUNT : TypeDiscount.PERCENT
   const value = Number(type === TypeDiscount.AMOUNT ? state?.discountAmount : state?.discountPercent)
   if (Number.isFinite(value) && value > 0) return applyDiscountToCart(state, { type, value })
@@ -107,7 +124,7 @@ export const reapplyActiveDiscount = (state: any): any => {
   const products = Array.isArray(state?.PRODUCT) ? state.PRODUCT.map((p: any) => {
     if (!isCourtesyProduct(p.free)) return p
     const restored = restoreProductPricing(p)
-    if (p.ProPrice !== 0 || (Array.isArray(p.dataExtra) && p.dataExtra.some((ex: any, i: number) => ex.newExtraPrice !== restored.dataExtra[i].newExtraPrice || ex.originalNewExtraPrice != null))) { changed = true; return restored }
+    if (p.ProPrice !== 0 || Number(p.discountAmount ?? 0) !== 0 || Number(p.discountPercent ?? 0) !== 0 || p.originalProPrice != null || (Array.isArray(p.dataExtra) && p.dataExtra.some((ex: any, i: number) => ex.newExtraPrice !== restored.dataExtra[i].newExtraPrice || ex.originalNewExtraPrice != null))) { changed = true; return restored }
     return p
   }) : []
   return changed ? { ...state, PRODUCT: products } : state
