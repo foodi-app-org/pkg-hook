@@ -802,7 +802,6 @@ export const useSales = ({
   const { data: salesPaymentMethods } = useGetAllPaymentMethods()
   const cashStore = String(idStore ?? '')
   const cashControl = useCashPOS(cashStore, cashManagementEnabled, cashPollingEnabled)
-  console.log({cashControl})
   const methodResolution = resolveFinancialMethod(cashControl.methods, data.payId)
   const configuredKind = methodResolution.kind
   const checkoutPaymentMethods = useMemo(() => cashManagementEnabled && !cashControl.known && !cashControl.enabled ? [] : paymentChoices(Array.isArray(salesPaymentMethods) ? salesPaymentMethods : [], cashControl.methods, cashControl.enabled), [salesPaymentMethods, cashControl.methods, cashControl.enabled, cashControl.known, cashManagementEnabled])

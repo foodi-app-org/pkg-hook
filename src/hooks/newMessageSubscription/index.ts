@@ -27,6 +27,7 @@ export const newMessageSubscription = (
   const subscription = useSubscription(NEW_MESSAGE_SUBSCRIPTION, {
     variables: { idStore },
     onSubscriptionData: ({ subscriptionData }) => {
+      console.log({subscriptionData})
       if (subscriptionData.data && subscriptionData.data.newMessage) {
         // Llama a la función proporcionada cuando se recibe un nuevo mensaje
         onMessageReceived(subscriptionData.data.newMessage)
