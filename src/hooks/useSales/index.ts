@@ -1,4 +1,5 @@
-import { minor } from 'exact-cart-totals'
+import { minor, moneyNumber } from 'exact-cart-totals'
+import { resolveFinancialMethod, paymentChoices, verifyCheckoutAmounts, paymentGate } from './helpers/checkout-readiness'
 import { exactMerchandise } from './helpers/exact-merchandise'
 import { useCashPOS, SALE_PAYMENT_EVIDENCE } from '../useCashManagement'
 import { verifyPhysicalCheckout } from '../useCashManagement/checkout'
@@ -99,8 +100,9 @@ export const useSales = ({
   pendingOrdersPersistence,
   automaticCashChange: requestedAutomaticCashChange = false,
   deliveryCheckoutEnabled = false,
-  cashManagementEnabled = false
-}: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean; cashManagementEnabled?: boolean }) => {
+  cashManagementEnabled = false,
+  cashPollingEnabled = true
+}: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean; cashManagementEnabled?: boolean; cashPollingEnabled?: boolean }) => {
   const automaticCashChange = requestedAutomaticCashChange || deliveryCheckoutEnabled
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
@@ -442,6 +444,7 @@ export const useSales = ({
     e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
     error: boolean = false
   ) => {
+    if (isCashOperationLocked()) return
     if (isCashOperationLocked()) return
     const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
@@ -798,10 +801,12 @@ export const useSales = ({
   // Apollo shares the payment catalog with CreateSales; no new GraphQL fields.
   const { data: salesPaymentMethods } = useGetAllPaymentMethods()
   const cashStore = String(idStore ?? '')
-  const cashControl = useCashPOS(cashStore, cashManagementEnabled)
-  const configuredKind = cashControl.methods.find(m => m.payId === data.payId && m.state === 'active')?.financialKind
+  const cashControl = useCashPOS(cashStore, cashManagementEnabled, cashPollingEnabled)
+  const methodResolution = resolveFinancialMethod(cashControl.methods, data.payId)
+  const configuredKind = methodResolution.kind
+  const checkoutPaymentMethods = useMemo(() => cashManagementEnabled && !cashControl.known && !cashControl.enabled ? [] : paymentChoices(Array.isArray(salesPaymentMethods) ? salesPaymentMethods : [], cashControl.methods, cashControl.enabled), [salesPaymentMethods, cashControl.methods, cashControl.enabled, cashControl.known, cashManagementEnabled])
   const paymentKind: 'cash' | 'non-cash' | 'unknown' = cashControl.enabled
-    ? (!configuredKind || configuredKind === 'UNKNOWN' ? 'unknown' : configuredKind === 'CASH' ? 'cash' : 'non-cash')
+    ? (!configuredKind ? 'unknown' : configuredKind === 'CASH' ? 'cash' : 'non-cash')
     : resolveSelectedPaymentKind(salesPaymentMethods, data.payId)
   const cashScopeRef = useRef(cashStore)
   cashScopeRef.current = cashStore
@@ -1163,7 +1168,7 @@ export const useSales = ({
   const cartIntegrity = useMemo(() => auditCart(data), [data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount])
   const exactCart = useMemo(() => deliveryCheckoutEnabled ? exactMerchandise(data, cartIntegrity) : {totals:null,issue:''}, [deliveryCheckoutEnabled, data.PRODUCT, data.discountType, data.discountAmount, data.discountPercent, cartIntegrity])
   const totalProductsPrice = useMemo(() => automaticCashChange
-    ? (exactCart.totals?.netTotal ?? cartIntegrity.net)
+    ? (exactCart.totals ? moneyNumber(minor(exactCart.totals.exact.netTotal)) : cartIntegrity.net)
     : finalArrayProduct.reduce((acc: number, item: Product) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0), [automaticCashChange, cartIntegrity.net, exactCart.totals?.netTotal, finalArrayProduct])
   const discountPayloadType = String(data.discountType ?? TypeDiscount.PERCENT)
   const discountPayloadValue = Number(discountPayloadType === TypeDiscount.AMOUNT ? data.discountAmount ?? 0 : data.discountPercent ?? 0)
@@ -1187,22 +1192,43 @@ export const useSales = ({
     blockingMessage: checkoutBlocking,
     hasItems: Boolean(data.PRODUCT?.length)
   })
-  // Same exact settlement as the delivery quote, not a new source of money.
-  const quotedCheckoutIssue = (() => {
-    if (!deliveryCheckoutEnabled || !deliveryCheckout.ready) return ''
-    try { return minor(deliveryCheckout.totals?.checkoutTotal) === minor(baseCashCheckout.total) ? '' : 'El total POS no coincide con la cotización financiera.' }
-    catch { return 'Cotización financiera inválida.' }
-  })()
-  const physicalIssue = cashControl.enabled && baseCashCheckout.amountsValid
+  // Quote, receipt and checkout must agree in COP, not minor units.
+  const quotedCheckoutIssue = baseCashCheckout.amountsValid && baseCashCheckout.hasItems
+    ? verifyCheckoutAmounts(totalProductsPrice, deliveryCheckoutEnabled ? deliveryCheckout.posCharge : baseCashCheckout.delivery, baseCashCheckout, deliveryCheckoutEnabled && deliveryCheckout.ready ? deliveryCheckout.totals : null) : ''
+  const physicalIssue = cashControl.enabled && baseCashCheckout.amountsValid && configuredKind
     ? verifyPhysicalCheckout(cashControl.session, configuredKind, baseCashCheckout.total, baseCashCheckout.received) : ''
-  const paymentConfirmKey = JSON.stringify([cashStore, cashControl.access?.actorId, cashControl.session?.id, configuredKind, data.payId, data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount, values.cliId, values.tableId, deliveryCheckout.input, deliveryCheckout.quote, baseCashCheckout.total, baseCashCheckout.received, baseCashCheckout.change])
+  const paymentConfirmKey = JSON.stringify([cashStore, cashControl.access?.actorId, cashControl.session?.id, cashControl.session?.roundingUnitMinor, cashControl.session?.roundingRule, configuredKind, data.payId, data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount, values.cliId, values.tableId, deliveryCheckout.input, deliveryCheckout.quote, baseCashCheckout.total, baseCashCheckout.received, baseCashCheckout.change])
   useEffect(() => { setConfirmedPaymentKey('') }, [paymentConfirmKey])
-  const cashProblem = cashManagementEnabled ? (!cashStorageReady ? 'Comprobando cobros pendientes…' : cashStorageIssue || (pendingCashReference ? `Verifica el cobro ${pendingCashReference} antes de continuar.` : '') || cashControl.blocking || (!cashControl.known ? 'Consultando la caja…' : '') || (cashControl.enabled && !deliveryCheckoutEnabled ? 'Activa el checkout de domicilios.' : '') || physicalIssue) : ''
-  const paymentConfirmationReady = cashControl.enabled && cashControl.known && !cashProblem && !quotedCheckoutIssue && baseCashCheckout.canSubmit && !cashOperationLocked
-  const paymentConfirmed = paymentConfirmationReady && confirmedPaymentKey === paymentConfirmKey
-  const confirmationIssue = cashControl.enabled && !paymentConfirmed ? (baseCashCheckout.total === 0 ? 'Confirma la operación sin cobro.' : 'Confirma que recibiste el pago.') : ''
-  const checkoutIssue = cashProblem || quotedCheckoutIssue || (!baseCashCheckout.canSubmit ? baseCashCheckout.message : confirmationIssue)
-  const cashCheckout = checkoutIssue ? { ...baseCashCheckout, canSubmit:false, message:checkoutIssue } : baseCashCheckout
+  const cashProblem = cashManagementEnabled ? (!cashStorageReady ? 'Comprobando cobros pendientes…' : cashStorageIssue || (pendingCashReference ? `Verifica el cobro ${pendingCashReference} antes de continuar.` : '') || cashControl.blocking || (!cashControl.known ? 'Consultando la caja…' : '') || (cashControl.enabled && !deliveryCheckoutEnabled ? 'Activa el checkout de domicilios.' : '') || (cashControl.enabled ? methodResolution.issue : '') || physicalIssue) : ''
+  const gate = paymentGate({enabled:cashControl.enabled,known:cashControl.known,locked:cashOperationLocked,issue:cashProblem,amountIssue:quotedCheckoutIssue,baseReady:baseCashCheckout.canSubmit,baseMessage:baseCashCheckout.message,confirmed:confirmedPaymentKey===paymentConfirmKey,zero:baseCashCheckout.total===0})
+  const paymentConfirmationReady = gate.ready
+  const paymentConfirmed = gate.confirmed
+  const confirmationIssue = gate.message
+  const checkoutIssue = gate.message
+  const cashCheckout = { ...baseCashCheckout, amountsValid:baseCashCheckout.amountsValid && !quotedCheckoutIssue, canSubmit:gate.canSubmit, message:checkoutIssue }
+  // Diagnostic values are limited to financial state. No customer, cart, authentication or payment secrets.
+  const checkoutDiagnostics = {
+    selectedMethodPresent: Boolean(data.payId),
+    financialCatalogCount: cashControl.methods.length,
+    selectedMethod: cashControl.methods.find(m=>m.payId===data.payId) ? {
+      state: cashControl.methods.find(m=>m.payId===data.payId)?.state,
+      financialKind: cashControl.methods.find(m=>m.payId===data.payId)?.financialKind
+    } : null,
+    paymentKind,
+    methodIssue: cashControl.enabled ? methodResolution.issue : '',
+    sessionStatus: cashControl.session?.status ?? null,
+    scopeMatches: cashControl.access?.storeId === cashStore,
+    contextReady: cashControl.known,
+    merchandiseExact: exactCart.totals?.exact.netTotal ?? null,
+    checkoutSubtotal: baseCashCheckout.subtotal,
+    checkoutDelivery: baseCashCheckout.delivery,
+    checkoutTotal: baseCashCheckout.total,
+    quoteTotal: deliveryCheckout.totals?.checkoutTotal ?? null,
+    amountIssue: quotedCheckoutIssue,
+    confirmationReady: gate.ready,
+    blocker: gate.reason,
+    issue: checkoutIssue
+  }
   const confirmCurrentPayment = (confirmed:boolean) => setConfirmedPaymentKey(confirmed && paymentConfirmationReady ? paymentConfirmKey : '')
   const handleCashReceivedChange = (value: string, mode: CashReceivedMode = 'manual'): void => {
     if (isCashOperationLocked()) return
@@ -1808,7 +1834,7 @@ export const useSales = ({
   }, [data, domain])
 
   return {
-    cashControl, paymentConfirmed, paymentConfirmationReady, confirmCurrentPayment, pendingCashReference, cashStorageIssue, cashOperationLocked, recoveringCash, resolvePendingCashReference, retryPendingCashSale, canRetryPendingCashSale: Boolean(pendingCashReference && attemptRef.current && cashControl.known && cashControl.access?.actorId===attemptRef.current.marker.actorId),
+    cashControl, checkoutPaymentMethods, paymentMethodIssue: cashControl.enabled && cashControl.known ? methodResolution.issue : '', paymentConfirmationBlocker: gate.reason, checkoutAmountIssue: quotedCheckoutIssue, checkoutDiagnostics, paymentConfirmed, paymentConfirmationReady, confirmCurrentPayment, pendingCashReference, cashStorageIssue, cashOperationLocked, recoveringCash, resolvePendingCashReference, retryPendingCashSale, canRetryPendingCashSale: Boolean(pendingCashReference && attemptRef.current && cashControl.known && cashControl.access?.actorId===attemptRef.current.marker.actorId),
     loading: loading || loadingSale,
     loadingExtraProduct,
     disabledModalItems: !disabledModalItems,

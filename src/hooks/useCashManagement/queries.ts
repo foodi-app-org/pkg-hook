@@ -28,34 +28,5 @@ export const DELIVERY_CASH_PAYOUT=gql`mutation DeliveryCashPayout($input:Deliver
 
 export const CASH_SCHEMA_STATUS=gql`query CashSchemaStatus { cashSchemaStatus { ready dialect schema missingTables missingColumns missingIndexes missingConstraints incompatibleColumns } }`
 
-export const RECOUNT_CLOSE = gql`
-  mutation RecountCashClose(
-    $input: RecountCashCloseInput!
-  ) {
-    recountCashClose(input: $input) {
-      ...CashCountFields
-    }
-  }
-  ${count}
-`
-
-export const CASH_UNLINKED_SALES = gql`
-  query CashUnlinkedSales($sessionId: ID!) {
-    getCashUnlinkedSales(sessionId: $sessionId) {
-      sessionId
-      from
-      to
-      count
-      unknownAmountCount
-      knownPayableMinor
-      candidates {
-        saleId
-        reference
-        createdAt
-        paymentName
-        financialKind
-        payableMinor
-      }
-    }
-  }
-`
+export const RECOUNT_CLOSE=gql`mutation RecountCashClose($input:RecountCashCloseInput!) { recountCashClose(input:$input) { ...CashCountFields } } ${count}`
+export const CASH_UNLINKED_SALES=gql`query CashUnlinkedSales($sessionId:ID!) { getCashUnlinkedSales(sessionId:$sessionId) { sessionId from to count unknownAmountCount knownPayableMinor candidates { saleId reference createdAt paymentName financialKind payableMinor } } }`

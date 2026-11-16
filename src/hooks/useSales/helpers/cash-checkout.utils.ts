@@ -1,4 +1,5 @@
-import { addCents, centsToText, moneyCents, settledMoneyCents } from './money-minor.utils'
+import { minor, moneyNumber, formatMinor } from 'exact-cart-totals'
+import { moneyCents } from './money-minor.utils'
 
 export type CashReceivedMode = 'manual' | 'exact'
 export type CashPaymentKind = 'cash' | 'non-cash' | 'unknown'
@@ -39,7 +40,8 @@ function parseCopCents(value: unknown, emptyAsZero = false, strict = false): num
   } else return null
   if (!Number.isFinite(number) || number < 0) return null
   const normalized = typeof value === 'string' ? value.trim().replace(/\./g, '').replace(',', '.') : number
-  return strict ? settledMoneyCents(normalized) : moneyCents(normalized)
+  if (!strict) return moneyCents(normalized)
+  try { const units = minor(normalized); moneyNumber(units); return Number(units) } catch { return null }
 }
 
 /** Public API continues to return COP (not cents). */
@@ -71,21 +73,24 @@ export function calculateCashCheckout(input: {
   const subtotal = parseCopCents(input.subtotal, false, true)
   const delivery = parseCopCents(input.delivery, true, true)
   const cash = input.kind === 'cash'
-  const totalCents = subtotal === null || delivery === null ? null : addCents(subtotal, delivery)
+  let totalCents: number | null = null
+  if (subtotal !== null && delivery !== null) {
+    try { const units = BigInt(subtotal) + BigInt(delivery); moneyNumber(units); totalCents = Number(units) } catch { /* fail closed */ }
+  }
   const total = totalCents ?? 0
   const amountsValid = totalCents !== null && !input.integrityMessage
   const showCash = cash && input.hasItems && amountsValid && total > 0
   const receivedMode = cash && input.receivedMode === 'exact' ? 'exact' : 'manual'
-  const receivedText = showCash && receivedMode === 'exact' ? centsToText(total) : input.receivedText
+  const receivedText = showCash && receivedMode === 'exact' ? formatMinor(BigInt(total)).replace('.', ',') : input.receivedText
   const received = showCash ? parseCashReceivedCents(receivedText) : null
   const result: CashCheckoutInfo = {
     kind: input.kind,
     receivedMode,
     receivedText: showCash ? receivedText : '',
-    subtotal: input.hasItems ? (subtotal ?? 0) / MONEY_SCALE : 0,
-    delivery: input.hasItems ? (delivery ?? 0) / MONEY_SCALE : 0,
-    total: input.hasItems && amountsValid ? total / MONEY_SCALE : 0,
-    received: showCash && received !== null ? received / MONEY_SCALE : null,
+    subtotal: input.hasItems ? moneyNumber(BigInt(subtotal ?? 0)) : 0,
+    delivery: input.hasItems ? moneyNumber(BigInt(delivery ?? 0)) : 0,
+    total: input.hasItems && amountsValid ? moneyNumber(BigInt(total)) : 0,
+    received: showCash && received !== null ? moneyNumber(BigInt(received)) : null,
     change: 0,
     missing: 0,
     canSubmit: false,
@@ -101,13 +106,11 @@ export function calculateCashCheckout(input: {
     ? 'Ingresa un monto válido con máximo dos decimales.'
     : 'Ingresa el efectivo recibido.'
   else if (received < total) {
-    result.missing = (total - received) / MONEY_SCALE
-    result.message = 'El efectivo recibido es insuficiente.'
+    try { result.missing = moneyNumber(BigInt(total - received)); result.message = 'El efectivo recibido es insuficiente.' } catch { result.message = 'Importe fuera del rango exacto permitido.' }
   } else if (received - total > MAX_CHANGE_CENTS) {
     result.message = 'El vuelto supera el límite permitido.'
   } else {
-    result.change = (received - total) / MONEY_SCALE
-    result.canSubmit = true
+    try { result.change = moneyNumber(BigInt(received - total)); result.canSubmit = true } catch { result.message = 'El vuelto no se puede representar exactamente.' }
   }
   if (input.blockingMessage && input.hasItems && amountsValid) {
     result.canSubmit = false
