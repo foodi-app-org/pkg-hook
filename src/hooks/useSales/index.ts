@@ -1329,6 +1329,7 @@ export const useSales = ({
     } finally {saleSubmissionLock.current=false;setRecoveringCash(false)}
   }
   const handleSubmit = () => {
+    console.log({useSales: 'click'})
     // Double-submit guard: prevent a second mutation while one is already in-flight.
     if (loadingSale || loadingRegisterSale || loadingControlledSale || isCashOperationLocked()) return
     if (cashManagementEnabled && (!cashControl.known || cashProblem || (cashControl.enabled && !paymentConfirmed))) return sendNotification({title:'Verifica la caja',backgroundColor:'warning',description:cashProblem || confirmationIssue || 'Consulta la sesión de caja'})

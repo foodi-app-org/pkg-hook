@@ -26,7 +26,7 @@ const MAX_CHANGE_CENTS = 2147483647 * MONEY_SCALE
 const LOCAL_MONEY = /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?$/
 const CASH_MONEY = /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/
 
-/** Parse numeric money or es-CO text. Round to cents, not whole pesos. */
+
 function parseCopCents(value: unknown, emptyAsZero = false, strict = false): number | null {
   if (value == null || (typeof value === 'string' && value.trim() === '')) {
     return emptyAsZero ? 0 : null
