@@ -1,53 +1,47 @@
 import { gql, useQuery } from '@apollo/client'
+import { useMemo } from 'react'
 
-import { fillLast7Weeks, WeeklyStockMovement } from './helpers'
+import { normalizeWeeklyStock } from './helpers'
+import type { WeeklyStockMovement, WeeklyStockWire } from './helpers'
+export type { WeeklyStockMovement, WeeklyComparisonStatus } from './helpers'
 
-const GET_WEEKLY_STOCK_MOVEMENT = gql`
+export const GET_WEEKLY_STOCK_MOVEMENT = gql`
   query GetStockMovementPercentageChange {
     getStockMovementWeeklyComparison {
       weekStart
+      weekEnd
       totalOut
       prevTotalOut
       percentageChange
+      comparisonStatus
+      isCurrent
+      isPartial
+      historyPartial
     }
   }
 `
 
-type PercentageChange = string | null
+export const useWeeklyStockMovement = () => {
+  const { data, loading, error, refetch } = useQuery<{
+    getStockMovementWeeklyComparison: WeeklyStockWire[]
+  }>(GET_WEEKLY_STOCK_MOVEMENT, {
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true
+  })
 
-export const useWeeklyStockMovement = (): [
-  WeeklyStockMovement[],
-  { loading: boolean; error?: Error }
-] => {
-  const { data, loading, error } = useQuery(GET_WEEKLY_STOCK_MOVEMENT)
+  const normalized = useMemo<{ rows: WeeklyStockMovement[]; error?: Error }>(() => {
+    if (!data) return { rows: [] }
+    try {
+      return { rows: normalizeWeeklyStock(data.getStockMovementWeeklyComparison) }
+    } catch (cause) {
+      return { rows: [], error: cause instanceof Error ? cause : new Error('Invalid weekly stock response') }
+    }
+  }, [data])
 
-  // Transform data and fill missing weeks
-  const rawData: WeeklyStockMovement[] = data?.getStockMovementWeeklyComparison || []
-  const formattedData = fillLast7Weeks(
-    rawData.map((item: WeeklyStockMovement) => ({
-      ...item,
-      percentageChange: formatPercentageChange(item.percentageChange)
-    }))
-  )
-
-  return [formattedData, { loading, error }]
-}
-
-/**
- * Ensures percentageChange is a valid string percentage, clamping between -100% and 100%.
- *
- * @param percentageChange Raw percentage change value.
- * @returns Formatted and clamped percentage change.
- */
-const formatPercentageChange = (percentageChange: PercentageChange): string => {
-  if (percentageChange === null) return 'N/A'
-
-  // Convert to number
-  let parsedValue = Number.parseFloat(percentageChange)
-
-  // Clamp between -100% and 100%
-  if (Number.isNaN(parsedValue)) return 'N/A'
-  parsedValue = Math.max(-100, Math.min(100, parsedValue))
-
-  return `${parsedValue.toFixed(1)}`
+  // Preserve the public two-element tuple; refetch is an additive capability.
+  const result: [WeeklyStockMovement[], { loading: boolean; error?: Error; refetch: typeof refetch }] = [
+    normalized.rows,
+    { loading, error: error ?? normalized.error, refetch }
+  ]
+  return result
 }
