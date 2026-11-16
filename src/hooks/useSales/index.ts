@@ -1,3 +1,9 @@
+import { minor } from 'exact-cart-totals'
+import { exactMerchandise } from './helpers/exact-merchandise'
+import { useCashPOS, SALE_PAYMENT_EVIDENCE } from '../useCashManagement'
+import { verifyPhysicalCheckout } from '../useCashManagement/checkout'
+import { REGISTER_SALE_WITH_CASH } from './cash-sale.mutation'
+import { buildPaymentAttempt, paymentVariables, readMarker, assertPaymentEvidence, classifySaleResponse, type PaymentAttempt, type PendingMarker } from './helpers/cash-sale-attempt'
 import {
   useApolloClient,
   useLazyQuery,
@@ -92,8 +98,9 @@ export const useSales = ({
   onSaleSuccess = (args) => { return args },
   pendingOrdersPersistence,
   automaticCashChange: requestedAutomaticCashChange = false,
-  deliveryCheckoutEnabled = false
-}: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean }) => {
+  deliveryCheckoutEnabled = false,
+  cashManagementEnabled = false
+}: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean; cashManagementEnabled?: boolean }) => {
   const automaticCashChange = requestedAutomaticCashChange || deliveryCheckoutEnabled
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
   const saveDataState = JSON.parse(Cookies.get(keyToSaveData) ?? '[]')
@@ -299,6 +306,9 @@ export const useSales = ({
     }
   )
 
+  const [registerControlledSale, { loading: loadingControlledSale }] = useMutation(REGISTER_SALE_WITH_CASH, { errorPolicy: 'all' })
+  const saleSubmissionLock = useRef(false)
+
   const [productFoodsOne, { data: dataProduct }] = useLazyQuery(GET_ONE_PRODUCTS_FOOD)
 
   const [ExtProductFoodsSubOptionalAll, { loading: loadingExtProductFoodsSubOptionalAll }] = useLazyQuery(
@@ -432,6 +442,7 @@ export const useSales = ({
     e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
     error: boolean = false
   ) => {
+    if (isCashOperationLocked()) return
     const target = (e as React.ChangeEvent<HTMLInputElement>).target as { name: string; value: string }
     const { name, value } = target
     // Reject stale callbacks/manual input when physical change does not apply.
@@ -786,12 +797,46 @@ export const useSales = ({
 
   // Apollo shares the payment catalog with CreateSales; no new GraphQL fields.
   const { data: salesPaymentMethods } = useGetAllPaymentMethods()
-  const paymentKind = resolveSelectedPaymentKind(salesPaymentMethods, data.payId)
+  const cashStore = String(idStore ?? '')
+  const cashControl = useCashPOS(cashStore, cashManagementEnabled)
+  const configuredKind = cashControl.methods.find(m => m.payId === data.payId && m.state === 'active')?.financialKind
+  const paymentKind: 'cash' | 'non-cash' | 'unknown' = cashControl.enabled
+    ? (!configuredKind || configuredKind === 'UNKNOWN' ? 'unknown' : configuredKind === 'CASH' ? 'cash' : 'non-cash')
+    : resolveSelectedPaymentKind(salesPaymentMethods, data.payId)
+  const cashScopeRef = useRef(cashStore)
+  cashScopeRef.current = cashStore
+  const cashActorRef = useRef(cashControl.access?.actorId)
+  cashActorRef.current = cashControl.access?.actorId
+  const storageKey = `venty:pending-cash-sale:${cashStore}`
+  const [markerState, setMarkerState] = useState<{ scope:string; ready:boolean; marker:PendingMarker|null; error:string }>({scope:'',ready:false,marker:null,error:''})
+  const markerRef = useRef<PendingMarker|null>(null)
+  const attemptRef = useRef<{ marker:PaymentAttempt; variables:Record<string,unknown>; pendingOrderId:string|null }|null>(null)
+  const [confirmedPaymentKey, setConfirmedPaymentKey] = useState('')
+  const [recoveringCash, setRecoveringCash] = useState(false)
+  useEffect(() => {
+    markerRef.current = null
+    attemptRef.current = null
+    setConfirmedPaymentKey('')
+    if (!cashManagementEnabled || !cashStore) { setMarkerState({scope:cashStore,ready:!cashManagementEnabled,marker:null,error:''}); return }
+    try {
+      const marker=readMarker(sessionStorage.getItem(storageKey),cashStore)
+      markerRef.current=marker
+      setMarkerState({scope:cashStore,ready:true,marker,error:''})
+    } catch (e) {
+      setMarkerState({scope:cashStore,ready:true,marker:null,error:e instanceof Error?e.message:'No se pudo comprobar un cobro pendiente.'})
+    }
+  }, [cashStore, cashManagementEnabled, storageKey])
+  const cashStorageReady = !cashManagementEnabled || (markerState.scope===cashStore && markerState.ready)
+  const cashStorageIssue = markerState.scope===cashStore ? markerState.error : ''
+  const pendingCashReference = markerState.scope===cashStore ? markerState.marker?.reference ?? '' : ''
+  const cashOperationLocked = saleSubmissionLock.current || (cashManagementEnabled && (!cashStorageReady || !!cashStorageIssue || !!pendingCashReference))
+  const isCashOperationLocked = () => saleSubmissionLock.current || (cashManagementEnabled && (!cashStorageReady || !!cashStorageIssue || !!markerRef.current))
 
   // PAYMENT_METHOD must clear the real checkout fields in the same event,
   // not wait until the receipt opens or the reconciliation effect runs.
   // Keep the reducer pure and pass every other action through untouched.
   const dispatch = useCallback((action: SalesReducerAction) => {
+    if (saleSubmissionLock.current || (cashManagementEnabled && (!cashStorageReady || !!cashStorageIssue || !!markerRef.current))) return
     if (automaticCashChange && (
       action.type === SalesActionTypes.REMOVE_ALL_PRODUCTS ||
       action.type === SalesActionTypes.RESTORE_PENDING_ORDER ||
@@ -801,7 +846,7 @@ export const useSales = ({
       setValues(previous => clearNonCashChange(previous, 'non-cash'))
       setErrors(previous => previous.change ? { ...previous, change: false } : previous)
     }, dispatchReducer)
-  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId, clearCashReceived])
+  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId, clearCashReceived, cashManagementEnabled, cashStorageReady, cashStorageIssue])
 
   useEffect(() => {
     if (paymentKind !== 'non-cash') return
@@ -1116,9 +1161,10 @@ export const useSales = ({
     return Number.isFinite(amount) && Number.isSafeInteger(Math.round(amount * 100)) ? amount : NaN
   }
   const cartIntegrity = useMemo(() => auditCart(data), [data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount])
+  const exactCart = useMemo(() => deliveryCheckoutEnabled ? exactMerchandise(data, cartIntegrity) : {totals:null,issue:''}, [deliveryCheckoutEnabled, data.PRODUCT, data.discountType, data.discountAmount, data.discountPercent, cartIntegrity])
   const totalProductsPrice = useMemo(() => automaticCashChange
-    ? cartIntegrity.net
-    : finalArrayProduct.reduce((acc: number, item: Product) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0), [automaticCashChange, cartIntegrity.net, finalArrayProduct])
+    ? (exactCart.totals?.netTotal ?? cartIntegrity.net)
+    : finalArrayProduct.reduce((acc: number, item: Product) => acc + (Number(item.ProPrice) || 0) + (Number(item.totalExtra) || 0), 0), [automaticCashChange, cartIntegrity.net, exactCart.totals?.netTotal, finalArrayProduct])
   const discountPayloadType = String(data.discountType ?? TypeDiscount.PERCENT)
   const discountPayloadValue = Number(discountPayloadType === TypeDiscount.AMOUNT ? data.discountAmount ?? 0 : data.discountPercent ?? 0)
   const discountPayloadIssue = validateDiscountPayload(discountPayloadType, discountPayloadValue)
@@ -1127,11 +1173,11 @@ export const useSales = ({
   const resetDelivery = deliveryCheckout.reset
   useEffect(() => { if (deliveryCheckoutEnabled && !data.PRODUCT?.length) resetDelivery() }, [deliveryCheckoutEnabled, data.PRODUCT?.length, resetDelivery])
   const checkoutDelivery = deliveryCheckoutEnabled ? deliveryCheckout.posCharge : values?.valueDelivery
-  const checkoutBlocking = discountPayloadIssue || (deliveryCheckoutEnabled ? deliveryCheckout.blockingMessage : '')
+  const checkoutBlocking = exactCart.issue || discountPayloadIssue || (deliveryCheckoutEnabled ? deliveryCheckout.blockingMessage : '')
 
   // Calculate synchronously from the same current cart used by GraphQL, not
   // from the formatted UI price or the previous render's total state.
-  const cashCheckout = calculateCashCheckout({
+  const baseCashCheckout = calculateCashCheckout({
     kind: paymentKind,
     subtotal: totalProductsPrice,
     delivery: checkoutDelivery,
@@ -1141,7 +1187,25 @@ export const useSales = ({
     blockingMessage: checkoutBlocking,
     hasItems: Boolean(data.PRODUCT?.length)
   })
+  // Same exact settlement as the delivery quote, not a new source of money.
+  const quotedCheckoutIssue = (() => {
+    if (!deliveryCheckoutEnabled || !deliveryCheckout.ready) return ''
+    try { return minor(deliveryCheckout.totals?.checkoutTotal) === minor(baseCashCheckout.total) ? '' : 'El total POS no coincide con la cotización financiera.' }
+    catch { return 'Cotización financiera inválida.' }
+  })()
+  const physicalIssue = cashControl.enabled && baseCashCheckout.amountsValid
+    ? verifyPhysicalCheckout(cashControl.session, configuredKind, baseCashCheckout.total, baseCashCheckout.received) : ''
+  const paymentConfirmKey = JSON.stringify([cashStore, cashControl.access?.actorId, cashControl.session?.id, configuredKind, data.payId, data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount, values.cliId, values.tableId, deliveryCheckout.input, deliveryCheckout.quote, baseCashCheckout.total, baseCashCheckout.received, baseCashCheckout.change])
+  useEffect(() => { setConfirmedPaymentKey('') }, [paymentConfirmKey])
+  const cashProblem = cashManagementEnabled ? (!cashStorageReady ? 'Comprobando cobros pendientes…' : cashStorageIssue || (pendingCashReference ? `Verifica el cobro ${pendingCashReference} antes de continuar.` : '') || cashControl.blocking || (!cashControl.known ? 'Consultando la caja…' : '') || (cashControl.enabled && !deliveryCheckoutEnabled ? 'Activa el checkout de domicilios.' : '') || physicalIssue) : ''
+  const paymentConfirmationReady = cashControl.enabled && cashControl.known && !cashProblem && !quotedCheckoutIssue && baseCashCheckout.canSubmit && !cashOperationLocked
+  const paymentConfirmed = paymentConfirmationReady && confirmedPaymentKey === paymentConfirmKey
+  const confirmationIssue = cashControl.enabled && !paymentConfirmed ? (baseCashCheckout.total === 0 ? 'Confirma la operación sin cobro.' : 'Confirma que recibiste el pago.') : ''
+  const checkoutIssue = cashProblem || quotedCheckoutIssue || (!baseCashCheckout.canSubmit ? baseCashCheckout.message : confirmationIssue)
+  const cashCheckout = checkoutIssue ? { ...baseCashCheckout, canSubmit:false, message:checkoutIssue } : baseCashCheckout
+  const confirmCurrentPayment = (confirmed:boolean) => setConfirmedPaymentKey(confirmed && paymentConfirmationReady ? paymentConfirmKey : '')
   const handleCashReceivedChange = (value: string, mode: CashReceivedMode = 'manual'): void => {
+    if (isCashOperationLocked()) return
     if (!automaticCashChange || paymentKind !== 'cash' || !data.PRODUCT?.length ||
         !cashCheckout.amountsValid || cashCheckout.total <= 0 || loadingSale || loadingRegisterSale) return
     setCashReceivedMode(mode === 'exact' ? 'exact' : 'manual')
@@ -1158,11 +1222,94 @@ export const useSales = ({
     ? { ...values, valueDelivery: deliveryCheckoutEnabled ? String(cashCheckout.delivery).replace('.', ',') : values.valueDelivery, change: paymentKind === 'cash' && cashCheckout.canSubmit ? String(cashCheckout.change).replace('.', ',') : '' }
     : values
 
+  const storeMarker = (marker:PaymentAttempt) => {
+    // The marker has no customer, cart contents, card data or credentials.
+    sessionStorage.setItem(storageKey,JSON.stringify(marker))
+    markerRef.current=marker
+    setMarkerState({scope:cashStore,ready:true,marker,error:''})
+  }
+  const clearMarker = (reference:string) => {
+    if (cashScopeRef.current !== cashStore || markerRef.current?.reference !== reference) throw new Error('El contexto de la venta cambió. Consulta la referencia original.')
+    sessionStorage.removeItem(storageKey)
+    markerRef.current=null
+    attemptRef.current=null
+    setMarkerState({scope:cashStore,ready:true,marker:null,error:''})
+    setConfirmedPaymentKey('')
+  }
+  const completeControlledSale = (reference:string, pendingOrderId:string|null) => {
+    clearMarker(reference)
+    setPrint(false)
+    setCode(reference)
+    setOpenCurrentSale(true as any)
+    if (pendingOrderId) {
+      try { updatePendingStatus(pendingOrderId,'COMPLETED') } catch { /* payment already confirmed; review local pending order */ }
+      setActivePendingOrderId(null)
+    }
+    dispatchReducer({type:SalesActionTypes.REMOVE_ALL_PRODUCTS} as SalesReducerAction)
+    clearCashReceived()
+    resetDelivery()
+    setValues(initialValuesState)
+    // A confirmed sale never becomes a failed payment due to a cache/receipt notification.
+    // Evict instead of decrementing: an idempotent replay must not consume stock twice in the UI.
+    try { for (const fieldName of ['productFoodsAll','productFoodsOne','getAllExtraProduct']) client.cache.evict({id:'ROOT_QUERY',fieldName});client.cache.gc() } catch { /* cache is not authoritative */ }
+    void client.refetchQueries({include:'active'}).catch(()=>{})
+    void client.query({query:GET_ALL_COUNT_SALES,fetchPolicy:'network-only'}).catch(()=>{})
+    void cashControl.refresh().catch(()=>{})
+    try { onSaleSuccess({code:reference}) } catch { /* sale already committed */ }
+    try { handleQuery('sale',reference) } catch { /* sale already committed */ }
+  }
+  const executeControlledSale = async (attempt:NonNullable<typeof attemptRef.current>, retry:boolean) => {
+    if(saleSubmissionLock.current || cashScopeRef.current!==attempt.marker.storeId || cashControl.access?.actorId!==attempt.marker.actorId) return
+    saleSubmissionLock.current=true
+    setLoadingSale(true)
+    try {
+      const response=await registerControlledSale({variables:attempt.variables})
+      if(cashScopeRef.current!==attempt.marker.storeId || cashActorRef.current!==attempt.marker.actorId) return
+      const state=classifySaleResponse(response,attempt.marker.reference,attempt.marker.storeId)
+      if(state==='CONFIRMED') {
+        completeControlledSale(attempt.marker.reference,attempt.pendingOrderId)
+        sendNotification({title:'Venta confirmada',backgroundColor:'success',description:`Venta ${attempt.marker.reference} registrada.`})
+      } else if(state==='REJECTED' && !retry) {
+        clearMarker(attempt.marker.reference)
+        renderSaleResponse(response.data?.registerSalesStore)
+        void cashControl.refresh().catch(()=>{})
+      } else {
+        setPrint(false)
+        sendNotification({title:'Cobro pendiente de verificar',backgroundColor:'warning',description:`No registres otra venta. Verifica ${attempt.marker.reference}.`})
+      }
+    } catch {
+      if(cashScopeRef.current===attempt.marker.storeId) {
+        setPrint(false)
+        sendNotification({title:'Resultado de cobro desconocido',backgroundColor:'warning',description:`Conservamos ${attempt.marker.reference}. Consulta o reintenta el mismo cobro.`})
+      }
+    } finally { saleSubmissionLock.current=false;setLoadingSale(false) }
+  }
+  const retryPendingCashSale = async () => {
+    const attempt=attemptRef.current
+    if(!attempt || markerRef.current?.reference!==attempt.marker.reference || !cashControl.enabled || !cashControl.known || cashControl.access?.actorId!==attempt.marker.actorId) throw new Error('El intento original no está disponible en esta sesión. Consulta la referencia.')
+    return executeControlledSale(attempt,true)
+  }
+  const resolvePendingCashReference = async () => {
+    const marker=markerRef.current
+    if(!marker || saleSubmissionLock.current || !cashControl.known || !cashControl.access?.canRead || (!('legacy' in marker) && marker.actorId!==cashControl.access.actorId)) throw new Error('No es posible verificar el cobro en este contexto.')
+    saleSubmissionLock.current=true;setRecoveringCash(true)
+    try {
+      const result=await client.query({query:SALE_PAYMENT_EVIDENCE,variables:{saleReference:marker.reference},fetchPolicy:'no-cache',context:{queryDeduplication:false}})
+      assertPaymentEvidence(marker,result.data?.getSalePaymentEvidence)
+      // The UI asks permission before recovering and clearing the cart.
+      if(cashScopeRef.current!==cashStore || (! ('legacy' in marker) && cashActorRef.current!==marker.actorId)) throw new Error('El operador o comercio cambió durante la consulta.')
+      completeControlledSale(marker.reference,'legacy' in marker ? null : marker.pendingOrderId??attemptRef.current?.pendingOrderId??null)
+      return marker.reference
+    } finally {saleSubmissionLock.current=false;setRecoveringCash(false)}
+  }
   const handleSubmit = () => {
     // Double-submit guard: prevent a second mutation while one is already in-flight.
-    if (loadingSale || loadingRegisterSale) return
+    if (loadingSale || loadingRegisterSale || loadingControlledSale || isCashOperationLocked()) return
+    if (cashManagementEnabled && (!cashControl.known || cashProblem || (cashControl.enabled && !paymentConfirmed))) return sendNotification({title:'Verifica la caja',backgroundColor:'warning',description:cashProblem || confirmationIssue || 'Consulta la sesión de caja'})
     if (deliveryCheckoutEnabled && (!deliveryCheckout.ready || !deliveryCheckout.input || !deliveryCheckout.totals)) return sendNotification({title:'Verifica el domicilio',backgroundColor:'warning',description:deliveryCheckout.blockingMessage})
     const audit = auditCart(data)
+    const liveExact = deliveryCheckoutEnabled ? exactMerchandise(data, audit) : null
+    if (liveExact?.issue) return sendNotification({title:'Verifica el carrito',backgroundColor:'warning',description:liveExact.issue})
     if (!audit.valid || discountPayloadIssue || !auditPayloadSubtotal(finalArrayProduct, audit.net)) {
       return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: discountPayloadIssue || audit.issues[0] || 'El subtotal del carrito no coincide.' })
     }
@@ -1179,7 +1326,7 @@ export const useSales = ({
         integrityMessage: deliveryCheckoutEnabled && !deliveryCheckout.ready ? deliveryCheckout.blockingMessage : currentIntegrity.valid ? undefined : `Los importes del carrito no coinciden. ${currentIntegrity.issues[0] ?? ''}`,
         blockingMessage: checkoutBlocking
       })
-      if (!auditPayloadSubtotal(finalArrayProduct, currentIntegrity.net) ||
+      if (quotedCheckoutIssue || !auditPayloadSubtotal(finalArrayProduct, currentIntegrity.net) ||
           !freshCheckout.canSubmit || freshCheckout.subtotal !== cashCheckout.subtotal ||
           freshCheckout.total !== cashCheckout.total || freshCheckout.change !== cashCheckout.change) {
         return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning',
@@ -1204,7 +1351,6 @@ export const useSales = ({
         description: 'Completa los campos requeridos'
       })
     }
-    setLoadingSale(true)
     const {
       code,
       success,
@@ -1277,8 +1423,7 @@ export const useSales = ({
       return sendNotification({ title: 'Verifica el cobro', backgroundColor: 'warning', description: 'Importe de domicilio o vuelto inválido.' })
     }
 
-    return registerSalesStore({
-      variables: {
+    const submittedVariables = {
         input,
         id: values?.cliId,
         pCodeRef: code,
@@ -1294,7 +1439,22 @@ export const useSales = ({
           value: discountPayloadValue
         },
         totalProductsPrice: audit.net
-      },
+    }
+    if (cashControl.enabled) {
+      try {
+        const marker = buildPaymentAttempt({reference:String(code),storeId:cashStore,actorId:cashControl.access?.actorId??'',sessionId:cashControl.session?.id??'',payId:String(data.payId??''),kind:configuredKind??'',total:cashCheckout.total,received:cashCheckout.received,change:cashCheckout.change,pendingOrderId:activePendingOrderId??null})
+        const attempt={marker,variables:{...submittedVariables,...paymentVariables(marker)},pendingOrderId:activePendingOrderId??null}
+        storeMarker(marker)
+        attemptRef.current=attempt
+        return executeControlledSale(attempt,false)
+      } catch(e) {
+        sendNotification({title:'No se pudo iniciar el cobro',backgroundColor:'warning',description:e instanceof Error?e.message:'Verifica el pago.'})
+        return
+      }
+    }
+    saleSubmissionLock.current=true
+    setLoadingSale(true)
+    return registerSalesStore({variables:submittedVariables,
       update(cache, { data: mutationData }) {
         // Solo descontamos stock en caché cuando el backend confirmó la venta.
         // El backend es la fuente de verdad del inventario; esto mantiene la UI
@@ -1361,6 +1521,7 @@ export const useSales = ({
         })
       })
       .finally(() => {
+        saleSubmissionLock.current=false
         setPrint(false)
         setLoadingSale(false)
       })
@@ -1461,6 +1622,7 @@ export const useSales = ({
   const handleSavePendingOrder = (
     customerDetails: Partial<Omit<PendingOrderCustomer, 'id'>> = {}
   ): PendingOrder | null => {
+    if(isCashOperationLocked()) return null
     if (!Array.isArray(data?.PRODUCT) || data.PRODUCT.length === 0) {
       sendNotification({
         title: 'Orden pendiente',
@@ -1522,6 +1684,7 @@ export const useSales = ({
     orderId: string,
     replaceCurrent = false
   ): boolean => {
+    if(isCashOperationLocked()) return false
     const order = pendingOrders.find((item) => item.id === orderId)
 
     if (!order || !['PENDING', 'IN_PROGRESS'].includes(order.status)) {
@@ -1621,6 +1784,7 @@ export const useSales = ({
    */
   const handleProcessBarcode = useCallback(
     async (rawBarcode: string | number | null | undefined): Promise<ProcessBarcodeOutcome> => {
+      if(saleSubmissionLock.current || (cashManagementEnabled && (!cashStorageReady || !!cashStorageIssue || !!markerRef.current))) return {status:'ERROR',barcode:String(rawBarcode??''),message:'Verifica el cobro pendiente antes de agregar productos.'}
       return await processBarcode({
         rawBarcode,
         normalize: normalizeBarcode,
@@ -1629,7 +1793,7 @@ export const useSales = ({
         dedupRef: barcodeDedupRef
       })
     },
-    [findByBarcode, addProductToCart]
+    [findByBarcode, addProductToCart, cashManagementEnabled, cashStorageReady, cashStorageIssue]
   )
 
   useEffect(() => {
@@ -1644,10 +1808,11 @@ export const useSales = ({
   }, [data, domain])
 
   return {
+    cashControl, paymentConfirmed, paymentConfirmationReady, confirmCurrentPayment, pendingCashReference, cashStorageIssue, cashOperationLocked, recoveringCash, resolvePendingCashReference, retryPendingCashSale, canRetryPendingCashSale: Boolean(pendingCashReference && attemptRef.current && cashControl.known && cashControl.access?.actorId===attemptRef.current.marker.actorId),
     loading: loading || loadingSale,
     loadingExtraProduct,
     disabledModalItems: !disabledModalItems,
-    loadingRegisterSale,
+    loadingRegisterSale: loadingRegisterSale || loadingControlledSale,
     errorSale,
     openCurrentSale,
     code,

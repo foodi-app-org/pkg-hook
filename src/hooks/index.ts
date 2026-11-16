@@ -178,4 +178,6 @@ export * from './useElectronUpdater/index'
 export * from './useDeliveryCheckout'
 export * from './useDeliveryManagement'
 export * from './useSalesReconciliation'
+export * from './useCashManagement'
+
 
