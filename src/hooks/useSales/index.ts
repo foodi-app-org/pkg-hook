@@ -101,7 +101,7 @@ export const useSales = ({
   automaticCashChange: requestedAutomaticCashChange = false,
   deliveryCheckoutEnabled = false,
   cashManagementEnabled = false,
-  cashPollingEnabled = true
+  cashPollingEnabled = false
 }: UseSalesProps & { automaticCashChange?: boolean; deliveryCheckoutEnabled?: boolean; cashManagementEnabled?: boolean; cashPollingEnabled?: boolean }) => {
   const automaticCashChange = requestedAutomaticCashChange || deliveryCheckoutEnabled
   const keyToSaveData = String(process.env.NEXT_LOCAL_SALES_STORE)
@@ -802,6 +802,7 @@ export const useSales = ({
   const { data: salesPaymentMethods } = useGetAllPaymentMethods()
   const cashStore = String(idStore ?? '')
   const cashControl = useCashPOS(cashStore, cashManagementEnabled, cashPollingEnabled)
+  console.log({cashControl})
   const methodResolution = resolveFinancialMethod(cashControl.methods, data.payId)
   const configuredKind = methodResolution.kind
   const checkoutPaymentMethods = useMemo(() => cashManagementEnabled && !cashControl.known && !cashControl.enabled ? [] : paymentChoices(Array.isArray(salesPaymentMethods) ? salesPaymentMethods : [], cashControl.methods, cashControl.enabled), [salesPaymentMethods, cashControl.methods, cashControl.enabled, cashControl.known, cashManagementEnabled])
@@ -1280,7 +1281,7 @@ export const useSales = ({
     try { for (const fieldName of ['productFoodsAll','productFoodsOne','getAllExtraProduct']) client.cache.evict({id:'ROOT_QUERY',fieldName});client.cache.gc() } catch { /* cache is not authoritative */ }
     void client.refetchQueries({include:'active'}).catch(()=>{})
     void client.query({query:GET_ALL_COUNT_SALES,fetchPolicy:'network-only'}).catch(()=>{})
-    void cashControl.refresh().catch(()=>{})
+    // Cash lifecycle is synchronized by its WebSocket; no full cash fetch after a confirmed sale.
     try { onSaleSuccess({code:reference}) } catch { /* sale already committed */ }
     try { handleQuery('sale',reference) } catch { /* sale already committed */ }
   }

@@ -1,6 +1,14 @@
 import {minor,formatMinor} from 'exact-cart-totals'
+
 import type {CashSession,FinancialKind} from './types'
-export function verifyPhysicalCheckout(session:CashSession|null,kind:FinancialKind|undefined,total:unknown,received:unknown):string {
+/**
+ *
+ * @param session
+ * @param kind
+ * @param total
+ * @param received
+ */
+export function verifyPhysicalCheckout(session:Pick<CashSession,'roundingUnitMinor'|'roundingRule'>|null,kind:FinancialKind|undefined,total:unknown,received:unknown):string {
  if(!kind||kind==='UNKNOWN')return 'Clasifica el medio de pago en Finanzas.'
  if(kind!=='CASH')return ''
  if(!session)return 'Abre la caja antes de cobrar.'
