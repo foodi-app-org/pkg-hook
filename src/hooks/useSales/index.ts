@@ -1,7 +1,8 @@
 import { minor, moneyNumber } from 'exact-cart-totals'
 import { resolveFinancialMethod, paymentChoices, verifyCheckoutAmounts, paymentGate } from './helpers/checkout-readiness'
+import { resolveSessionPaymentMethods } from './helpers/session-payment-methods'
 import { exactMerchandise } from './helpers/exact-merchandise'
-import { useCashPOS, SALE_PAYMENT_EVIDENCE } from '../useCashManagement'
+import { useCashPOS, SALE_PAYMENT_EVIDENCE, useCashSessionPaymentPolicy } from '../useCashManagement'
 import { verifyPhysicalCheckout } from '../useCashManagement/checkout'
 import { REGISTER_SALE_WITH_CASH } from './cash-sale.mutation'
 import { buildPaymentAttempt, paymentVariables, readMarker, assertPaymentEvidence, classifySaleResponse, type PaymentAttempt, type PendingMarker } from './helpers/cash-sale-attempt'
@@ -802,9 +803,48 @@ export const useSales = ({
   const { data: salesPaymentMethods } = useGetAllPaymentMethods()
   const cashStore = String(idStore ?? '')
   const cashControl = useCashPOS(cashStore, cashManagementEnabled, cashPollingEnabled)
+
+  // Read session-scoped payment policy only after CashPOS confirms an OPEN session.
+  // All hooks are unconditional; skip is handled by the Apollo hook itself.
+  const cashSessionPaymentPolicy = useCashSessionPaymentPolicy({
+    sessionId: cashControl.session?.status === 'OPEN' ? cashControl.session.id : null,
+    enabled: cashManagementEnabled && cashControl.enabled && cashControl.known &&
+      cashControl.session?.status === 'OPEN'
+  })
+
   const methodResolution = resolveFinancialMethod(cashControl.methods, data.payId)
   const configuredKind = methodResolution.kind
-  const checkoutPaymentMethods = useMemo(() => cashManagementEnabled && !cashControl.known && !cashControl.enabled ? [] : paymentChoices(Array.isArray(salesPaymentMethods) ? salesPaymentMethods : [], cashControl.methods, cashControl.enabled), [salesPaymentMethods, cashControl.methods, cashControl.enabled, cashControl.known, cashManagementEnabled])
+  const allCheckoutPaymentMethods = useMemo(
+    () => cashManagementEnabled && !cashControl.known && !cashControl.enabled
+      ? []
+      : paymentChoices(
+          Array.isArray(salesPaymentMethods) ? salesPaymentMethods : [],
+          cashControl.methods,
+          cashControl.enabled
+        ),
+    [salesPaymentMethods, cashControl.methods, cashControl.enabled, cashControl.known, cashManagementEnabled]
+  )
+
+  const sessionPaymentSelection = useMemo(() => resolveSessionPaymentMethods({
+    cashManagementEnabled,
+    cashEnabled: cashControl.enabled,
+    cashKnown: cashControl.known,
+    sessionId: cashControl.session?.id ?? null,
+    sessionStatus: cashControl.session?.status ?? null,
+    paymentMethods: allCheckoutPaymentMethods,
+    financialMethods: cashControl.methods,
+    policy: cashSessionPaymentPolicy.policy,
+    loading: cashSessionPaymentPolicy.loading,
+    error: Boolean(cashSessionPaymentPolicy.error),
+    selectedId: String(data.payId ?? '')
+  }), [
+    cashManagementEnabled, cashControl.enabled, cashControl.known,
+    cashControl.session?.id, cashControl.session?.status, cashControl.methods,
+    allCheckoutPaymentMethods, cashSessionPaymentPolicy.policy,
+    cashSessionPaymentPolicy.loading, cashSessionPaymentPolicy.error, data.payId
+  ])
+  const checkoutPaymentMethods = sessionPaymentSelection.methods
+  const sessionPaymentIssue = sessionPaymentSelection.issue
   const paymentKind: 'cash' | 'non-cash' | 'unknown' = cashControl.enabled
     ? (!configuredKind ? 'unknown' : configuredKind === 'CASH' ? 'cash' : 'non-cash')
     : resolveSelectedPaymentKind(salesPaymentMethods, data.payId)
@@ -842,6 +882,9 @@ export const useSales = ({
   // Keep the reducer pure and pass every other action through untouched.
   const dispatch = useCallback((action: SalesReducerAction) => {
     if (saleSubmissionLock.current || (cashManagementEnabled && (!cashStorageReady || !!cashStorageIssue || !!markerRef.current))) return
+    if (action.type === SalesActionTypes.PAYMENT_METHOD &&
+        sessionPaymentSelection.configured && sessionPaymentSelection.ready &&
+        action.payload && !checkoutPaymentMethods.some(m => m.id === action.payload)) return
     if (automaticCashChange && (
       action.type === SalesActionTypes.REMOVE_ALL_PRODUCTS ||
       action.type === SalesActionTypes.RESTORE_PENDING_ORDER ||
@@ -851,7 +894,16 @@ export const useSales = ({
       setValues(previous => clearNonCashChange(previous, 'non-cash'))
       setErrors(previous => previous.change ? { ...previous, change: false } : previous)
     }, dispatchReducer)
-  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId, clearCashReceived, cashManagementEnabled, cashStorageReady, cashStorageIssue])
+  }, [salesPaymentMethods, dispatchReducer, automaticCashChange, data.payId, clearCashReceived,
+    cashManagementEnabled, cashStorageReady, cashStorageIssue,
+    sessionPaymentSelection.configured, sessionPaymentSelection.ready, checkoutPaymentMethods])
+
+  // A restored order or old session may select a method excluded by the new OPEN session.
+  // Clear it after policy resolution; CreateSales will select a valid default if available.
+  useEffect(() => {
+    if (!sessionPaymentSelection.selectedDisallowed || !data.payId) return
+    dispatch({ type: SalesActionTypes.PAYMENT_METHOD, payload: '' })
+  }, [sessionPaymentSelection.selectedDisallowed, data.payId, dispatch])
 
   useEffect(() => {
     if (paymentKind !== 'non-cash') return
@@ -1197,9 +1249,9 @@ export const useSales = ({
     ? verifyCheckoutAmounts(totalProductsPrice, deliveryCheckoutEnabled ? deliveryCheckout.posCharge : baseCashCheckout.delivery, baseCashCheckout, deliveryCheckoutEnabled && deliveryCheckout.ready ? deliveryCheckout.totals : null) : ''
   const physicalIssue = cashControl.enabled && baseCashCheckout.amountsValid && configuredKind
     ? verifyPhysicalCheckout(cashControl.session, configuredKind, baseCashCheckout.total, baseCashCheckout.received) : ''
-  const paymentConfirmKey = JSON.stringify([cashStore, cashControl.access?.actorId, cashControl.session?.id, cashControl.session?.roundingUnitMinor, cashControl.session?.roundingRule, configuredKind, data.payId, data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount, values.cliId, values.tableId, deliveryCheckout.input, deliveryCheckout.quote, baseCashCheckout.total, baseCashCheckout.received, baseCashCheckout.change])
+  const paymentConfirmKey = JSON.stringify([cashStore, cashControl.access?.actorId, cashControl.session?.id, cashControl.session?.roundingUnitMinor, cashControl.session?.roundingRule, cashSessionPaymentPolicy.policy?.configured, cashSessionPaymentPolicy.policy?.methodIds, sessionPaymentIssue, configuredKind, data.payId, data.PRODUCT, data.discountType, data.discountPercent, data.discountAmount, values.cliId, values.tableId, deliveryCheckout.input, deliveryCheckout.quote, baseCashCheckout.total, baseCashCheckout.received, baseCashCheckout.change])
   useEffect(() => { setConfirmedPaymentKey('') }, [paymentConfirmKey])
-  const cashProblem = cashManagementEnabled ? (!cashStorageReady ? 'Comprobando cobros pendientes…' : cashStorageIssue || (pendingCashReference ? `Verifica el cobro ${pendingCashReference} antes de continuar.` : '') || cashControl.blocking || (!cashControl.known ? 'Consultando la caja…' : '') || (cashControl.enabled && !deliveryCheckoutEnabled ? 'Activa el checkout de domicilios.' : '') || (cashControl.enabled ? methodResolution.issue : '') || physicalIssue) : ''
+  const cashProblem = cashManagementEnabled ? (!cashStorageReady ? 'Comprobando cobros pendientes…' : cashStorageIssue || (pendingCashReference ? `Verifica el cobro ${pendingCashReference} antes de continuar.` : '') || cashControl.blocking || (!cashControl.known ? 'Consultando la caja…' : '') || (cashControl.enabled && !deliveryCheckoutEnabled ? 'Activa el checkout de domicilios.' : '') || (cashControl.enabled ? sessionPaymentIssue || methodResolution.issue : '') || physicalIssue) : ''
   const gate = paymentGate({enabled:cashControl.enabled,known:cashControl.known,locked:cashOperationLocked,issue:cashProblem,amountIssue:quotedCheckoutIssue,baseReady:baseCashCheckout.canSubmit,baseMessage:baseCashCheckout.message,confirmed:confirmedPaymentKey===paymentConfirmKey,zero:baseCashCheckout.total===0})
   const paymentConfirmationReady = gate.ready
   const paymentConfirmed = gate.confirmed
@@ -1215,7 +1267,10 @@ export const useSales = ({
       financialKind: cashControl.methods.find(m=>m.payId===data.payId)?.financialKind
     } : null,
     paymentKind,
-    methodIssue: cashControl.enabled ? methodResolution.issue : '',
+    methodIssue: cashControl.enabled ? sessionPaymentIssue || methodResolution.issue : '',
+    sessionPaymentPolicyConfigured: sessionPaymentSelection.configured,
+    sessionPaymentPolicyLegacy: sessionPaymentSelection.legacy,
+    sessionPaymentPolicyMethodCount: checkoutPaymentMethods.length,
     sessionStatus: cashControl.session?.status ?? null,
     scopeMatches: cashControl.access?.storeId === cashStore,
     contextReady: cashControl.known,
@@ -1835,7 +1890,7 @@ export const useSales = ({
   }, [data, domain])
 
   return {
-    cashControl, checkoutPaymentMethods, paymentMethodIssue: cashControl.enabled && cashControl.known ? methodResolution.issue : '', paymentConfirmationBlocker: gate.reason, checkoutAmountIssue: quotedCheckoutIssue, checkoutDiagnostics, paymentConfirmed, paymentConfirmationReady, confirmCurrentPayment, pendingCashReference, cashStorageIssue, cashOperationLocked, recoveringCash, resolvePendingCashReference, retryPendingCashSale, canRetryPendingCashSale: Boolean(pendingCashReference && attemptRef.current && cashControl.known && cashControl.access?.actorId===attemptRef.current.marker.actorId),
+    cashControl, cashSessionPaymentPolicy, sessionPaymentSelection, checkoutPaymentMethods, paymentMethodIssue: cashControl.enabled && cashControl.known ? (sessionPaymentIssue || methodResolution.issue) : '', paymentConfirmationBlocker: gate.reason, checkoutAmountIssue: quotedCheckoutIssue, checkoutDiagnostics, paymentConfirmed, paymentConfirmationReady, confirmCurrentPayment, pendingCashReference, cashStorageIssue, cashOperationLocked, recoveringCash, resolvePendingCashReference, retryPendingCashSale, canRetryPendingCashSale: Boolean(pendingCashReference && attemptRef.current && cashControl.known && cashControl.access?.actorId===attemptRef.current.marker.actorId),
     loading: loading || loadingSale,
     loadingExtraProduct,
     disabledModalItems: !disabledModalItems,
