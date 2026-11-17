@@ -1,8 +1,11 @@
 import { minor, moneyNumber } from 'exact-cart-totals'
+
 import type { FinancialKind, FinancialMethod } from '../../useCashManagement/types'
 
 const KINDS: readonly FinancialKind[] = ['CASH', 'CARD', 'BANK_TRANSFER', 'DIGITAL_WALLET', 'OTHER', 'UNKNOWN']
 export type PaymentChoice = { id: string; name: string; icon: string }
+
+
 export function resolveFinancialMethod(methods: readonly FinancialMethod[], selectedId: unknown) {
   const id = typeof selectedId === 'string' ? selectedId : ''
   if (!id) return { kind: undefined, issue: 'Selecciona un medio de pago.' }
@@ -13,11 +16,27 @@ export function resolveFinancialMethod(methods: readonly FinancialMethod[], sele
   if (!KINDS.includes(method.financialKind) || method.financialKind === 'UNKNOWN') return { kind: undefined, issue: 'Clasifica este medio de pago en Finanzas → Medios de pago.' }
   return { kind: method.financialKind, issue: '' }
 }
+/**
+ *
+ * @param legacy
+ * @param financial
+ * @param controlled
+ */
 export function paymentChoices(legacy: readonly {payId?: string | null;name?: string | null;icon?: string | null}[], financial: readonly FinancialMethod[], controlled: boolean): PaymentChoice[] {
-  if (!controlled) return legacy.filter(m => !!m.payId).map(m => ({id:m.payId!, name:m.name ?? '', icon:m.icon ?? ''}))
+  if (!controlled) return legacy.filter(m => Boolean(m.payId)).map(m => ({id:m.payId!, name:m.name ?? '', icon:m.icon ?? ''}))
   // Legacy catalog is only decoration. Never determines payment validity.
   return financial.filter(m=>m.state==='active').map(m=>({id:m.payId,name:m.name,icon:legacy.find(x=>x.payId===m.payId)?.icon || 'IconSales'}))
 }
+/**
+ *
+ * @param merchandise
+ * @param delivery
+ * @param checkout
+ * @param checkout.subtotal
+ * @param checkout.delivery
+ * @param checkout.total
+ * @param quote
+ */
 export function verifyCheckoutAmounts(merchandise: unknown, delivery: unknown, checkout: {subtotal:unknown;delivery:unknown;total:unknown}, quote?: {merchandiseNet:string;posCharge:string;checkoutTotal:string}|null): string {
   try {
     const net=minor(merchandise), fee=minor(delivery), total=net+fee
@@ -28,6 +47,19 @@ export function verifyCheckoutAmounts(merchandise: unknown, delivery: unknown, c
     return ''
   } catch { return 'Importes financieros inválidos. Revisa el carrito.' }
 }
+/**
+ *
+ * @param input
+ * @param input.enabled
+ * @param input.known
+ * @param input.locked
+ * @param input.issue
+ * @param input.amountIssue
+ * @param input.baseReady
+ * @param input.baseMessage
+ * @param input.confirmed
+ * @param input.zero
+ */
 export function paymentGate(input: {enabled:boolean;known:boolean;locked:boolean;issue:string;amountIssue:string;baseReady:boolean;baseMessage:string;confirmed:boolean;zero:boolean}) {
   const reason=input.issue || input.amountIssue || (!input.baseReady ? input.baseMessage || 'Revisa los datos del pago.' : '') || (input.enabled && !input.known ? 'Consultando la sesión de caja…' : '') || (input.locked ? 'Hay una operación pendiente.' : '')
   const ready=input.enabled&&input.known&&!input.locked&&!reason

@@ -179,5 +179,7 @@ export * from './useDeliveryCheckout'
 export * from './useDeliveryManagement'
 export * from './useSalesReconciliation'
 export * from './useCashManagement'
+export * from './usePaginatedCategories'
+export * from './useCreateCategoryProduct'
 
 
