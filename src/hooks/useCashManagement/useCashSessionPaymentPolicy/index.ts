@@ -54,7 +54,6 @@ export function useCashSessionPaymentPolicy({
     notifyOnNetworkStatusChange: true,
     pollInterval: active ? pollInterval : 0
   })
-
   const policy = active && !query.error &&
     query.data?.getSessionPaymentPolicy?.sessionId === id
       ? query.data.getSessionPaymentPolicy
