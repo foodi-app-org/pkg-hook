@@ -185,5 +185,7 @@ export * from './useCashManagement/useCashSessionPaymentPolicy'
 export * from './useSaleRefunds'
 export * from './useSaleCancellations'
 export * from './useMoveOrderOnBoard'
+export * from './useOrderBoardHistory'
+
 
 
