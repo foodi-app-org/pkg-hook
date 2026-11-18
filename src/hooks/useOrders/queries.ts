@@ -68,6 +68,7 @@ query getAllSalesStore {
     channel
     status
     createdAt
+    boardStatusId
     pCodeRef
     idStore
     pdpId

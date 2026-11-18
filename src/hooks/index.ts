@@ -184,6 +184,6 @@ export * from './useCreateCategoryProduct'
 export * from './useCashManagement/useCashSessionPaymentPolicy'
 export * from './useSaleRefunds'
 export * from './useSaleCancellations'
-
+export * from './useMoveOrderOnBoard'
 
 
